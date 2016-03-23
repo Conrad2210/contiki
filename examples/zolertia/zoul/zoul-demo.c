@@ -87,7 +87,7 @@
 #define LEDS_BUTTON         LEDS_RED
 #define LEDS_SERIAL_IN      LEDS_GREEN
 #define LEDS_REBOOT         LEDS_ALL
-#define LEDS_RF_RX          (LEDS_YELLOW | LEDS_RED)
+#define LEDS_RF_RX          (LEDS_ALL)
 #define BUTTON_PRESS_EVENT_INTERVAL (CLOCK_SECOND)
 /*---------------------------------------------------------------------------*/
 static struct etimer et;
