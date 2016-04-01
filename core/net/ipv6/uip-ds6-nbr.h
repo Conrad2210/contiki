@@ -69,14 +69,12 @@ NBR_TABLE_DECLARE(ds6_neighbors);
 /** \brief An entry in the nbr cache */
 typedef struct uip_ds6_nbr {
   uip_ipaddr_t ipaddr;
-  uint8_t isrouter;
-  uint8_t state;
-  uint16_t link_metric;
-#if UIP_ND6_SEND_NA || UIP_ND6_SEND_RA
   struct stimer reachable;
   struct stimer sendns;
   uint8_t nscount;
-#endif /* UIP_ND6_SEND_NA || UIP_ND6_SEND_RA */
+  uint8_t isrouter;
+  uint8_t state;
+  uint16_t link_metric;
 #if UIP_CONF_IPV6_QUEUE_PKT
   struct uip_packetqueue_handle packethandle;
 #define UIP_DS6_NBR_PACKET_LIFETIME CLOCK_SECOND * 4

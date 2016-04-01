@@ -199,8 +199,8 @@ tsch_reset(void)
   frame802154_set_pan_id(0xffff);
   /* First make sure pending packet callbacks are sent etc */
   process_post_synch(&tsch_pending_events_process, PROCESS_EVENT_POLL, NULL);
-  /* Reset neighbor queues */
-  tsch_queue_reset();
+  /* Empty all neighbor queues */
+  /* tsch_queue_flush_all(); */
   /* Remove unused neighbors */
   tsch_queue_free_unused_neighbors();
   tsch_queue_update_time_source(NULL);
@@ -858,7 +858,6 @@ tsch_init(void)
   tsch_log_init();
   ringbufindex_init(&input_ringbuf, TSCH_MAX_INCOMING_PACKETS);
   ringbufindex_init(&dequeued_ringbuf, TSCH_DEQUEUED_ARRAY_SIZE);
-
   tsch_is_initialized = 1;
 
 #if TSCH_AUTOSTART
@@ -936,7 +935,6 @@ send_packet(mac_callback_t sent, void *ptr)
              tsch_queue_packet_count(addr),
              p->header_len,
              queuebuf_datalen(p->qb));
-      (void)packet_count_before; /* Discard "variable set but unused" warning in case of TSCH_LOG_LEVEL of 0 */
     }
   }
   if(ret != MAC_TX_DEFERRED) {
