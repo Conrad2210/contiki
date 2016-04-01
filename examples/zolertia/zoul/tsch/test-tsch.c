@@ -90,10 +90,8 @@ PROCESS_THREAD(zoul_demo_process, ev, data)
         if(button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL) ==
            BUTTON_SENSOR_PRESSED_LEVEL) {
           printf("Button pressed\n");
-          tsch_schedule_print();
           packetbuf_copyfrom(&counter, sizeof(counter));
           broadcast_send(&bc);
-          leds_toggle(LEDS_RF_RX);
         } else {
           printf("...and released!\n");
         }

@@ -1,5 +1,4 @@
 DEFINES+=PROJECT_CONF_H=\"project-conf.h\"
-DEFINES+= NETSTACK_CONF_RDC=contikimac_driver
 
 CONTIKI_PROJECT = zoul-demo test-tsl2563 test-sht25 test-power-mgmt
 CONTIKI_PROJECT += test-bmp085-bmp180 test-motion test-rotation-sensor
