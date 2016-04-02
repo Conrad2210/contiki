@@ -40,6 +40,10 @@
 
 #define BROADCAST_CHANNEL     129
 
+
+#define TSCH_CONF_DEFAULT_TIMESLOT_LENGTH 10000
+#define TSCH_ADAPTIVE_TIMESYNC 1
+
 /* Netstack layers */
 #undef NETSTACK_CONF_MAC
 #define NETSTACK_CONF_MAC     tschmac_driver

@@ -36,8 +36,8 @@
 #define LEDS_RF_RX          (LEDS_ALL)
 #define BUTTON_PRESS_EVENT_INTERVAL (CLOCK_SECOND)
 /*---------------------------------------------------------------------------*/
-static struct etimer et;
-static struct rtimer rt;
+//static struct etimer et;
+//static struct rtimer rt;
 static uint16_t counter;
 /*---------------------------------------------------------------------------*/
 PROCESS(zoul_demo_process, "Zoul demo process");
@@ -50,19 +50,29 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
   printf("*** Received %u bytes from %u:%u: '0x%04x'\n", packetbuf_datalen(),
          from->u8[0], from->u8[1], *(uint16_t *)packetbuf_dataptr());
 }
+static void schedule_update_received(struct broadcast_conn *c, const linkaddr_t *from)
+{
+	printf("*** Received Schedule Update %u bytes from %u:%u: '0x%04x'\n", packetbuf_datalen(), from->u8[0], from->u8[1], *(uint16_t *) packetbuf_dataptr());
+}
+
 /*---------------------------------------------------------------------------*/
 static const struct broadcast_callbacks bc_rx = { broadcast_recv };
 static struct broadcast_conn bc;
+
+static const struct broadcast_callbacks schedule_bc_rx =
+{ schedule_update_received };
+static struct broadcast_conn schedule_bc;
 /*---------------------------------------------------------------------------*/
-static void
-rt_callback(struct rtimer *t, void *ptr)
-{
-  leds_off(LEDS_PERIODIC);
-}
+//static void
+//rt_callback(struct rtimer *t, void *ptr)
+//{
+//  leds_off(LEDS_PERIODIC);
+//}
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(zoul_demo_process, ev, data)
 {
   PROCESS_EXITHANDLER(broadcast_close(&bc))
+			PROCESS_EXITHANDLER(broadcast_close(&schedule_bc));
 
   PROCESS_BEGIN();
 
@@ -72,6 +82,7 @@ PROCESS_THREAD(zoul_demo_process, ev, data)
   //NETSTACK_MAC.off(1);
 
   broadcast_open(&bc, BROADCAST_CHANNEL, &bc_rx);
+	broadcast_open(&schedule_bc, BROADCAST_CHANNEL, &schedule_bc_rx);
 
   /* Configure the user button */
   button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,

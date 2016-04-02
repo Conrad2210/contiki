@@ -1,0 +1,13 @@
+/*
+ * test-tsch-coordinator.h
+ *
+ *  Created on: Apr 2, 2016
+ *      Author: user
+ */
+
+#ifndef DEWI_NIMBUS_CONTIKI_EXAMPLES_ZOLERTIA_ZOUL_TSCH_TEST_TSCH_COORDINATOR_H_
+#define DEWI_NIMBUS_CONTIKI_EXAMPLES_ZOLERTIA_ZOUL_TSCH_TEST_TSCH_COORDINATOR_H_
+
+void test_tsch_coordinator_init(void);
+
+#endif /* DEWI_NIMBUS_CONTIKI_EXAMPLES_ZOLERTIA_ZOUL_TSCH_TEST_TSCH_COORDINATOR_H_ */

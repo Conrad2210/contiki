@@ -7,6 +7,8 @@
 
 
 
+#include "test_tsch_coordinator.h"
+
 #include "contiki.h"
 #include "cpu.h"
 #include "sys/etimer.h"
@@ -23,12 +25,13 @@
 #include "net/rime/broadcast.h"
 #include "net/mac/tsch/tsch.h"
 #include "net/mac/tsch/tsch-schedule.h"
-
+#include "packet_types.h"
 #include <stdio.h>
 #include <stdint.h>
 /*---------------------------------------------------------------------------*/
 #define LOOP_PERIOD         8
 #define LOOP_INTERVAL       (CLOCK_SECOND * LOOP_PERIOD)
+#define SCHEDULE_INTERVAL       (CLOCK_SECOND)
 #define LEDS_OFF_HYSTERISIS ((RTIMER_SECOND * LOOP_PERIOD) >> 1)
 #define LEDS_PERIODIC       LEDS_BLUE
 #define LEDS_BUTTON         LEDS_RED
@@ -37,12 +40,13 @@
 #define LEDS_RF_RX          (LEDS_ALL)
 #define BUTTON_PRESS_EVENT_INTERVAL (CLOCK_SECOND)
 /*---------------------------------------------------------------------------*/
-static struct etimer et;
-static struct rtimer rt;
+static struct etimer scheduleUpdate;
+//static struct rtimer rt;
 static uint16_t counter;
 /*---------------------------------------------------------------------------*/
+PROCESS(start_app, "START_APP");
 PROCESS(zoul_demo_process, "Zoul demo process");
-AUTOSTART_PROCESSES(&zoul_demo_process);
+AUTOSTART_PROCESSES(&start_app, &zoul_demo_process);
 /*---------------------------------------------------------------------------*/
 static void
 broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
@@ -54,51 +58,69 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 /*---------------------------------------------------------------------------*/
 static const struct broadcast_callbacks bc_rx = { broadcast_recv };
 static struct broadcast_conn bc;
-
+CIDER_PACKET temp;
 static void
 tsch_schedule(void)
 {
-  struct tsch_slotframe *sf_min;
-  /* First, empty current schedule */
-  tsch_schedule_remove_all_slotframes();
-  /* Build 6TiSCH minimal schedule.
-   * We pick a slotframe length of TSCH_SCHEDULE_DEFAULT_LENGTH */
-  sf_min = tsch_schedule_add_slotframe(0, TSCH_SCHEDULE_DEFAULT_LENGTH);
-  /* Add a single Tx|Rx|Shared slot using broadcast address (i.e. usable for unicast and broadcast).
-   * We set the link type to advertising, which is not compliant with 6TiSCH minimal schedule
-   * but is required according to 802.15.4e if also used for EB transmission.
-   * Timeslot: 0, channel offset: 0. */
-  tsch_schedule_add_link(sf_min,
-	  LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING | LINK_OPTION_TX | LINK_OPTION_RX,
-      LINK_TYPE_ADVERTISING, &tsch_broadcast_address,
-      0, 0);
-  tsch_schedule_add_link(sf_min,
-      LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING | LINK_OPTION_TX | LINK_OPTION_RX,
-      LINK_TYPE_NORMAL, &tsch_broadcast_address,
-      1, 2);
-  tsch_schedule_add_link(sf_min,
-      LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING | LINK_OPTION_TX | LINK_OPTION_RX,
-      LINK_TYPE_NORMAL, &tsch_broadcast_address,
-      3, 1);
-  tsch_schedule_add_link(sf_min,
-      LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING | LINK_OPTION_TX | LINK_OPTION_RX,
-      LINK_TYPE_NORMAL, &tsch_broadcast_address,
-      5, 4);
+	struct tsch_slotframe *sf_min;
+	  /* First, empty current schedule */
+	  tsch_schedule_remove_all_slotframes();
+	  /* Build 6TiSCH minimal schedule.
+	   * We pick a slotframe length of TSCH_SCHEDULE_DEFAULT_LENGTH */
+	  sf_min = tsch_schedule_add_slotframe(0, 25);
+	  /* Add a single Tx|Rx|Shared slot using broadcast address (i.e. usable for unicast and broadcast).
+	   * We set the link type to advertising, which is not compliant with 6TiSCH minimal schedule
+	   * but is required according to 802.15.4e if also used for EB transmission.
+	   * Timeslot: 0, channel offset: 0. */
+	  tsch_schedule_add_link(sf_min,
+	      LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
+	      LINK_TYPE_ADVERTISING, &tsch_broadcast_address,
+	      0, 0);
+	  tsch_schedule_add_link(sf_min,
+	      LINK_OPTION_RX | LINK_OPTION_TX,
+	      LINK_TYPE_NORMAL, &tsch_broadcast_address,
+	      1, 1);
+	  tsch_schedule_add_link(sf_min,
+	      LINK_OPTION_RX | LINK_OPTION_TX,
+		  LINK_TYPE_NORMAL, &tsch_broadcast_address,
+	      2, 2);
+	  tsch_schedule_add_link(sf_min,
+	      LINK_OPTION_RX | LINK_OPTION_TX,
+		  LINK_TYPE_NORMAL, &tsch_broadcast_address,
+	      8, 5);
+	  tsch_schedule_add_link(sf_min,
+	      LINK_OPTION_RX | LINK_OPTION_TX,
+		  LINK_TYPE_NORMAL, &tsch_broadcast_address,
+	      12, 3);
+	  tsch_schedule_add_link(sf_min,
+	      LINK_OPTION_RX | LINK_OPTION_TX,
+		  LINK_TYPE_NORMAL, &tsch_broadcast_address,
+	      18, 5);
 }
 /*---------------------------------------------------------------------------*/
-static void
-rt_callback(struct rtimer *t, void *ptr)
-{
-  leds_off(LEDS_PERIODIC);
-}
+//static void
+//rt_callback(struct rtimer *t, void *ptr)
+//{
+//  leds_off(LEDS_PERIODIC);
+//}
 /*---------------------------------------------------------------------------*/
+PROCESS_THREAD(start_app, ev, data){
+	PROCESS_BEGIN();
+
+	test_tsch_coordinator_init();
+
+	 PROCESS_END();
+}
+
+
+
 PROCESS_THREAD(zoul_demo_process, ev, data)
 {
 
-	//tsch_schedule();
-		tsch_set_coordinator(1);
 	  PROCESS_EXITHANDLER(broadcast_close(&bc))
 
+	 temp.stage = 0;
+	temp.shortAddr = 0;
 	  PROCESS_BEGIN();
 
 	  counter = 0;
@@ -112,7 +134,7 @@ PROCESS_THREAD(zoul_demo_process, ev, data)
 	  button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
 	                          BUTTON_PRESS_EVENT_INTERVAL);
 
-
+	  etimer_set(&scheduleUpdate,SCHEDULE_INTERVAL);
 	  printf("Zoul test application\n");
 
 
@@ -120,7 +142,12 @@ PROCESS_THREAD(zoul_demo_process, ev, data)
 	  while(1){
 
 	    PROCESS_YIELD();
-
+	    	if(ev == PROCESS_EVENT_TIMER){
+	    		printf("create schedule update packet\n");
+	    		packetbuf_copyfrom(&temp,sizeof(temp));
+	    		broadcast_send(&bc);
+	    		etimer_set(&scheduleUpdate,SCHEDULE_INTERVAL);
+	    	}
 	      if(data == &button_sensor) {
 	        if(button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL) ==
 	           BUTTON_SENSOR_PRESSED_LEVEL) {
@@ -136,6 +163,16 @@ PROCESS_THREAD(zoul_demo_process, ev, data)
 
 
 	  PROCESS_END();
+}
+
+
+void
+test_tsch_coordinator_init(void)
+{
+	printf("Coordinator: initialization start\n");
+	tsch_schedule();
+	tsch_set_coordinator(1);
+	printf("Coordinator: initialization done\n");
 }
 /*---------------------------------------------------------------------------*/
 /**
