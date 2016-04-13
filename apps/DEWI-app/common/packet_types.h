@@ -30,15 +30,36 @@
 
 /**
  * \file
- *         CIDER header file
- *         see 'CIDER - Clustering In Dense EnviRonments' - XXX - 2016
+ *			Packet Types header files
+ *
  *
  * \author Conrad Dandelski <conrad.dandelski@mycit.ie>
  */
 
-#ifndef DEWI_NIMBUS_CONTIKI_APPS_DEWI_APP_CIDER_CIDER_H_
-#define DEWI_NIMBUS_CONTIKI_APPS_DEWI_APP_CIDER_CIDER_H_
+
+
+typedef struct{
+	uint16_t src;
+	uint16_t dst;
+	uint8_t type;
+}BasePacket;
+
+
+typedef struct{
+		BasePacket base;
+		uint8_t stage;
+		uint16_t shortAddr;
+		int8_t rssi;
+		int8_t lqi;
+}CIDER_PACKET;
+
+typedef struct{
+		BasePacket base;
+		uint16_t size;
+		uint8_t slotframeHandle;
+
+}scheduleUpdate_Packet;
 
 
 
-#endif /* DEWI_NIMBUS_CONTIKI_APPS_DEWI_APP_CIDER_CIDER_H_ */
+CIDER_PACKET parse_CIDER_PK(void * packet);

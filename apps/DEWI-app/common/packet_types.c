@@ -30,15 +30,12 @@
 
 /**
  * \file
- *         CIDER header file
- *         see 'CIDER - Clustering In Dense EnviRonments' - XXX - 2016
+ *			Packet Types: packet types used by CIDER, RLL and DEWI-scheduler
+ *
  *
  * \author Conrad Dandelski <conrad.dandelski@mycit.ie>
  */
 
-#ifndef DEWI_NIMBUS_CONTIKI_APPS_DEWI_APP_CIDER_CIDER_H_
-#define DEWI_NIMBUS_CONTIKI_APPS_DEWI_APP_CIDER_CIDER_H_
+#include "packet_types.h"
 
 
-
-#endif /* DEWI_NIMBUS_CONTIKI_APPS_DEWI_APP_CIDER_CIDER_H_ */
