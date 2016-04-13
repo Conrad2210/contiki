@@ -22,6 +22,7 @@
 #include "net/netstack.h"
 #include "net/rime/broadcast.h"
 #include "net/mac/tsch/tsch-schedule.h"
+#include "packet_types.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -52,7 +53,17 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 }
 static void schedule_update_received(struct broadcast_conn *c, const linkaddr_t *from)
 {
+
+	int temp = 73;
+	leds_toggle(LEDS_RED);
+	CIDER_PACKET *m = packetbuf_dataptr();
+	m->rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
+	//m->rssi = m->rssi- temp;
+	m->lqi = packetbuf_attr(PACKETBUF_ATTR_LINK_QUALITY);
 	printf("*** Received Schedule Update %u bytes from %u:%u: '0x%04x'\n", packetbuf_datalen(), from->u8[0], from->u8[1], *(uint16_t *) packetbuf_dataptr());
+	printf("Message Type: %u, SRC: %u, DST: %u \n ",m->base.type,m->base.src, m->base.dst);
+	printf("Stage: %u, ShortAddr: %u \n ",m->stage,m->shortAddr);
+	printf("RSSI: %d [0x%02x], LQI: %d [0x%04x]\n",m->rssi ,m->rssi,m->lqi,m->lqi);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -82,7 +93,7 @@ PROCESS_THREAD(zoul_demo_process, ev, data)
   //NETSTACK_MAC.off(1);
 
   broadcast_open(&bc, BROADCAST_CHANNEL, &bc_rx);
-	broadcast_open(&schedule_bc, BROADCAST_CHANNEL, &schedule_bc_rx);
+	broadcast_open(&schedule_bc, BROADCAST_CHANNEL_SCHEDULE, &schedule_bc_rx);
 
   /* Configure the user button */
   button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
