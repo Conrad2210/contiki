@@ -1,4 +1,5 @@
 /*
+ /*
  * Copyright (c) 2015, Swedish Institute of Computer Science.
  * All rights reserved.
  *
@@ -30,33 +31,45 @@
 
 /**
  * \file
- *         Scheduler header file
+ *         type_defs used for DEWI-Stack
+ *
  *
  * \author Conrad Dandelski <conrad.dandelski@mycit.ie>
  */
-#ifndef DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_SCHEDULER_SCHEDULER_H_
-#define DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_SCHEDULER_SCHEDULER_H_
+#include "tsch-schedule.h"
 
-#include "contiki.h"
-#include "cpu.h"
-#include "sys/etimer.h"
-#include "sys/rtimer.h"
-#include "dev/leds.h"
-#include "dev/watchdog.h"
-#include "dev/serial-line.h"
-#include "dev/sys-ctrl.h"
-#include "net/netstack.h"
-#include "net/rime/broadcast.h"
-#include "net/mac/tsch/tsch-schedule.h"
+#ifndef DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_COMMON_TYPE_DEFS_H_
+#define DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_COMMON_TYPE_DEFS_H_
 
-#include "net/DEWI/common/type_defs.h"
+#define MAX_NUM_LINKS 51
 
-#include <stdio.h>
-#include <stdint.h>
+typedef struct{
+		  /* MAC address of neighbor */
+		  linkaddr_t addr;
+
+		  /* Identifier of Slotframe to which this link belongs
+		   * Unused. */
+		  /* uint8_t handle; */
+		  /* Timeslot for this link */
+		  uint16_t timeslot;
+		  /* Channel offset for this link */
+		  uint16_t channel_offset;
+		  /* A bit string that defines
+		   * b0 = Transmit, b1 = Receive, b2 = Shared, b3 = Timekeeping, b4 = reserved */
+		  uint8_t link_options;
+		  /* Type of link. NORMAL = 0. ADVERTISING = 1, and indicates
+		     the link may be used to send an Enhanced beacon. */
+		  enum link_type link_type;
+
+}linkInfo;
+
+typedef struct{
+		//slotframe handle CIDER:0; RLL:1
+		uint16_t handle;
+		uint16_t slotframeLength;
+		linkInfo links[MAX_NUM_LINKS];
+}ScheduleInfo;
 
 
-int setSchedule(ScheduleInfo schedule);
 
-void setCoord(int isCoordinator);
-
-#endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_SCHEDULER_SCHEDULER_H_ */
+#endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_COMMON_TYPE_DEFS_H_ */

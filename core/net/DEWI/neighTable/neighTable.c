@@ -35,3 +35,19 @@
  *
  * \author Conrad Dandelski <conrad.dandelski@mycit.ie>
  */
+
+
+void initNeighbourTable(){
+#if DEBUG
+	printf("Init Neighbourtable\n");
+#endif
+}
+
+
+
+
+
+
+
+
+

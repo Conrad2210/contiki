@@ -23,6 +23,10 @@
 #include "net/rime/broadcast.h"
 #include "net/mac/tsch/tsch.h"
 #include "net/mac/tsch/tsch-schedule.h"
+
+#include "net/DEWI/scheduler/scheduler.h"
+#include "net/DEWI/rll/rll.h"
+#include "net/DEWI/cider/cider.h"
 #include <stdio.h>
 #include <stdint.h>
 /*---------------------------------------------------------------------------*/
@@ -61,6 +65,7 @@ PROCESS_THREAD(dewi_demo_start, ev, data)
 	PROCESS_BEGIN();
 #if ISCOORD
 	test_tsch_coordinator_init();
+	setCoord(1);
 
 #else
 	printf("INIT as TSCH node\n");
