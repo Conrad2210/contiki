@@ -1,5 +1,5 @@
 /*
- /*
+
  * Copyright (c) 2015, Swedish Institute of Computer Science.
  * All rights reserved.
  *
@@ -45,8 +45,10 @@
 
 typedef struct{
 		  /* MAC address of neighbor */
-		  linkaddr_t addr;
+		  linkaddr_t *addr;
+		  //
 
+		  uint8_t isActive;
 		  /* Identifier of Slotframe to which this link belongs
 		   * Unused. */
 		  /* uint8_t handle; */
@@ -68,7 +70,7 @@ typedef struct{
 		uint16_t handle;
 		uint16_t slotframeLength;
 		linkInfo links[MAX_NUM_LINKS];
-}ScheduleInfo;
+}ScheduleInfo_t;
 
 
 

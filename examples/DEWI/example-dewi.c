@@ -43,13 +43,11 @@
 /*---------------------------------------------------------------------------*/
 
 //static struct rtimer rt;
-
 /*---------------------------------------------------------------------------*/
 PROCESS(dewi_demo_start, "START_EXAMPLE");
-PROCESS(dewi_demo_process, "DEWI DEMO PROCESS");
-AUTOSTART_PROCESSES(&dewi_demo_start, &dewi_demo_process);
+//PROCESS(dewi_demo_process, "DEWI DEMO PROCESS");
+AUTOSTART_PROCESSES(&dewi_demo_start);
 /*---------------------------------------------------------------------------*/
-
 
 /*---------------------------------------------------------------------------*/
 
@@ -62,40 +60,79 @@ AUTOSTART_PROCESSES(&dewi_demo_start, &dewi_demo_process);
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(dewi_demo_start, ev, data)
 {
-	PROCESS_BEGIN();
+	PROCESS_BEGIN()
+		;
+
+		ScheduleInfo_t temp;
+
+		temp.handle = 0x01;
+		temp.slotframeLength = 51;
+		int i;
+		printf("Start seting Schedule\n");
+		for (i = 0; i < MAX_NUM_LINKS; i++)
+		{
+			temp.links[i].addr = &tsch_broadcast_address;
+			temp.links[i].channel_offset = 0;
+			temp.links[i].isActive = 1;
+			temp.links[i].link_options = LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_SHARED;
+
+			if (i == 0)
+				temp.links[i].link_type = LINK_TYPE_ADVERTISING_ONLY;
+			else
+				temp.links[i].link_type = LINK_TYPE_NORMAL;
+
+			temp.links[i].timeslot = i;
+		}
+
 #if ISCOORD
-	test_tsch_coordinator_init();
-	setCoord(1);
-
+		test_tsch_coordinator_init();
+		setCoord(1);
+		initScheduler();
+		setSchedule(temp);
 #else
-	printf("INIT as TSCH node\n");
+		printf("INIT as TSCH node\n");
 #endif
 
-	//init SCHEDULER
-	//init RLL
-	//init CIDER
+		//init SCHEDULER
+		//init RLL
+		//init CIDER
 	PROCESS_END();
 }
 
-PROCESS_THREAD(dewi_demo_process, ev, data)
-{
-	PROCESS_BEGIN();
-
-	/* Configure the user button */
-	printf("DEWI Application\n");
-#if EXTERNAL_LED
-	printf("with external LED\n");
-#else
-	printf("without external LED\n");
-#endif
-
-	PROCESS_END();
-}
+//PROCESS_THREAD(dewi_demo_process, ev, data)
+//{
+//PROCESS_BEGIN();
+//button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,BUTTON_PRESS_EVENT_INTERVAL);
+//	/* Configure the user button */
+//	printf("DEWI Application\n");
+//#if EXTERNAL_LED
+//	printf("with external LED\n");
+//
+//#else
+//	printf("without external LED\n");
+//#endif
+//	while (1)
+//	{
+//
+//		PROCESS_YIELD()
+//		;
+//		if (data == &button_sensor)
+//		{
+//
+//			if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL) == BUTTON_SENSOR_PRESSED_LEVEL)
+//			{
+//				printf("Button pressed\n");
+//			}
+//
+//		}
+//	}
+//PROCESS_END();
+//}
 
 void test_tsch_coordinator_init(void)
 {
-	printf("Coordinator: initialization start\n");
-	tsch_set_coordinator(1);
+printf("Coordinator: initialization start\n");
+tsch_set_coordinator(1);
 }
 /*---------------------------------------------------------------------------*/
 /**

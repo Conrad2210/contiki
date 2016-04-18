@@ -55,8 +55,10 @@
 #include <stdint.h>
 
 
-int setSchedule(ScheduleInfo schedule);
+uint16_t setSchedule(ScheduleInfo_t schedule);
 
 void setCoord(int isCoordinator);
+
+int initScheduler();
 
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_SCHEDULER_SCHEDULER_H_ */
