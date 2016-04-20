@@ -50,6 +50,7 @@
 #include "net/mac/tsch/tsch-schedule.h"
 
 #include "net/DEWI/common/type_defs.h"
+#include "net/DEWI/common/packet_types.h"
 
 #include <stdio.h>
 #include <stdint.h>

@@ -36,30 +36,33 @@
  * \author Conrad Dandelski <conrad.dandelski@mycit.ie>
  */
 
+enum packettype{SCHEDULE_UPDATE,CIDER_PACKET,RLL_PACKET};
+enum subpackettype{CIDER_UPDATE};
+
+struct BasePacket{
+	linkaddr_t src;
+	linkaddr_t dst;
+	enum packettype type;
+};
 
 
-typedef struct{
-	uint16_t src;
-	uint16_t dst;
-	uint8_t type;
-}BasePacket;
-
-
-typedef struct{
-		BasePacket base;
+struct CIDER_PACKET{
+		struct BasePacket base;
+		enum subpackettype subType;
 		uint8_t stage;
 		uint16_t shortAddr;
 		int8_t rssi;
 		int8_t lqi;
-}CIDER_PACKET;
+};
+struct RLL_PACKET{
+		struct BasePacket base;
+		enum subpackettype subType;
 
-typedef struct{
-		BasePacket base;
-		uint16_t size;
-		uint8_t slotframeHandle;
+};
 
-}scheduleUpdate_Packet;
+struct scheduleUpdate_Packet{
+		struct BasePacket base;
+		uint8_t schedule; // 0 = CIDER, 1 = RLL
 
+};
 
-
-CIDER_PACKET parse_CIDER_PK(void * packet);

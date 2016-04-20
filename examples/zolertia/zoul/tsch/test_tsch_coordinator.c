@@ -76,8 +76,7 @@ static void tsch_schedule(void)
 	 * We set the link type to advertising, which is not compliant with 6TiSCH minimal schedule
 	 * but is required according to 802.15.4e if also used for EB transmission.
 	 * Timeslot: 0, channel offset: 0. */
-	tsch_schedule_add_link(sf_min,
-	LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING, LINK_TYPE_ADVERTISING, &tsch_broadcast_address, 0, 0);
+	tsch_schedule_add_link(sf_min,LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING, LINK_TYPE_ADVERTISING, &tsch_broadcast_address, 0, 0);
 	tsch_schedule_add_link(sf_min,
 	LINK_OPTION_RX | LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, 1, 1);
 	tsch_schedule_add_link(sf_min,

@@ -63,13 +63,13 @@ typedef struct{
 		     the link may be used to send an Enhanced beacon. */
 		  enum link_type link_type;
 
-}linkInfo;
+}linkInfo_t;
 
 typedef struct{
 		//slotframe handle CIDER:0; RLL:1
 		uint16_t handle;
 		uint16_t slotframeLength;
-		linkInfo links[MAX_NUM_LINKS];
+		linkInfo_t links[MAX_NUM_LINKS];
 }ScheduleInfo_t;
 
 
