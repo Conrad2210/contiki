@@ -37,7 +37,7 @@
  */
 
 enum packettype{SCHEDULE_UPDATE,CIDER_PACKET,RLL_PACKET};
-enum subpackettype{CIDER_UPDATE};
+enum subpackettype{CIDER_PING};
 
 struct BasePacket{
 	linkaddr_t src;
@@ -49,7 +49,6 @@ struct BasePacket{
 struct CIDER_PACKET{
 		struct BasePacket base;
 		enum subpackettype subType;
-		uint8_t stage;
 		uint16_t shortAddr;
 		int8_t rssi;
 		int8_t lqi;
@@ -57,6 +56,7 @@ struct CIDER_PACKET{
 struct RLL_PACKET{
 		struct BasePacket base;
 		enum subpackettype subType;
+		uint8_t stage;
 
 };
 

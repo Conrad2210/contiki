@@ -51,12 +51,15 @@
 
 #include "net/DEWI/common/type_defs.h"
 #include "net/DEWI/common/packet_types.h"
+#include "net/DEWI/cider/cider.h"
+#include "net/DEWI/rll/rll.h"
 
 #include <stdio.h>
 #include <stdint.h>
 
 
 uint16_t setSchedule(ScheduleInfo_t schedule);
+void clearSchedule();
 
 void setCoord(int isCoordinator);
 

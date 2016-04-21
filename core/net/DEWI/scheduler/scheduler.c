@@ -58,8 +58,9 @@ static void schedule_update_received(struct broadcast_conn *c, const linkaddr_t 
 
 		switch(activeSchedule){
 			case 0: //do stuff for CIDER;
+				CIDER_notify();
 				break;
-			case 1: //do stuff for RLL
+			case 1: //todo: stuff for RLL
 				break;
 			default:
 				//just do nothing
@@ -117,6 +118,16 @@ uint16_t setSchedule(ScheduleInfo_t schedule)
 
 }
 
+void clearSchedule(){
+
+	int i;
+	//remove everyhing except ADV slot
+	for(i = 1; i < MAX_NUM_LINKS; i++)
+	{
+		tsch_schedule_remove_link(tsch_schedule_get_slotframe_by_handle(0),tsch_schedule_get_link_by_handle(i));
+	}
+}
+
 struct scheduleUpdate_Packet createScheduleUpdate()
 {
 	struct scheduleUpdate_Packet temp;
@@ -139,7 +150,7 @@ PROCESS_THREAD(dewi_scheduler_coord_process, ev, data)
 
 		/* Configure the user button */
 #if DEBUG
-		printf("Create Schedule update\n");
+		printf("[SCHEDULER]: Create Schedule update\n");
 #endif
 
 		while(1)
@@ -147,8 +158,6 @@ PROCESS_THREAD(dewi_scheduler_coord_process, ev, data)
 			PROCESS_YIELD();
 			if (ev == PROCESS_EVENT_TIMER)
 			{
-
-				printf("create schedule update packet\n");
 				scheduleUpdatePacket = createScheduleUpdate();
 				packetbuf_copyfrom(&scheduleUpdatePacket, sizeof(struct scheduleUpdate_Packet));
 #if TSCH_WITH_LINK_SELECTOR
@@ -192,14 +201,16 @@ int initScheduler()
 {
 	if(isCoord){
 #if DEBUG
-		printf("Start Scheduler for coordinator\n");
+		printf("[SCHEDULER]: Start Scheduler for coordinator\n");
 #endif
+		//if satrtup set CIDER active
+		CIDER_notify();
 		process_start(&dewi_scheduler_coord_process, NULL);
 
 	}
 	else{
 #if DEBUG
-		printf("Start Scheduler for node\n");
+		printf("[SCHEDULER]: Start Scheduler for node\n");
 #endif
 		process_start(&dewi_scheduler_node_process, NULL);
 	}
