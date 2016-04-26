@@ -36,7 +36,7 @@
  * \author Conrad Dandelski <conrad.dandelski@mycit.ie>
  */
 
-enum packettype{SCHEDULE_UPDATE,CIDER_PACKET,RLL_PACKET};
+enum packettype{SCHEDULE_UPDATE,CIDER,RLL};
 enum subpackettype{CIDER_PING};
 
 struct BasePacket{

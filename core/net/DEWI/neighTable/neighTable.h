@@ -39,7 +39,48 @@
 #ifndef DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_NEIGHTABLE_NEIGHTABLE_H_
 #define DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_NEIGHTABLE_NEIGHTABLE_H_
 
+
+#include "contiki.h"
+#include "cpu.h"
+#include "sys/etimer.h"
+#include "sys/rtimer.h"
+#include "dev/leds.h"
+#include "dev/watchdog.h"
+#include "dev/serial-line.h"
+#include "dev/sys-ctrl.h"
+#include "net/netstack.h"
+#include "net/rime/broadcast.h"
+#include "net/mac/tsch/tsch-schedule.h"
+
+#include "lib/list.h"
+#include "lib/memb.h"
+
+
+
+struct neighbour {
+  /* The ->next pointer is needed since we are placing these on a
+     Contiki list. */
+  struct neighbour *next;
+
+  /* The ->addr field holds the Rime address of the neighbor. */
+  linkaddr_t addr;
+
+  /* The ->last_rssi and ->last_lqi fields hold the Received Signal
+     Strength Indicator (RSSI) and CC2420 Link Quality Indicator (LQI)
+     values that are received for the incoming broadcast packets. */
+  uint16_t last_rssi, last_lqi;
+
+  /* Each broadcast packet contains a sequence number (seqno). The
+     ->last_seqno field holds the last sequenuce number we saw from
+     this neighbor. */
+  uint8_t last_seqno;
+
+};
 void initNeighbourTable();
 
+void addNeighbour(struct neighbour neigh);
+struct neighbour *getNeighbour(linkaddr_t addr);
+int checkIfNeighbourExist(linkaddr_t addr);
+int updateNeighbour(struct neighbour neigh);
 
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_RLL_RLL_H_ */

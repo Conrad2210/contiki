@@ -39,18 +39,19 @@
 #include "cider.h"
 
 int CIDER_isActive = 0;
-
+int CIDER_currentStep = 0;
+#define DEBUG DEBUG_PRINT
+struct CIDER_PACKET createCCIDERPacket();
 static struct etimer CIDER_ping_timer;
 #define CIDER_PING_INTERVAL       (CLOCK_SECOND * 15)
-PROCESS(dewi_cider_ping_process, "DEWI cider ping PROCESS");
+PROCESS(dewi_cider_process, "DEWI cider PROCESS");
 
 static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *from)
 {
 	struct CIDER_PACKET *temp = packetbuf_dataptr();
 	printf("*** Received CIDER packet %u bytes from %u:%u: '0x%04x'\n", packetbuf_datalen(), from->u8[0], from->u8[1], *(uint16_t *) packetbuf_dataptr());
 
-
-	if(temp->subType == CIDER_PING)
+	if (temp->subType == CIDER_PING)
 	{
 		printf("*** Received CIDER PING message ***\n");
 	}
@@ -59,16 +60,21 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 static const struct broadcast_callbacks cider_bc_rx =
 { cider_packet_received };
 
-
 static struct broadcast_conn cider_bc;
 
 int CIDER_notify()
 {
 	//todo: Implement check if RLL;
 	if (CIDER_isActive == 0)
+	{
 		CIDER_isActive = 1;
+		process_start(&dewi_cider_process, NULL);
+	}
 	else
+	{
 		CIDER_isActive = 0;
+		process_exit(&dewi_cider_process);
+	}
 
 	CIDER_createSchedule();
 
@@ -117,29 +123,64 @@ void CIDER_createSchedule()
 	}
 }
 
-PROCESS_THREAD(dewi_scheduler_coord_process, ev, data){
+struct CIDER_PACKET createCIDERPacket()
+{
 	struct CIDER_PACKET CIDERPacket;
 
+	switch (CIDER_currentStep)
+	{
+		case 0: //PING message
+#if DEBUG
+			printf("*** SEND CIDER PING MESSAGE ***\n");
+#endif
+			CIDERPacket.base.dst = tsch_broadcast_address;
+			CIDERPacket.base.src = linkaddr_node_addr;
+			CIDERPacket.base.type = CIDER;
+			CIDERPacket.shortAddr = linkaddr_node_addr.u16;
+			CIDERPacket.subType = CIDER_PING;
+			break;
+		case 1: //neighbour update
+#if DEBUG
+			printf("*** SEND CIDER NEIGHBOUR MESSAGE ***\n");
+#endif
+			break;
+		default:
+			//do nothing
+			break;
+	}
+	return CIDERPacket;
+
+}
+
+PROCESS_THREAD(dewi_cider_process, ev, data)
+{
+	struct CIDER_PACKET CIDERPacket;
 
 	PROCESS_EXITHANDLER(broadcast_close(&cider_bc))
 	broadcast_open(&cider_bc, BROADCAST_CHANNEL_CIDER, &cider_bc_rx);
-	PROCESS_BEGIN();
+	PROCESS_BEGIN()
+	;
 
 	etimer_set(&CIDER_ping_timer, CIDER_PING_INTERVAL);
 
-	while(1)
+	while (1)
 	{
-		PROCESS_YIELD();
+		PROCESS_YIELD()
+		;
 		if (ev == PROCESS_EVENT_TIMER)
 		{
-			CIDERPacket = createScheduleUpdate();
+			CIDERPacket = createCIDERPacket();
 			packetbuf_copyfrom(&CIDERPacket, sizeof(struct CIDER_PACKET));
-
+#if TSCH_WITH_LINK_SELECTOR
+				packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
+				packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, 15);
+#endif
 			broadcast_send(&cider_bc);
 			etimer_set(&CIDER_ping_timer, CIDER_PING_INTERVAL);
 
 		}
 	}
 
+	PROCESS_END();
 }
-}
+

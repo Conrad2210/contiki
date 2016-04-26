@@ -19,6 +19,7 @@
 #include "dev/watchdog.h"
 #include "dev/serial-line.h"
 #include "dev/sys-ctrl.h"
+#include "i2c.h"
 #include "net/netstack.h"
 #include "net/rime/broadcast.h"
 #include "net/mac/tsch/tsch.h"
@@ -27,6 +28,7 @@
 #include "net/DEWI/scheduler/scheduler.h"
 #include "net/DEWI/rll/rll.h"
 #include "net/DEWI/cider/cider.h"
+#include "net/DEWI/neighTable/neighTable.h"
 #include <stdio.h>
 #include <stdint.h>
 /*---------------------------------------------------------------------------*/
@@ -77,6 +79,10 @@ PROCESS_THREAD(dewi_demo_start, ev, data)
 		initScheduler();
 #endif
 
+
+		i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN, I2C_SCL_NORMAL_BUS_SPEED);
+		clock_delay_usec(50000);
+		//initNeighbourTable();
 		//init SCHEDULER
 		//init RLL
 		//init CIDER
@@ -86,6 +92,27 @@ PROCESS_THREAD(dewi_demo_start, ev, data)
 PROCESS_THREAD(dewi_demo_process, ev, data)
 {
 PROCESS_BEGIN();
+
+i2c_master_enable();
+clock_delay_usec(50000);
+uint8_t err = 0x00;
+printf("Error Test: 0x%x\n",err);
+err = i2c_single_send(0x72, 0b01011111);
+clock_delay_usec(50000);
+printf("Error LED1: 0x%x\n",err);
+
+i2c_master_enable();
+clock_delay_usec(50000);
+ err = i2c_single_send(0x72, 0b01111111);
+	clock_delay_usec(50000);
+printf("Error LED2: 0x%x\n",err);
+i2c_master_enable();
+clock_delay_usec(50000);
+ err = i2c_single_send(0x72, 0b10011111);
+	clock_delay_usec(50000);
+printf("Error LED3: 0x%x\n",err);
+
+
 button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,BUTTON_PRESS_EVENT_INTERVAL);
 	/* Configure the user button */
 	printf("DEWI Application\n");
