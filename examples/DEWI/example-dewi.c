@@ -42,13 +42,16 @@
 #define LEDS_REBOOT         LEDS_ALL
 #define LEDS_RF_RX          (LEDS_ALL)
 #define BUTTON_PRESS_EVENT_INTERVAL (CLOCK_SECOND)
+
+static struct etimer timer;
+#define TIMER       (CLOCK_SECOND * 1)
 /*---------------------------------------------------------------------------*/
 
 //static struct rtimer rt;
 /*---------------------------------------------------------------------------*/
 PROCESS(dewi_demo_start, "START_EXAMPLE");
 PROCESS(dewi_demo_process, "DEWI DEMO PROCESS");
-AUTOSTART_PROCESSES(&dewi_demo_start,&dewi_demo_process);
+AUTOSTART_PROCESSES(&dewi_demo_start, &dewi_demo_process);
 /*---------------------------------------------------------------------------*/
 
 /*---------------------------------------------------------------------------*/
@@ -62,80 +65,88 @@ AUTOSTART_PROCESSES(&dewi_demo_start,&dewi_demo_process);
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(dewi_demo_start, ev, data)
 {
-	PROCESS_BEGIN();
-
-
+	PROCESS_BEGIN()
+	;
 
 #if ISCOORD
-		printf("Coordinator: initialization start\n");
-		tsch_set_coordinator(1);
-		setCoord(1);
-		initScheduler();
-
+	printf("Coordinator: initialization start\n");
+	tsch_set_coordinator(1);
+	setCoord(1);
+	initScheduler();
 
 #else
-		printf("Node: initialization start\n");
-		setCoord(0);
-		initScheduler();
+	printf("Node: initialization start\n");
+	setCoord(0);
+	initScheduler();
 #endif
 
+	i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN, I2C_SCL_FAST_BUS_SPEED);
+	i2c_master_enable();
+	uint8_t err = 0x00;
+	printf("Error Test: 0x%x\n", err);
+	err = i2c_single_send(0x39, 0b00000000);
+	printf("Error All OFF: 0x%x\n", err);
+	i2c_master_enable();
+	err = i2c_single_send(0x39, 0x3F);
+	printf("Error Current: 0x%x\n", err);
 
-		i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN, I2C_SCL_NORMAL_BUS_SPEED);
-		clock_delay_usec(50000);
-		//initNeighbourTable();
-		//init SCHEDULER
-		//init RLL
-		//init CIDER
-	PROCESS_END();
+	initNeighbourTable();
+	//init SCHEDULER
+	//init RLL
+	//init CIDER
+PROCESS_END();
 }
 
 PROCESS_THREAD(dewi_demo_process, ev, data)
 {
-PROCESS_BEGIN();
+PROCESS_BEGIN()
+;
 
-i2c_master_enable();
-clock_delay_usec(50000);
-uint8_t err = 0x00;
-printf("Error Test: 0x%x\n",err);
-err = i2c_single_send(0x72, 0b01011111);
-clock_delay_usec(50000);
-printf("Error LED1: 0x%x\n",err);
+etimer_set(&timer, TIMER);
 
-i2c_master_enable();
-clock_delay_usec(50000);
- err = i2c_single_send(0x72, 0b01111111);
-	clock_delay_usec(50000);
-printf("Error LED2: 0x%x\n",err);
-i2c_master_enable();
-clock_delay_usec(50000);
- err = i2c_single_send(0x72, 0b10011111);
-	clock_delay_usec(50000);
-printf("Error LED3: 0x%x\n",err);
-
-
-button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,BUTTON_PRESS_EVENT_INTERVAL);
-	/* Configure the user button */
-	printf("DEWI Application\n");
+button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL, BUTTON_PRESS_EVENT_INTERVAL);
+/* Configure the user button */
+printf("DEWI Application\n");
 #if EXTERNAL_LED
-	printf("with external LED\n");
+printf("with external LED\n");
 
 #else
-	printf("without external LED\n");
+printf("without external LED\n");
 #endif
-	while (1)
+while (1)
+{
+
+	PROCESS_YIELD()
+	;
+
+	if (data == &button_sensor)
 	{
 
-		PROCESS_YIELD();
-		if (data == &button_sensor)
+		if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL) == BUTTON_SENSOR_PRESSED_LEVEL)
 		{
-
-			if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL) == BUTTON_SENSOR_PRESSED_LEVEL)
-			{
-				printf("Button pressed\n");
-			}
-
+			printf("Button pressed\n");
 		}
+
 	}
+
+	if (ev == PROCESS_EVENT_TIMER)
+	{
+		uint8_t test;
+			i2c_master_enable();
+			test = i2c_single_send(0x39, 0x1F);
+			printf("Error LED1: 0x%x\n", test);
+
+			i2c_master_enable();
+			test = i2c_single_send(0x39, 0x1F);
+			printf("Error LED2: 0x%x\n", test);
+
+			i2c_master_enable();
+			test = i2c_single_send(0x39, 0x1F);
+			printf("Error LED3: 0x%x\n", test);
+
+		etimer_set(&timer, TIMER);
+	}
+}
 PROCESS_END();
 }
 

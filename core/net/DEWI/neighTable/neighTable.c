@@ -40,6 +40,10 @@
 
 #define MAX_NEIGHBOURS CONF_MAX_NEIGHBOURS
 #define DEBUG DEBUG_PRINT
+
+MEMB(neighbours_memb, struct neighbour, MAX_NEIGHBOURS);
+LIST(neighbours_list);
+
 void initNeighbourTable()
 {
 #if DEBUG
@@ -47,37 +51,21 @@ void initNeighbourTable()
 #endif
 	/* This MEMB() definition defines a memory pool from which we allocate
 	 neighbor entries. */
-	MEMB(neighburs_memb, struct neighbour, MAX_NEIGHBOURS);
 
 	/* The neighbors_list is a Contiki list that holds the neighbors we
 	 have seen thus far. */
-	LIST(neighbours_list);
 
 }
 
-void addNeighbour(struct neighbour neigh)
+void copyNeighbour(struct neighbour *n1, struct neighbour *n2)
 {
-	list_add(neighbours_list,neigh);
+	n1->addr = n2->addr;
+	n1->last_lqi = n2->last_lqi;
+	n1->last_rssi = n2->last_rssi;
+	n1->last_seqno = n2->last_seqno;
 }
-struct neighbour *getNeighbour(linkaddr_t addr)
-{
-	struct neighbor *n;
-	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
-	{
 
-		/* We break out of the loop if the address of the neighbor matches
-		 the address of the neighbor from which we received this
-		 broadcast message. */
-		if (linkaddr_cmp(&n->addr, &addr))
-		{
-			break;
-		}
-	}
-
-	return n;
-
-}
-int checkIfNeighbourExist(linkaddr_t addr)
+void addNeighbour(struct neighbour *neigh)
 {
 	struct neighbour *n;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
@@ -86,18 +74,73 @@ int checkIfNeighbourExist(linkaddr_t addr)
 		/* We break out of the loop if the address of the neighbor matches
 		 the address of the neighbor from which we received this
 		 broadcast message. */
-		if (linkaddr_cmp(&n->addr, &addr))
+		if (linkaddr_cmp(&n->addr, &neigh->addr) == 1)
 		{
 			break;
 		}
 	}
 
-	if(n != NULL)
+	if (n == NULL)
+	{
+		n = memb_alloc(&neighbours_memb);
+
+		/* If we could not allocate a new neighbor entry, we give up. We
+		 could have reused an old neighbor entry, but we do not do this
+		 for now. */
+		if (n == NULL)
+		{
+			return;
+		}
+	}
+	copyNeighbour(n, neigh);
+
+	list_add(neighbours_list, n);
+}
+
+
+struct neighbour *getNeighbour(linkaddr_t *addr)
+{
+	struct neighbour *n;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+
+		/* We break out of the loop if the address of the neighbor matches
+		 the address of the neighbor from which we received this
+		 broadcast message. */
+		if (linkaddr_cmp(&n->addr, addr))
+		{
+			break;
+		}
+	}
+	if(n == NULL)
+		return NULL;
+	else
+		return n;
+
+}
+
+
+int checkIfNeighbourExist(linkaddr_t *addr)
+{
+	struct neighbour *n;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+
+		/* We break out of the loop if the address of the neighbor matches
+		 the address of the neighbor from which we received this
+		 broadcast message. */
+		if (linkaddr_cmp(&n->addr, addr))
+		{
+			break;
+		}
+	}
+
+	if (n != NULL)
 		return 1;
 	else
 		return 0;
 }
-int updateNeighbour(struct neighbour neigh)
+int updateNeighbour(struct neighbour *neigh)
 {
 	struct neighbour *n;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
@@ -106,20 +149,21 @@ int updateNeighbour(struct neighbour neigh)
 		/* We break out of the loop if the address of the neighbor matches
 		 the address of the neighbor from which we received this
 		 broadcast message. */
-		if (linkaddr_cmp(&n->addr, neigh.addr))
+		if (linkaddr_cmp(&n->addr, &neigh->addr))
 		{
 			break;
 		}
 	}
 
-	if(n == NULL)
+	if (n == NULL)
 		return 0;
 
-	n->addr = neigh.addr;
-	n->last_lqi = neigh.last_lqi;
-	n->last_rssi = neigh.last_rssi;
-	n->last_seqno = neigh.last_seqno;
+	n->addr = neigh->addr;
+	n->last_lqi = neigh->last_lqi;
+	n->last_rssi = neigh->last_rssi;
+	n->last_seqno = neigh->last_seqno;
 
-	list_add(neighbours_list,n);
+	list_add(neighbours_list, n);
+	return 1;
 }
 

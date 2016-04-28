@@ -49,7 +49,9 @@ void
 i2c_init(uint8_t port_sda, uint8_t pin_sda, uint8_t port_scl, uint8_t pin_scl,
          uint32_t bus_speed)
 {
-  /* Enable I2C clock in different modes */
+
+	  printf("INIT I2C: port_SDA: 0x%x, pin SDA 0x%x, port SCL: 0x%x, pin SCL: 0x%x, bus speed: 0x%x\n", port_sda,  pin_sda,  port_scl,  pin_scl,  bus_speed);
+	  /* Enable I2C clock in different modes */
   REG(SYS_CTRL_RCGCI2C) |= 1; /* Run mode */
 
   /* Reset I2C peripheral */

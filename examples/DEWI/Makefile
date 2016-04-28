@@ -6,6 +6,7 @@ CONTIKI_PROJECT = example-dewi
 MODULES += core/net/DEWI/cider
 MODULES += core/net/DEWI/rll
 MODULES += core/net/DEWI/scheduler
+MODULES += core/net/DEWI/neighTable
 MODULES += core/net/mac/tsch
 
 all: $(CONTIKI_PROJECT)

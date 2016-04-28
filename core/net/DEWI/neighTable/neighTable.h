@@ -50,10 +50,12 @@
 #include "dev/sys-ctrl.h"
 #include "net/netstack.h"
 #include "net/rime/broadcast.h"
+#include "net/linkaddr.h"
 #include "net/mac/tsch/tsch-schedule.h"
 
 #include "lib/list.h"
 #include "lib/memb.h"
+#include <stdio.h>
 
 
 
@@ -75,12 +77,13 @@ struct neighbour {
      this neighbor. */
   uint8_t last_seqno;
 
+
 };
 void initNeighbourTable();
 
-void addNeighbour(struct neighbour neigh);
-struct neighbour *getNeighbour(linkaddr_t addr);
-int checkIfNeighbourExist(linkaddr_t addr);
-int updateNeighbour(struct neighbour neigh);
+void addNeighbour(struct neighbour *neigh);
+struct neighbour *getNeighbour(linkaddr_t *addr);
+int checkIfNeighbourExist(linkaddr_t *addr);
+int updateNeighbour(struct neighbour *neigh);
 
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_RLL_RLL_H_ */
