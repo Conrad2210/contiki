@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, Swedish Institute of Computer Science.
+ * Copyright (c) 2010, Loughborough University - Computer Science
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,91 +25,22 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- * This file is part of the Contiki operating system.
- *
  */
-
 /**
  * \file
- *         A test program for Deluge.
+ *         Stub file overriding core/net/netstack.c. What we want to achieve
+ *         here is call netstack_init from main without initialising the RDC,
+ *         MAC and Network layers. It will just turn on the radio instead.
+ *
  * \author
- *         Nicolas Tsiftes <nvt@sics.se>
+ *         George Oikonomou - <oikonomou@users.sourceforge.net>
  */
-
-#include "contiki.h"
-#include "cfs/cfs.h"
-#include "deluge.h"
-#include "sys/node-id.h"
-
-#include <stdio.h>
-#include <string.h>
-
-#ifndef SINK_ID
-#define SINK_ID	1
-#endif
-
-#ifndef FILE_SIZE
-#define FILE_SIZE 1000
-#endif
-
-PROCESS(deluge_test_process, "Deluge test process");
-AUTOSTART_PROCESSES(&deluge_test_process);
+#include "netstack.h"
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(deluge_test_process, ev, data)
+void
+netstack_init(void)
 {
-  int fd, r;
-  char buf[32];
-  static struct etimer et;
-
-  PROCESS_BEGIN();
-
-  memset(buf, 0, sizeof(buf));
-  if(node_id == SINK_ID) {
-    strcpy(buf, "This is version 1 of the file");
-  } else {
-    strcpy(buf, "This is version 0 of the file");
-  }
-
-  cfs_remove("test");
-  fd = cfs_open("test", CFS_WRITE);
-  if(fd < 0) {
-    process_exit(NULL);
-  }
-  if(cfs_write(fd, buf, sizeof(buf)) != sizeof(buf)) {
-    cfs_close(fd);
-    process_exit(NULL);
-  }
-
-  if(cfs_seek(fd, FILE_SIZE, CFS_SEEK_SET) != FILE_SIZE) {
-    printf("failed to seek to the end\n");
-  }
-
-  deluge_disseminate("test", node_id == SINK_ID);
-  cfs_close(fd);
-
-  etimer_set(&et, CLOCK_SECOND * 5);
-  for(;;) {
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-    if(node_id != SINK_ID) {
-      fd = cfs_open("test", CFS_READ);
-      if(fd < 0) {
-        printf("failed to open the test file\n");
-      } else {
-        r = cfs_read(fd, buf, sizeof(buf));
-	buf[sizeof(buf) - 1] = '\0';
-	if(r <= 0) {
-	  printf("failed to read data from the file\n");
-	} else {
-	  printf("File contents: %s\n", buf);
-	}
-	cfs_close(fd);
-      }
-    }
-    etimer_reset(&et);
-  }
-
-
-  PROCESS_END();
+  NETSTACK_RADIO.init();
+  NETSTACK_RADIO.on();
 }
 /*---------------------------------------------------------------------------*/

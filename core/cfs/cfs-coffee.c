@@ -1055,7 +1055,12 @@ cfs_seek(int fd, cfs_offset_t offset, int whence)
   }
 
   if(fdp->file->end < new_offset) {
-    fdp->file->end = new_offset;
+    if(FD_WRITABLE(fd)) {
+      fdp->file->end = new_offset;
+    } else {
+      /* Disallow seeking past the end of the file for read only FDs */
+      return (cfs_offset_t)-1;
+    }
   }
 
   return fdp->offset = new_offset;
@@ -1098,9 +1103,20 @@ cfs_read(int fd, void *buf, unsigned size)
 
   fdp = &coffee_fd_set[fd];
   file = fdp->file;
-  if(fdp->offset + size > file->end) {
-    size = file->end - fdp->offset;
+  
+#if COFFEE_IO_SEMANTICS
+  if(fdp->io_flags & CFS_COFFEE_IO_ENSURE_READ_LENGTH) {
+    while(fdp->offset + size > file->end) {
+      ((char*)buf)[--size] = 0;
+    }
+  } else {
+#endif
+    if(fdp->offset + size > file->end) {
+      size = file->end - fdp->offset;
+    }
+#if COFFEE_IO_SEMANTICS
   }
+#endif
 
   /* If the file is not modified, read directly from the file extent. */
   if(!FILE_MODIFIED(file)) {
