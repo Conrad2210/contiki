@@ -60,6 +60,8 @@ static struct etimer timer;
 #define LED_RED 0b10000000
 #define LED_GREEN 0b01100000
 #define LED_BLUE 0b01000000
+
+int counter = 0;
 /*---------------------------------------------------------------------------*/
 
 //static struct rtimer rt;
@@ -94,7 +96,8 @@ PROCESS_THREAD(dewi_demo_start, ev, data)
 	setCoord(0);
 	initScheduler();
 #endif
-
+	button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
+	                        BUTTON_PRESS_EVENT_INTERVAL);
 	i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN, I2C_SCL_FAST_BUS_SPEED);
 	uint8_t err = 0x00;
 	printf("Error Test: 0x%x\n", err);
@@ -119,7 +122,7 @@ PROCESS_BEGIN()
 
 etimer_set(&timer, TIMER);
 
-button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL, BUTTON_PRESS_EVENT_INTERVAL);
+
 /* Configure the user button */
 printf("DEWI Application\n");
 #if EXTERNAL_LED
@@ -133,36 +136,42 @@ while (1)
 
 	PROCESS_YIELD()
 	;
+	if(ev == sensors_event){
+		if (data == &button_sensor)
+			{
 
-	if (data == &button_sensor)
-	{
+				if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL) == BUTTON_SENSOR_PRESSED_LEVEL)
+				{
+					printf("Button pressed\n");
+				}else {
+			          printf("...and released!\n");
+			        }
 
-		if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL) == BUTTON_SENSOR_PRESSED_LEVEL)
-		{
-			printf("Button pressed\n");
-		}
-
-	}
-
-	if (ev == PROCESS_EVENT_TIMER)
+			}
+	}else	if (ev == PROCESS_EVENT_TIMER)
 	{
 
 			uint8_t randNum = rand() % 31;
 			uint8_t result;
-			result =
-			printf("Set LED RED to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_RED | randNum)));
+			if(counter > 20)
+				result =printf("Set LED RED to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_RED | randNum)));
 			i2c_single_send(0x39, (LED_RED | randNum));
 			//printf("Error LED1: 0x%x\n", test);
 			clock_delay_usec(50);
 			randNum = rand() % 31;
-			printf("Set LED GREEN to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_GREEN | randNum)));
+			if(counter > 20)
+				printf("Set LED GREEN to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_GREEN | randNum)));
 			i2c_single_send(0x39, (LED_GREEN | randNum));
 			clock_delay_usec(50);
 			randNum = rand() % 31;
-			printf("Set LED BLUE to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_BLUE | randNum)));
+			if(counter > 20)
+				printf("Set LED BLUE to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_BLUE | randNum)));
 			i2c_single_send(0x39, (LED_BLUE | randNum));
 
 			//printf("Error LED3: 0x%x\n", test);
+			if(counter > 20)
+				counter = 0;
+			counter++;
 
 		etimer_set(&timer, TIMER);
 	}
