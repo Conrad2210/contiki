@@ -55,20 +55,18 @@
 #define BUTTON_PRESS_EVENT_INTERVAL (CLOCK_SECOND)
 
 static struct etimer timer;
-#define TIMER       (CLOCK_SECOND * 0.1)
+#define TIMER       (CLOCK_SECOND)
 
 #define LED_RED 0b10000000
 #define LED_GREEN 0b01100000
 #define LED_BLUE 0b01000000
-
-int counter = 0;
 /*---------------------------------------------------------------------------*/
 
 //static struct rtimer rt;
 /*---------------------------------------------------------------------------*/
 PROCESS(dewi_demo_start, "START_EXAMPLE");
 PROCESS(dewi_demo_process, "DEWI DEMO PROCESS");
-AUTOSTART_PROCESSES(&dewi_demo_start, &dewi_demo_process);
+AUTOSTART_PROCESSES(&dewi_demo_start);
 /*---------------------------------------------------------------------------*/
 
 /*---------------------------------------------------------------------------*/
@@ -105,13 +103,16 @@ PROCESS_THREAD(dewi_demo_start, ev, data)
 	printf("Error All OFF: 0x%x\n", err);
 
 	clock_delay_usec(50);
-	err = i2c_single_send(0x39, 0b001100001);
+	err = i2c_single_send(0x39, 0b00111111);
+	clock_delay_usec(50);
+	i2c_single_send(0x39, (LED_RED | 0b00011111));
 	printf("Error Current: 0x%x\n", err);
 
 	initNeighbourTable();
 	//init SCHEDULER
 	//init RLL
 	//init CIDER
+	process_start(&dewi_demo_process,NULL);
 PROCESS_END();
 }
 
@@ -153,25 +154,16 @@ while (1)
 
 			uint8_t randNum = rand() % 31;
 			uint8_t result;
-			if(counter > 20)
-				result =printf("Set LED RED to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_RED | randNum)));
+			i2c_single_send(0x39, (0x00000000));
+			clock_delay_usec(50);
 			i2c_single_send(0x39, (LED_RED | randNum));
-			//printf("Error LED1: 0x%x\n", test);
 			clock_delay_usec(50);
 			randNum = rand() % 31;
-			if(counter > 20)
-				printf("Set LED GREEN to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_GREEN | randNum)));
 			i2c_single_send(0x39, (LED_GREEN | randNum));
 			clock_delay_usec(50);
 			randNum = rand() % 31;
-			if(counter > 20)
-				printf("Set LED BLUE to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_BLUE | randNum)));
 			i2c_single_send(0x39, (LED_BLUE | randNum));
 
-			//printf("Error LED3: 0x%x\n", test);
-			if(counter > 20)
-				counter = 0;
-			counter++;
 
 		etimer_set(&timer, TIMER);
 	}

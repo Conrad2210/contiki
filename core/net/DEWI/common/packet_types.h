@@ -52,6 +52,7 @@ struct CIDER_PACKET{
 		uint16_t shortAddr;
 		int8_t rssi;
 		int8_t lqi;
+		uint8_t txPower;
 };
 struct RLL_PACKET{
 		struct BasePacket base;

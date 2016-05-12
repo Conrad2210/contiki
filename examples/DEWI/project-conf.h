@@ -37,8 +37,30 @@
  */
 #ifndef PROJECT_CONF_H_
 #define PROJECT_CONF_H_
+//
+//Tx Power values
+// static const output_config_t output_power[] = {
+//  {  7, 0xFF },
+//  {  5, 0xED },
+//  {  3, 0xD5 },
+//  {  1, 0xC5 },
+//  {  0, 0xB6 },
+//  { -1, 0xB0 },
+//  { -3, 0xA1 },
+//  { -5, 0x91 },
+//  { -7, 0x88 },
+//  { -9, 0x72 },
+//  {-11, 0x62 },
+//  {-13, 0x58 },
+//  {-15, 0x42 },
+//  {-24, 0x00 },
+//};
 
-
+#ifdef LPDEVICE
+#define CC2538_RF_CONF_TX_POWER 0x00 //-24dBm
+#else
+#define CC2538_RF_CONF_TX_POWER 0xB6 //0dBm
+#endif
 #define BROADCAST_CHANNEL_CIDER     129
 #define BROADCAST_CHANNEL_SCHEDULE     130
 

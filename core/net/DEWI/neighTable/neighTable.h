@@ -51,7 +51,9 @@
 #include "net/netstack.h"
 #include "net/rime/broadcast.h"
 #include "net/linkaddr.h"
+#include "net/mac/tsch/tsch-asn.h"
 #include "net/mac/tsch/tsch-schedule.h"
+#include "net/mac/tsch/tsch.h"
 
 #include "lib/list.h"
 #include "lib/memb.h"
@@ -64,26 +66,47 @@ struct neighbour {
      Contiki list. */
   struct neighbour *next;
 
-  /* The ->addr field holds the Rime address of the neighbor. */
-  linkaddr_t addr;
+  /* The ->addr field holds the Rime address of the neighbor, parent = holds the parent address in the cluster tree. */
+  linkaddr_t addr,parent;
 
   /* The ->last_rssi and ->last_lqi fields hold the Received Signal
      Strength Indicator (RSSI) and CC2420 Link Quality Indicator (LQI)
      values that are received for the incoming broadcast packets. */
-  uint16_t last_rssi, last_lqi;
+  int8_t last_rssi;
+
+  /* The used transmit power and distance to the neighbour, based on RSSI */
+  uint8_t txPW, distance;
+
+  /* CIDER/RLL related values, cluster stage, indication if parent or cs*/
+  uint8_t stage, myCH,myCS;
+
+  /* CIDER related values, node Degree = number of neighbours, cluster degree = number of possible cluster nodes
+   * lpDegree = number of low power devices in neighbourhood*/
+  uint16_t nodeDegree, clusterDegree, lpDegree;
+
+  /* CIDER realted value: weight indication */
+  float weight;
+
+  /* last active ASN */
+  struct asn_t last_asn;
 
   /* Each broadcast packet contains a sequence number (seqno). The
      ->last_seqno field holds the last sequenuce number we saw from
      this neighbor. */
-  uint8_t last_seqno;
+//  uint8_t last_seqno;
 
 
 };
+
 void initNeighbourTable();
 
 void addNeighbour(struct neighbour *neigh);
 struct neighbour *getNeighbour(linkaddr_t *addr);
 int checkIfNeighbourExist(linkaddr_t *addr);
 int updateNeighbour(struct neighbour *neigh);
+struct neighbour initNeighbour();
+
+
+void printTable();
 
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_RLL_RLL_H_ */

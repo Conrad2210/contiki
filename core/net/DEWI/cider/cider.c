@@ -37,7 +37,7 @@
  */
 
 #include "cider.h"
-
+#include "neighTable.h"
 int CIDER_isActive = 0;
 int CIDER_currentStep = 0;
 #define DEBUG DEBUG_PRINT
@@ -49,11 +49,22 @@ PROCESS(dewi_cider_process, "DEWI cider PROCESS");
 static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *from)
 {
 	struct CIDER_PACKET *temp = packetbuf_dataptr();
-	printf("*** Received CIDER packet %u bytes from %u:%u: '0x%04x'\n", packetbuf_datalen(), from->u8[0], from->u8[1], *(uint16_t *) packetbuf_dataptr());
+	temp->lqi = (int8_t) packetbuf_attr(PACKETBUF_ATTR_LINK_QUALITY);
+	temp->rssi = (int8_t) packetbuf_attr(PACKETBUF_ATTR_RSSI);
+	printf("[CIDER]:Received CIDER packet %u bytes from %u:%u: '0x%04x'\n", packetbuf_datalen(), from->u8[0], from->u8[1], *(uint16_t *) packetbuf_dataptr());
 
 	if (temp->subType == CIDER_PING)
 	{
-		printf("*** Received CIDER PING message ***\n");
+		printf("[CIDER]:Received CIDER PING message\n");
+
+		struct neighbour n = initNeighbour();
+		n.addr = temp->base.src;
+		n.last_rssi = temp->rssi;
+		n.last_asn = tsch_get_current_asn();
+		n.txPW = temp->txPower;
+		addNeighbour(&n);
+		printTable();
+
 	}
 }
 
@@ -131,17 +142,18 @@ struct CIDER_PACKET createCIDERPacket()
 	{
 		case 0: //PING message
 #if DEBUG
-			printf("*** SEND CIDER PING MESSAGE ***\n");
+			printf("[CIDER]:SEND CIDER PING MESSAGE\n");
 #endif
 			CIDERPacket.base.dst = tsch_broadcast_address;
 			CIDERPacket.base.src = linkaddr_node_addr;
 			CIDERPacket.base.type = CIDER;
 			CIDERPacket.shortAddr = linkaddr_node_addr.u16;
 			CIDERPacket.subType = CIDER_PING;
+			cc2538_rf_driver.get_value(RADIO_PARAM_TXPOWER,CIDERPacket.txPower);
 			break;
 		case 1: //neighbour update
 #if DEBUG
-			printf("*** SEND CIDER NEIGHBOUR MESSAGE ***\n");
+			printf("[CIDER]:SEND CIDER NEIGHBOUR MESSAGE\n");
 #endif
 			break;
 		default:
