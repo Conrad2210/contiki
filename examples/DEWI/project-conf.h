@@ -56,11 +56,27 @@
 //  {-24, 0x00 },
 //};
 
-#ifdef LPDEVICE
-#define CC2538_RF_CONF_TX_POWER 0x00 //-24dBm
+
+#ifndef DEBUG_PRINT
+#define DEBUG_PRINT 0
+#undef DEBUG
+#define DEBUG DEBUG_PRINT
 #else
-#define CC2538_RF_CONF_TX_POWER 0xB6 //0dBm
+#undef DEBUG
+#define DEBUG DEBUG_PRINT
+#endif /* PROJECT_CONF_H_ */
+
+#ifndef LPDEVICE
+#define LPDEVICE 0
 #endif
+
+#if LPDEVICE
+#define TXRADIOPOWER -24 //-24dBm
+#else
+#define TXRADIOPOWER 0 //0dBm
+#endif
+
+
 #define BROADCAST_CHANNEL_CIDER     129
 #define BROADCAST_CHANNEL_SCHEDULE     130
 
@@ -95,7 +111,5 @@
 #define TSCH_SCHEDULE_CONF_MAX_LINKS 100
 
 
-
-#endif /* PROJECT_CONF_H_ */
-
+#endif
 /** @} */

@@ -49,19 +49,23 @@ PROCESS(dewi_cider_process, "DEWI cider PROCESS");
 static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *from)
 {
 	struct CIDER_PACKET *temp = packetbuf_dataptr();
-	temp->lqi = (int8_t) packetbuf_attr(PACKETBUF_ATTR_LINK_QUALITY);
-	temp->rssi = (int8_t) packetbuf_attr(PACKETBUF_ATTR_RSSI);
-	printf("[CIDER]:Received CIDER packet %u bytes from %u:%u: '0x%04x'\n", packetbuf_datalen(), from->u8[0], from->u8[1], *(uint16_t *) packetbuf_dataptr());
+	radio_result_t rv = (int8_t) NETSTACK_RADIO.get_value(RADIO_PARAM_LAST_RSSI,&temp->rssi);
+
+
+	printf("[CIDER]:Received CIDER packet %u bytes from %u:%u: \n", packetbuf_datalen(), from->u8[0], from->u8[1]);
 
 	if (temp->subType == CIDER_PING)
 	{
 		printf("[CIDER]:Received CIDER PING message\n");
 
 		struct neighbour n = initNeighbour();
+		printf("[CIDER]: TxPower0: %d\n",n.txPW);
 		n.addr = temp->base.src;
 		n.last_rssi = temp->rssi;
 		n.last_asn = tsch_get_current_asn();
-		n.txPW = temp->txPower;
+		n.txPW = (int)temp->txPower;
+		printf("[CIDER]: TxPower: %d\n",temp->txPower);
+		printf("[CIDER]: TxPower1: %d\n",n.txPW);
 		addNeighbour(&n);
 		printTable();
 
@@ -138,6 +142,8 @@ struct CIDER_PACKET createCIDERPacket()
 {
 	struct CIDER_PACKET CIDERPacket;
 
+	int *tempTX;
+	tempTX = 0;
 	switch (CIDER_currentStep)
 	{
 		case 0: //PING message
@@ -149,7 +155,14 @@ struct CIDER_PACKET createCIDERPacket()
 			CIDERPacket.base.type = CIDER;
 			CIDERPacket.shortAddr = linkaddr_node_addr.u16;
 			CIDERPacket.subType = CIDER_PING;
-			cc2538_rf_driver.get_value(RADIO_PARAM_TXPOWER,CIDERPacket.txPower);
+			radio_value_t chan;
+			radio_result_t rv;
+			  rv = NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &chan);
+			printf("[CIDER]:Get TxPower: %d with Result: %u\n",chan,rv);
+			CIDERPacket.txPower = chan;
+			printf("[CIDER]:Get TxPower1: %d with Result: %u\n",CIDERPacket.txPower,rv);
+
+			//cc2538_rf_driver.get_value(RADIO_PARAM_TXPOWER,);
 			break;
 		case 1: //neighbour update
 #if DEBUG
@@ -182,6 +195,8 @@ PROCESS_THREAD(dewi_cider_process, ev, data)
 		if (ev == PROCESS_EVENT_TIMER)
 		{
 			CIDERPacket = createCIDERPacket();
+			printf("[CIDER]:Get TxPower2: %d \n",CIDERPacket.txPower);
+
 			packetbuf_copyfrom(&CIDERPacket, sizeof(struct CIDER_PACKET));
 #if TSCH_WITH_LINK_SELECTOR
 				packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);

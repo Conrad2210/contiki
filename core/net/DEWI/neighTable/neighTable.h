@@ -75,7 +75,8 @@ struct neighbour {
   int8_t last_rssi;
 
   /* The used transmit power and distance to the neighbour, based on RSSI */
-  uint8_t txPW, distance;
+  uint8_t distance;
+  int txPW;
 
   /* CIDER/RLL related values, cluster stage, indication if parent or cs*/
   uint8_t stage, myCH,myCS;

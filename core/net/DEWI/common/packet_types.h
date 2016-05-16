@@ -51,8 +51,7 @@ struct CIDER_PACKET{
 		enum subpackettype subType;
 		uint16_t shortAddr;
 		int8_t rssi;
-		int8_t lqi;
-		uint8_t txPower;
+		int txPower;
 };
 struct RLL_PACKET{
 		struct BasePacket base;

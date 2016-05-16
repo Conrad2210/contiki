@@ -50,10 +50,10 @@ PROCESS(dewi_scheduler_node_process, "DEWI scheduler PROCESS for node");
 static void schedule_update_received(struct broadcast_conn *c, const linkaddr_t *from)
 {
 	struct scheduleUpdate_Packet *temp = packetbuf_dataptr();
-	printf("*** Received Schedule Update %u bytes from %u:%u: '0x%04x'\n", packetbuf_datalen(), from->u8[0], from->u8[1], *(uint16_t *) packetbuf_dataptr());
+	printf("[SCHEDULER]: Received Schedule Update %u bytes from %u:%u: '0x%04x'\n", packetbuf_datalen(), from->u8[0], from->u8[1], *(uint16_t *) packetbuf_dataptr());
 	if(activeSchedule != temp->schedule)
 	{
-		printf("Update Schedule, active is now %u\n",temp->schedule);
+		printf("[SCHEDULER]: Update Schedule, active is now %u\n",temp->schedule);
 		activeSchedule = temp->schedule;
 
 		switch(activeSchedule){
@@ -69,7 +69,7 @@ static void schedule_update_received(struct broadcast_conn *c, const linkaddr_t 
 	}
 	else
 	{
-		printf("No new schedule received, Schedule %u is still active\n",temp->schedule);
+		printf("[SCHEDULER]: No new schedule received, Schedule %u is still active\n",temp->schedule);
 	}
 }
 
@@ -91,9 +91,9 @@ uint16_t setSchedule(ScheduleInfo_t schedule)
 
 	tempHandle = tsch_schedule_add_slotframe(schedule.handle, schedule.slotframeLength);
 
-#if DEBUG
-	printf("start adding links\n");
-#endif
+//#if DEBUG
+//	printf("start adding links\n");
+//#endif
 
 	int i = 0;
 	for (i = 0; i < MAX_NUM_LINKS; i++)
@@ -101,14 +101,14 @@ uint16_t setSchedule(ScheduleInfo_t schedule)
 		if (schedule.links[i].isActive == 1)
 		{
 			linkInfo_t temp = schedule.links[i];
-#if DEBUG
-			printf("ADD LINK: %u, %u\n",temp.timeslot, temp.channel_offset);
-#endif
+//#if DEBUG
+//			printf("[SCHEDULER]: ADD LINK: %u, %u\n",temp.timeslot, temp.channel_offset);
+//#endif
 			if (tsch_schedule_add_link(tempHandle, temp.link_options, temp.link_type, temp.addr, temp.timeslot, temp.channel_offset) == NULL)
 			{
-#if DEBUG
-				printf("Add schedule caused an error, EXIT \n");
-#endif
+//#if DEBUG
+//				printf("[SCHEDULER]: Add schedule caused an error, EXIT \n");
+//#endif
 				break;
 			}
 		}

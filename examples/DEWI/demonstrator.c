@@ -60,6 +60,8 @@ static struct etimer timer;
 #define LED_RED 0b10000000
 #define LED_GREEN 0b01100000
 #define LED_BLUE 0b01000000
+
+
 /*---------------------------------------------------------------------------*/
 
 //static struct rtimer rt;
@@ -78,10 +80,22 @@ AUTOSTART_PROCESSES(&dewi_demo_start);
 //  leds_off(LEDS_PERIODIC);
 //}
 /*---------------------------------------------------------------------------*/
+
+void printDEMOConfiguration(){
+	printf("\n\n[DEMO]: Print Configuration\n");
+	printf("[DEMO]: Tx Power: %d\n",TXRADIOPOWER);
+	printf("[DEMO]: LP Device: %x\n",LPDEVICE);
+	printf("[DEMO]: TSCH SlotLength: %u\n",TSCH_CONF_DEFAULT_TIMESLOT_LENGTH);
+}
+
 PROCESS_THREAD(dewi_demo_start, ev, data)
 {
-	PROCESS_BEGIN()
-	;
+	PROCESS_BEGIN()	;
+
+
+#if DEBUG
+	printDEMOConfiguration();
+#endif
 
 #if ISCOORD
 	printf("Coordinator: initialization start\n");
@@ -94,6 +108,8 @@ PROCESS_THREAD(dewi_demo_start, ev, data)
 	setCoord(0);
 	initScheduler();
 #endif
+
+	radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER,TXRADIOPOWER);
 	button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
 	                        BUTTON_PRESS_EVENT_INTERVAL);
 	i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN, I2C_SCL_FAST_BUS_SPEED);
@@ -120,7 +136,6 @@ PROCESS_THREAD(dewi_demo_process, ev, data)
 {
 PROCESS_BEGIN()
 ;
-
 etimer_set(&timer, TIMER);
 
 
