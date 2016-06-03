@@ -147,8 +147,7 @@ void printTable()
 	printf("**** Print Neighbour Table for Node: 0x%x\n", linkaddr_node_addr.u16);
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-		printf("TxPower: %d \n", n->txPW);
-		printf("Neigh: 0x%x last RSSI: %ddBm last ASN: %x.%lx TxPower: %d\n",n->addr.u16, n->last_rssi, n->last_asn.ms1b, n->last_asn.ls4b,	n->txPW);
+		printf("Neigh: 0x%x last RSSI: %ddBm last ASN: %x.%lx TxPower: %d dBm\n",n->addr.u16, n->last_rssi, n->last_asn.ms1b, n->last_asn.ls4b,	n->txPW);
 
 	}
 

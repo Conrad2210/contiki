@@ -65,4 +65,6 @@ void setCoord(int isCoordinator);
 
 int initScheduler();
 
+void scheduleMessage(int timeslots, void* callback);
+
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_SCHEDULER_SCHEDULER_H_ */

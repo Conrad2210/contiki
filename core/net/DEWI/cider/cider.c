@@ -46,11 +46,113 @@ static struct etimer CIDER_ping_timer;
 #define CIDER_PING_INTERVAL       (CLOCK_SECOND * 15)
 PROCESS(dewi_cider_process, "DEWI cider PROCESS");
 
+
+uint8_t getTxPower8bit(int tx)
+{
+
+	uint8_t tx8 = 0x00;
+	switch (tx)
+	{
+		case 7:
+			tx8 = 0xFF;
+			break;
+		case 5:
+			tx8 = 0xed;
+			break;
+		case 3:
+			tx8 = 0xd5;
+			break;
+		case 1:
+			tx8 = 0xc5;
+			break;
+		case 0:
+			tx8 = 0xb6;
+			break;
+		case -1:
+			tx8 = 0xb0;
+			break;
+		case -3:
+			tx8 = 0xa1;
+			break;
+		case -5:
+			tx8 = 0x91;
+			break;
+		case -7:
+			tx8 = 0x88;
+			break;
+		case -9:
+			tx8 = 0x72;
+			break;
+		case -11:
+			tx8 = 0x62;
+			break;
+		case -13:
+			tx8 = 0x58;
+			break;
+		case -15:
+			tx8 = 0x42;
+			break;
+		case -24:
+			tx8 = 0x00;
+			break;
+	}
+	return tx8;
+}
+
+int getTxPowerInt(uint8_t tx)
+{
+	int txInt = -24;
+	switch (tx)
+	{
+		case 0xFF:
+			txInt = 7;
+			break;
+		case 0xed:
+			txInt = 5;
+			break;
+		case 3:
+			txInt = 0xd5;
+			break;
+		case 0xc5:
+			txInt = 1;
+			break;
+		case 0xb6:
+			txInt = 0;
+			break;
+		case 0xb0:
+			txInt = -1;
+			break;
+		case 0xa1:
+			txInt = -3;
+			break;
+		case 0x91:
+			txInt = -5;
+			break;
+		case 0x88:
+			txInt = -7;
+			break;
+		case 0x72:
+			txInt = -9;
+			break;
+		case 0x62:
+			txInt = -11;
+			break;
+		case 0x58:
+			txInt = -13;
+			break;
+		case 0x42:
+			txInt = -15;
+			break;
+		case 0x0:
+			txInt = -24;
+			break;
+	}
+	return txInt;
+}
 static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *from)
 {
 	struct CIDER_PACKET *temp = packetbuf_dataptr();
-	radio_result_t rv = (int8_t) NETSTACK_RADIO.get_value(RADIO_PARAM_LAST_RSSI,&temp->rssi);
-
+	radio_result_t rv = (int8_t) NETSTACK_RADIO.get_value(RADIO_PARAM_LAST_RSSI, &temp->rssi);
 
 	printf("[CIDER]:Received CIDER packet %u bytes from %u:%u: \n", packetbuf_datalen(), from->u8[0], from->u8[1]);
 
@@ -59,13 +161,10 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 		printf("[CIDER]:Received CIDER PING message\n");
 
 		struct neighbour n = initNeighbour();
-		printf("[CIDER]: TxPower0: %d\n",n.txPW);
 		n.addr = temp->base.src;
 		n.last_rssi = temp->rssi;
 		n.last_asn = tsch_get_current_asn();
-		n.txPW = (int)temp->txPower;
-		printf("[CIDER]: TxPower: %d\n",temp->txPower);
-		printf("[CIDER]: TxPower1: %d\n",n.txPW);
+		n.txPW = getTxPowerInt(temp->txPower);
 		addNeighbour(&n);
 		printTable();
 
@@ -148,7 +247,7 @@ struct CIDER_PACKET createCIDERPacket()
 	{
 		case 0: //PING message
 #if DEBUG
-			printf("[CIDER]:SEND CIDER PING MESSAGE\n");
+		printf("[CIDER]:SEND CIDER PING MESSAGE\n");
 #endif
 			CIDERPacket.base.dst = tsch_broadcast_address;
 			CIDERPacket.base.src = linkaddr_node_addr;
@@ -157,16 +256,12 @@ struct CIDER_PACKET createCIDERPacket()
 			CIDERPacket.subType = CIDER_PING;
 			radio_value_t chan;
 			radio_result_t rv;
-			  rv = NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &chan);
-			printf("[CIDER]:Get TxPower: %d with Result: %u\n",chan,rv);
-			CIDERPacket.txPower = chan;
-			printf("[CIDER]:Get TxPower1: %d with Result: %u\n",CIDERPacket.txPower,rv);
-
-			//cc2538_rf_driver.get_value(RADIO_PARAM_TXPOWER,);
+			rv = NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &chan);
+			CIDERPacket.txPower = getTxPower8bit(chan);
 			break;
 		case 1: //neighbour update
 #if DEBUG
-			printf("[CIDER]:SEND CIDER NEIGHBOUR MESSAGE\n");
+		printf("[CIDER]:SEND CIDER NEIGHBOUR MESSAGE\n");
 #endif
 			break;
 		default:
@@ -184,29 +279,27 @@ PROCESS_THREAD(dewi_cider_process, ev, data)
 	PROCESS_EXITHANDLER(broadcast_close(&cider_bc))
 	broadcast_open(&cider_bc, BROADCAST_CHANNEL_CIDER, &cider_bc_rx);
 	PROCESS_BEGIN()
-	;
-
-	etimer_set(&CIDER_ping_timer, CIDER_PING_INTERVAL);
-
-	while (1)
-	{
-		PROCESS_YIELD()
 		;
-		if (ev == PROCESS_EVENT_TIMER)
-		{
-			CIDERPacket = createCIDERPacket();
-			printf("[CIDER]:Get TxPower2: %d \n",CIDERPacket.txPower);
 
-			packetbuf_copyfrom(&CIDERPacket, sizeof(struct CIDER_PACKET));
+		etimer_set(&CIDER_ping_timer, CIDER_PING_INTERVAL);
+
+		while (1)
+		{
+			PROCESS_YIELD()
+			;
+			if (ev == PROCESS_EVENT_TIMER)
+			{
+				CIDERPacket = createCIDERPacket();
+				packetbuf_copyfrom(&CIDERPacket, sizeof(struct CIDER_PACKET));
 #if TSCH_WITH_LINK_SELECTOR
 				packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
 				packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, 15);
 #endif
-			broadcast_send(&cider_bc);
-			etimer_set(&CIDER_ping_timer, CIDER_PING_INTERVAL);
+				broadcast_send(&cider_bc);
+				etimer_set(&CIDER_ping_timer, CIDER_PING_INTERVAL);
 
+			}
 		}
-	}
 
 	PROCESS_END();
 }

@@ -217,3 +217,6 @@ int initScheduler()
 return 1;
 }
 
+void scheduleMessage(int timeslots, void* callback){
+
+}
