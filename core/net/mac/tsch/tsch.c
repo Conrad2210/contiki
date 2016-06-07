@@ -191,6 +191,11 @@ tsch_set_eb_period(uint32_t period)
 {
   tsch_current_eb_period = period;
 }
+
+struct asn_t tsch_get_current_asn(){
+		return current_asn;
+}
+
 /*---------------------------------------------------------------------------*/
 static void
 tsch_reset(void)

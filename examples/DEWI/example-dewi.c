@@ -60,8 +60,9 @@ static struct etimer timer;
 #define LED_RED 0b10000000
 #define LED_GREEN 0b01100000
 #define LED_BLUE 0b01000000
-
+#define LED_BRIGHTNESS 0b00100000
 int counter = 0;
+uint8_t lastBRIGHTNESS = 0b00000001;
 /*---------------------------------------------------------------------------*/
 
 //static struct rtimer rt;
@@ -96,8 +97,7 @@ PROCESS_THREAD(dewi_demo_start, ev, data)
 	setCoord(0);
 	initScheduler();
 #endif
-	button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
-	                        BUTTON_PRESS_EVENT_INTERVAL);
+	button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,            BUTTON_PRESS_EVENT_INTERVAL);
 	i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN, I2C_SCL_FAST_BUS_SPEED);
 	uint8_t err = 0x00;
 	printf("Error Test: 0x%x\n", err);
@@ -105,7 +105,7 @@ PROCESS_THREAD(dewi_demo_start, ev, data)
 	printf("Error All OFF: 0x%x\n", err);
 
 	clock_delay_usec(50);
-	err = i2c_single_send(0x39, 0b001100001);
+	err = i2c_single_send(0x39, (LED_BRIGHTNESS | lastBRIGHTNESS));
 	printf("Error Current: 0x%x\n", err);
 
 	initNeighbourTable();
@@ -143,6 +143,13 @@ while (1)
 				if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL) == BUTTON_SENSOR_PRESSED_LEVEL)
 				{
 					printf("Button pressed\n");
+					lastBRIGHTNESS = lastBRIGHTNESS + 3;
+					if(lastBRIGHTNESS > 0b00011111)
+						lastBRIGHTNESS = 0b00000001;
+
+
+					i2c_single_send(0x39, (LED_BRIGHTNESS | lastBRIGHTNESS));
+
 				}else {
 			          printf("...and released!\n");
 			        }
