@@ -36,6 +36,7 @@
 /********** Includes **********/
 
 #include "contiki.h"
+#include "net/packetbuf.h"
 #include "net/mac/tsch/tsch-private.h"
 #include "net/mac/frame802154.h"
 #include "net/mac/frame802154e-ie.h"
@@ -46,21 +47,21 @@
 #ifdef TSCH_PACKET_CONF_EB_WITH_TIMESLOT_TIMING
 #define TSCH_PACKET_EB_WITH_TIMESLOT_TIMING TSCH_PACKET_CONF_EB_WITH_TIMESLOT_TIMING
 #else
-#define TSCH_PACKET_EB_WITH_TIMESLOT_TIMING 1
+#define TSCH_PACKET_EB_WITH_TIMESLOT_TIMING 0
 #endif
 
 /* TSCH EB: include hopping sequence Information Element? */
 #ifdef TSCH_PACKET_CONF_EB_WITH_HOPPING_SEQUENCE
 #define TSCH_PACKET_EB_WITH_HOPPING_SEQUENCE TSCH_PACKET_CONF_EB_WITH_HOPPING_SEQUENCE
 #else
-#define TSCH_PACKET_EB_WITH_HOPPING_SEQUENCE 1
+#define TSCH_PACKET_EB_WITH_HOPPING_SEQUENCE 0
 #endif
 
 /* TSCH EB: include slotframe and link Information Element? */
 #ifdef TSCH_PACKET_CONF_EB_WITH_SLOTFRAME_AND_LINK
 #define TSCH_PACKET_EB_WITH_SLOTFRAME_AND_LINK TSCH_PACKET_CONF_EB_WITH_SLOTFRAME_AND_LINK
 #else
-#define TSCH_PACKET_EB_WITH_SLOTFRAME_AND_LINK 1
+#define TSCH_PACKET_EB_WITH_SLOTFRAME_AND_LINK 0
 #endif
 
 /* Include source address in ACK? */
@@ -81,7 +82,7 @@ by default, useful in case of duplicate seqno */
 /********** Constants *********/
 
 /* Max TSCH packet lenght */
-#define TSCH_PACKET_MAX_LEN 127
+#define TSCH_PACKET_MAX_LEN MIN(127,PACKETBUF_SIZE)
 
 /********** Functions *********/
 

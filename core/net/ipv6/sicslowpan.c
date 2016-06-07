@@ -62,6 +62,7 @@
 
 #include "contiki.h"
 #include "dev/watchdog.h"
+#include "net/link-stats.h"
 #include "net/ip/tcpip.h"
 #include "net/ip/uip.h"
 #include "net/ipv6/uip-ds6.h"
@@ -1516,6 +1517,9 @@ input(void)
   uint8_t first_fragment = 0, last_fragment = 0;
 #endif /*SICSLOWPAN_CONF_FRAG*/
 
+  /* Update link statistics */
+  link_stats_input_callback(packetbuf_addr(PACKETBUF_ADDR_SENDER));
+
   /* init */
   uncomp_hdr_len = 0;
   packetbuf_hdr_len = 0;
@@ -1753,8 +1757,8 @@ sicslowpan_init(void)
 #ifdef SICSLOWPAN_CONF_ADDR_CONTEXT_0
   SICSLOWPAN_CONF_ADDR_CONTEXT_0;
 #else
-  addr_contexts[0].prefix[0] = 0xaa;
-  addr_contexts[0].prefix[1] = 0xaa;
+  addr_contexts[0].prefix[0] = UIP_DS6_DEFAULT_PREFIX_0;
+  addr_contexts[0].prefix[1] = UIP_DS6_DEFAULT_PREFIX_1;
 #endif
 #endif /* SICSLOWPAN_CONF_MAX_ADDR_CONTEXTS > 0 */
 

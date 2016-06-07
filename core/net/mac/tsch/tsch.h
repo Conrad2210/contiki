@@ -163,7 +163,5 @@ void tsch_set_eb_period(uint32_t period);
 void tsch_set_coordinator(int enable);
 /* Set the pan as secured or not */
 void tsch_set_pan_secured(int enable);
-/* returns the current asn*/
-struct asn_t tsch_get_current_asn();
 
 #endif /* __TSCH_H__ */

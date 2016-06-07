@@ -52,7 +52,7 @@
 /* 4 channels, sequence length 16 */
 #define TSCH_HOPPING_SEQUENCE_4_16 (uint8_t[]){ 20, 26, 25, 26, 15, 15, 25, 20, 26, 15, 26, 25, 20, 15, 20, 25 }
 /* 4 channels, sequence length 4 */
-#define TSCH_HOPPING_SEQUENCE_4_4 (uint8_t[]){ 13, 24, 20, 18 }
+#define TSCH_HOPPING_SEQUENCE_4_4 (uint8_t[]){ 15, 25, 26, 20 }
 /* 1 channel, sequence length 1 */
 #define TSCH_HOPPING_SEQUENCE_1_1 (uint8_t[]){ 20 }
 
@@ -135,7 +135,7 @@
 #define TSCH_DEFAULT_TS_MAX_TX             4256
 #define TSCH_DEFAULT_TS_TIMESLOT_LENGTH    15000
 
-#elif TSCH_CONF_DEFAULT_TIMESLOT_LENGTH == 65000
+#elif TSCH_CONF_DEFAULT_TIMESLOT_LENGTH == 65000U
 /* 65ms timeslot, i.e. nearly the max length allowed by standard (16-bit unsigned in micro-seconds).
  * Useful for running link-layer security on sky or z1 in Cooja, where only S/W security is supported.
  * Note: this slot timing would require a total of 120ms. If a slot overlaps with the next active slot,
@@ -172,14 +172,7 @@
 #ifdef TSCH_CONF_ADAPTIVE_TIMESYNC
 #define TSCH_ADAPTIVE_TIMESYNC TSCH_CONF_ADAPTIVE_TIMESYNC
 #else
-#define TSCH_ADAPTIVE_TIMESYNC 1
-#endif
-
-/* HW frame filtering enabled */
-#ifdef TSCH_CONF_HW_FRAME_FILTERING
-#define TSCH_HW_FRAME_FILTERING	TSCH_CONF_HW_FRAME_FILTERING
-#else /* TSCH_CONF_HW_FRAME_FILTERING */
-#define TSCH_HW_FRAME_FILTERING	1
+#define TSCH_ADAPTIVE_TIMESYNC 0
 #endif
 
 /* HW frame filtering enabled */

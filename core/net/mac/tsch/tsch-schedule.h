@@ -48,7 +48,7 @@
 #ifdef TSCH_SCHEDULE_CONF_WITH_6TISCH_MINIMAL
 #define TSCH_SCHEDULE_WITH_6TISCH_MINIMAL TSCH_SCHEDULE_CONF_WITH_6TISCH_MINIMAL
 #else
-#define TSCH_SCHEDULE_WITH_6TISCH_MINIMAL 0
+#define TSCH_SCHEDULE_WITH_6TISCH_MINIMAL 1
 #endif
 
 /* 6TiSCH Minimal schedule slotframe length */
@@ -84,7 +84,7 @@
 
 /* 802.15.4e link types.
  * LINK_TYPE_ADVERTISING_ONLY is an extra one: for EB-only links. */
-enum link_type { LINK_TYPE_NORMAL, LINK_TYPE_ADVERTISING, LINK_TYPE_ADVERTISING_ONLY};
+enum link_type { LINK_TYPE_NORMAL, LINK_TYPE_ADVERTISING, LINK_TYPE_ADVERTISING_ONLY };
 
 struct tsch_link {
   /* Links are stored as a list: "next" must be the first field */

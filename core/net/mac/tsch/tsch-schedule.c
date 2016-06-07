@@ -191,6 +191,7 @@ tsch_schedule_add_link(struct tsch_slotframe *slotframe,
       l = memb_alloc(&link_memb);
       if(l == NULL) {
         PRINTF("TSCH-schedule:! add_link memb_alloc failed\n");
+        tsch_release_lock();
       } else {
         static int current_link_handle = 0;
         struct tsch_neighbor *n;
@@ -413,28 +414,8 @@ tsch_schedule_create_minimal(void)
    * Timeslot: 0, channel offset: 0. */
   tsch_schedule_add_link(sf_min,
       LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
-      LINK_TYPE_ADVERTISING_ONLY, &tsch_broadcast_address,
+      LINK_TYPE_ADVERTISING, &tsch_broadcast_address,
       0, 0);
-  tsch_schedule_add_link(sf_min,
-      LINK_OPTION_RX | LINK_OPTION_TX,
-      LINK_TYPE_NORMAL, &tsch_broadcast_address,
-      1, 1);
-  tsch_schedule_add_link(sf_min,
-      LINK_OPTION_RX | LINK_OPTION_TX,
-	  LINK_TYPE_NORMAL, &tsch_broadcast_address,
-      2, 2);
-  tsch_schedule_add_link(sf_min,
-      LINK_OPTION_RX | LINK_OPTION_TX,
-	  LINK_TYPE_NORMAL, &tsch_broadcast_address,
-      8, 5);
-  tsch_schedule_add_link(sf_min,
-      LINK_OPTION_RX | LINK_OPTION_TX,
-	  LINK_TYPE_NORMAL, &tsch_broadcast_address,
-      12, 3);
-  tsch_schedule_add_link(sf_min,
-      LINK_OPTION_RX | LINK_OPTION_TX,
-	  LINK_TYPE_NORMAL, &tsch_broadcast_address,
-      18, 5);
 }
 /*---------------------------------------------------------------------------*/
 /* Prints out the current schedule (all slotframes and links) */

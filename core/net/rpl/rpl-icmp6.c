@@ -91,8 +91,6 @@ void RPL_DEBUG_DAO_OUTPUT(rpl_parent_t *);
 
 static uint8_t dao_sequence = RPL_LOLLIPOP_INIT;
 
-extern rpl_of_t RPL_OF;
-
 #if RPL_CONF_MULTICAST
 static uip_mcast6_route_t *mcast_group;
 #endif
@@ -302,7 +300,7 @@ dio_input(void)
   dio.dag_redund = RPL_DIO_REDUNDANCY;
   dio.dag_min_hoprankinc = RPL_MIN_HOPRANKINC;
   dio.dag_max_rankinc = RPL_MAX_RANKINC;
-  dio.ocp = RPL_OF.ocp;
+  dio.ocp = RPL_OF_OCP;
   dio.default_lifetime = RPL_DEFAULT_LIFETIME;
   dio.lifetime_unit = RPL_DEFAULT_LIFETIME_UNIT;
 
@@ -313,33 +311,6 @@ dio_input(void)
   PRINT6ADDR(&from);
   PRINTF("\n");
 
-<<<<<<< HEAD
-  if((nbr = uip_ds6_nbr_lookup(&from)) == NULL) {
-    if((nbr = uip_ds6_nbr_add(&from, (uip_lladdr_t *)
-                              packetbuf_addr(PACKETBUF_ADDR_SENDER),
-                              0, NBR_REACHABLE)) != NULL) {
-      /* set reachable timer */
-      stimer_set(&nbr->reachable, UIP_ND6_REACHABLE_TIME / 1000);
-      PRINTF("RPL: Neighbor added to neighbor cache ");
-      PRINT6ADDR(&from);
-      PRINTF(", ");
-      PRINTLLADDR((uip_lladdr_t *)packetbuf_addr(PACKETBUF_ADDR_SENDER));
-      PRINTF("\n");
-    } else {
-      PRINTF("RPL: Out of memory, dropping DIO from ");
-      PRINT6ADDR(&from);
-      PRINTF(", ");
-      PRINTLLADDR((uip_lladdr_t *)packetbuf_addr(PACKETBUF_ADDR_SENDER));
-      PRINTF("\n");
-
-      goto discard;
-    }
-  } else {
-    PRINTF("RPL: Neighbor already in neighbor cache\n");
-  }
-
-=======
->>>>>>> upstream/master
   buffer_length = uip_len - uip_l3_icmp_hdr_len;
 
   /* Process the DIO base option. */
@@ -839,26 +810,6 @@ dao_input(void)
 
   PRINTF("RPL: Adding DAO route\n");
 
-<<<<<<< HEAD
-  if((nbr = uip_ds6_nbr_lookup(&dao_sender_addr)) == NULL) {
-    if((nbr = uip_ds6_nbr_add(&dao_sender_addr,
-                              (uip_lladdr_t *)packetbuf_addr(PACKETBUF_ADDR_SENDER),
-                              0, NBR_REACHABLE)) != NULL) {
-      /* set reachable timer */
-      stimer_set(&nbr->reachable, UIP_ND6_REACHABLE_TIME / 1000);
-      PRINTF("RPL: Neighbor added to neighbor cache ");
-      PRINT6ADDR(&dao_sender_addr);
-      PRINTF(", ");
-      PRINTLLADDR((uip_lladdr_t *)packetbuf_addr(PACKETBUF_ADDR_SENDER));
-      PRINTF("\n");
-    } else {
-      PRINTF("RPL: Out of Memory, dropping DAO from ");
-      PRINT6ADDR(&dao_sender_addr);
-      PRINTF(", ");
-      PRINTLLADDR((uip_lladdr_t *)packetbuf_addr(PACKETBUF_ADDR_SENDER));
-      PRINTF("\n");
-      goto discard;
-=======
   /* Update and add neighbor - if no room - fail. */
   if((nbr = rpl_icmp6_update_nbr_table(&dao_sender_addr, NBR_TABLE_REASON_RPL_DAO, instance)) == NULL) {
     PRINTF("RPL: Out of Memory, dropping DAO from ");
@@ -871,7 +822,6 @@ dao_input(void)
       dao_ack_output(instance, &dao_sender_addr, sequence,
 		     is_root ? RPL_DAO_ACK_UNABLE_TO_ADD_ROUTE_AT_ROOT :
 		     RPL_DAO_ACK_UNABLE_TO_ACCEPT);
->>>>>>> upstream/master
     }
     goto discard;
   }
