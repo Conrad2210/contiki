@@ -85,15 +85,10 @@ void setCoord(int isCoordinator)
 uint16_t setSchedule(ScheduleInfo_t schedule)
 {
 
-	//tsch_schedule_add_link(sf_min,LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING, LINK_TYPE_ADVERTISING, &tsch_broadcast_address, 0, 0);
 	struct tsch_slotframe *tempHandle = tsch_schedule_get_slotframe_by_handle(schedule.handle);
 	tsch_schedule_remove_slotframe(tempHandle);
 
 	tempHandle = tsch_schedule_add_slotframe(schedule.handle, schedule.slotframeLength);
-
-//#if DEBUG
-//	printf("start adding links\n");
-//#endif
 
 	int i = 0;
 	for (i = 0; i < MAX_NUM_LINKS; i++)
@@ -101,14 +96,9 @@ uint16_t setSchedule(ScheduleInfo_t schedule)
 		if (schedule.links[i].isActive == 1)
 		{
 			linkInfo_t temp = schedule.links[i];
-//#if DEBUG
-//			printf("[SCHEDULER]: ADD LINK: %u, %u\n",temp.timeslot, temp.channel_offset);
-//#endif
+
 			if (tsch_schedule_add_link(tempHandle, temp.link_options, temp.link_type, temp.addr, temp.timeslot, temp.channel_offset) == NULL)
 			{
-//#if DEBUG
-//				printf("[SCHEDULER]: Add schedule caused an error, EXIT \n");
-//#endif
 				break;
 			}
 		}
@@ -218,5 +208,7 @@ return 1;
 }
 
 void scheduleMessage(int timeslots, void* callback){
+
+printf("[SCHEDULER]: Schedule msg in: %d timeslots, callback: %u",timeslots,callback);
 
 }

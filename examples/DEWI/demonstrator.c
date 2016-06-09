@@ -54,13 +54,15 @@
 #define LEDS_RF_RX          (LEDS_ALL)
 #define BUTTON_PRESS_EVENT_INTERVAL (CLOCK_SECOND)
 
-static struct etimer timer;
+static struct etimer randomColorTimer;
 #define TIMER       (CLOCK_SECOND)
 
 #define LED_RED 0b10000000
 #define LED_GREEN 0b01100000
 #define LED_BLUE 0b01000000
-
+#define LED_BRIGHTNESS 0b00100000
+int counter = 0;
+uint8_t lastBRIGHTNESS = 0b00000001;
 
 /*---------------------------------------------------------------------------*/
 
@@ -81,17 +83,18 @@ AUTOSTART_PROCESSES(&dewi_demo_start);
 //}
 /*---------------------------------------------------------------------------*/
 
-void printDEMOConfiguration(){
+void printDEMOConfiguration()
+{
 	printf("\n\n[DEMO]: Print Configuration\n");
-	printf("[DEMO]: Tx Power: %d\n",TXRADIOPOWER);
-	printf("[DEMO]: LP Device: %x\n",LPDEVICE);
-	printf("[DEMO]: TSCH SlotLength: %u\n",TSCH_CONF_DEFAULT_TIMESLOT_LENGTH);
+	printf("[DEMO]: Tx Power: %d\n", TXRADIOPOWER);
+	printf("[DEMO]: LP Device: %x\n", LPDEVICE);
+	printf("[DEMO]: TSCH SlotLength: %u\n", TSCH_CONF_DEFAULT_TIMESLOT_LENGTH);
 }
 
 PROCESS_THREAD(dewi_demo_start, ev, data)
 {
-	PROCESS_BEGIN()	;
-
+	PROCESS_BEGIN()
+	;
 
 #if DEBUG
 	printDEMOConfiguration();
@@ -108,81 +111,77 @@ PROCESS_THREAD(dewi_demo_start, ev, data)
 	setCoord(0);
 	initScheduler();
 #endif
-
-	radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER,TXRADIOPOWER);
+	radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, TXRADIOPOWER);
 	button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
-	                        BUTTON_PRESS_EVENT_INTERVAL);
-	i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN, I2C_SCL_FAST_BUS_SPEED);
-	uint8_t err = 0x00;
-	printf("Error Test: 0x%x\n", err);
-	err = i2c_single_send(0x39, 0b00000000);
-	printf("Error All OFF: 0x%x\n", err);
-
-	clock_delay_usec(50);
-	err = i2c_single_send(0x39, 0b00111111);
-	clock_delay_usec(50);
-	i2c_single_send(0x39, (LED_RED | 0b00011111));
-	printf("Error Current: 0x%x\n", err);
+	BUTTON_PRESS_EVENT_INTERVAL);
 
 	initNeighbourTable();
-	//init SCHEDULER
+
 	//init RLL
 	//init CIDER
-	process_start(&dewi_demo_process,NULL);
+	process_start(&dewi_demo_process, NULL);
 PROCESS_END();
 }
 
 PROCESS_THREAD(dewi_demo_process, ev, data)
 {
 PROCESS_BEGIN()
-;
-etimer_set(&timer, TIMER);
-
-
-/* Configure the user button */
-printf("DEWI Application\n");
-#if EXTERNAL_LED
-printf("with external LED\n");
-
-#else
-printf("without external LED\n");
-#endif
-while (1)
-{
-
-	PROCESS_YIELD()
 	;
-	if(ev == sensors_event){
-		if (data == &button_sensor)
+
+	i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN, I2C_SCL_FAST_BUS_SPEED);
+	i2c_single_send(0x39, (LED_BRIGHTNESS | lastBRIGHTNESS));
+	etimer_set(&randomColorTimer, TIMER);
+	printf("DEWI Application\n");
+#if EXTERNAL_LED
+	printf("with external LED\n");
+	while (1)
+		{
+
+			PROCESS_YIELD()
+			;
+			if (ev == sensors_event)
+			{
+				if (data == &button_sensor)
+				{
+
+					if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL) == BUTTON_SENSOR_PRESSED_LEVEL)
+					{
+						printf("Button pressed\n");
+						lastBRIGHTNESS = lastBRIGHTNESS + 3;
+						if (lastBRIGHTNESS > 0b00011111)
+							lastBRIGHTNESS = 0b00000001;
+
+
+						printf("[APP]: change brightness to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_BRIGHTNESS | lastBRIGHTNESS)));
+						i2c_single_send(0x39, (LED_BRIGHTNESS | lastBRIGHTNESS));
+
+					}
+				}
+			}
+			else if (ev == PROCESS_EVENT_TIMER)
 			{
 
-				if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL) == BUTTON_SENSOR_PRESSED_LEVEL)
-				{
-					printf("Button pressed\n");
-				}else {
-			          printf("...and released!\n");
-			        }
+				uint8_t randNum = rand() % 31;
+				uint8_t result;
+				printf("[APP]: change RED to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_RED | randNum)));
+				i2c_single_send(0x39, (LED_RED | randNum));
+				clock_delay_usec(50);
+				randNum = rand() % 31;
+				printf("[APP]: change GREE to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_GREEN | randNum)));
+				i2c_single_send(0x39, (LED_GREEN | randNum));
+				clock_delay_usec(50);
+				randNum = rand() % 31;
+				printf("[APP]: change BLUE to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_BLUE | randNum)));
+				i2c_single_send(0x39, (LED_BLUE | randNum));
 
+				etimer_set(&randomColorTimer, TIMER);
 			}
-	}else	if (ev == PROCESS_EVENT_TIMER)
-	{
+		}
 
-			uint8_t randNum = rand() % 31;
-			uint8_t result;
-			i2c_single_send(0x39, (0x00000000));
-			clock_delay_usec(50);
-			i2c_single_send(0x39, (LED_RED | randNum));
-			clock_delay_usec(50);
-			randNum = rand() % 31;
-			i2c_single_send(0x39, (LED_GREEN | randNum));
-			clock_delay_usec(50);
-			randNum = rand() % 31;
-			i2c_single_send(0x39, (LED_BLUE | randNum));
+#else
+	printf("without external LED\n");
+#endif
 
-
-		etimer_set(&timer, TIMER);
-	}
-}
 PROCESS_END();
 }
 

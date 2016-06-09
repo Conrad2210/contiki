@@ -38,11 +38,15 @@
 
 #include "cider.h"
 #include "neighTable.h"
-int CIDER_isActive = 0;
-int CIDER_currentStep = 0;
+uint8_t CIDER_isActive = 0;
+uint8_t CIDER_currentStep = 0;
+uint8_t CIDER_ping_sent = 0;
+uint8_t CIDER_ping_recvd = 0;
+
 #define DEBUG DEBUG_PRINT
 struct CIDER_PACKET createCCIDERPacket();
 static struct etimer CIDER_ping_timer;
+static struct ctimer CIDER_send_ping_timer;
 #define CIDER_PING_INTERVAL       (CLOCK_SECOND * 15)
 PROCESS(dewi_cider_process, "DEWI cider PROCESS");
 
@@ -169,6 +173,11 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 		printTable();
 
 	}
+	if(CIDER_ping_sent == 1)
+	{
+		printf("[CIDER]:Stop Ping Timer\n");
+		CIDER_ping_recvd = 1;
+	}
 }
 
 static const struct broadcast_callbacks cider_bc_rx =
@@ -272,31 +281,42 @@ struct CIDER_PACKET createCIDERPacket()
 
 }
 
+void sendCIDERPing(){
+
+	printf("[CIDER]: Send ping msg now, at %u\n",tsch_get_current_asn());
+	struct CIDER_PACKET CIDERPacket;
+	CIDERPacket = createCIDERPacket();
+	packetbuf_copyfrom(&CIDERPacket, sizeof(struct CIDER_PACKET));
+//#if TSCH_WITH_LINK_SELECTOR
+//	packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
+//	packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, 15);
+//#endif
+	broadcast_send(&cider_bc);
+	CIDER_ping_sent = 1;
+	if(!CIDER_ping_recvd)
+		etimer_set(&CIDER_ping_timer, CIDER_PING_INTERVAL);
+}
+
 PROCESS_THREAD(dewi_cider_process, ev, data)
 {
-	struct CIDER_PACKET CIDERPacket;
 
+	uint16_t msgDelay;
+	clock_time_t delay;
 	PROCESS_EXITHANDLER(broadcast_close(&cider_bc))
 	broadcast_open(&cider_bc, BROADCAST_CHANNEL_CIDER, &cider_bc_rx);
-	PROCESS_BEGIN()
-		;
+	PROCESS_BEGIN();
 
-		etimer_set(&CIDER_ping_timer, CIDER_PING_INTERVAL);
-
+	etimer_set(&CIDER_ping_timer, CLOCK_SECOND);
 		while (1)
 		{
-			PROCESS_YIELD()
-			;
+			PROCESS_YIELD();
 			if (ev == PROCESS_EVENT_TIMER)
 			{
-				CIDERPacket = createCIDERPacket();
-				packetbuf_copyfrom(&CIDERPacket, sizeof(struct CIDER_PACKET));
-#if TSCH_WITH_LINK_SELECTOR
-				packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
-				packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, 15);
-#endif
-				broadcast_send(&cider_bc);
-				etimer_set(&CIDER_ping_timer, CIDER_PING_INTERVAL);
+				msgDelay = (linkaddr_node_addr.u16 & 0b0000111111111111);
+				delay = (msgDelay/1000.0) * CLOCK_SECOND;
+
+				printf("[CIDER]: linkaddr: 0x%x, Delay msg by: %d ms and CLOCKSECONDS: %d, at %u \n",linkaddr_node_addr.u16,msgDelay,delay,tsch_get_current_asn());
+				ctimer_set(&CIDER_send_ping_timer,delay,sendCIDERPing,NULL);
 
 			}
 		}
