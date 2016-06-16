@@ -39,7 +39,7 @@
 #include "cider.h"
 #include "neighTable.h"
 uint8_t CIDER_isActive = 0;
-uint8_t CIDER_currentStep = 0;
+enum CIDERsubpackettype CIDER_currentStep = PING;
 uint8_t CIDER_ping_sent = 0;
 uint8_t CIDER_ping_recvd = 0;
 
@@ -49,7 +49,6 @@ static struct etimer CIDER_ping_timer;
 static struct ctimer CIDER_send_ping_timer;
 #define CIDER_PING_INTERVAL       (CLOCK_SECOND * 15)
 PROCESS(dewi_cider_process, "DEWI cider PROCESS");
-
 
 uint8_t getTxPower8bit(int tx)
 {
@@ -153,27 +152,45 @@ int getTxPowerInt(uint8_t tx)
 	}
 	return txInt;
 }
+
+
 static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *from)
 {
+
+	struct neighbour n = initNeighbour();
 	struct CIDER_PACKET *temp = packetbuf_dataptr();
-	radio_result_t rv = (int8_t) NETSTACK_RADIO.get_value(RADIO_PARAM_LAST_RSSI, &temp->rssi);
+	radio_result_t rv = (int8_t) NETSTACK_RADIO.get_value(RADIO_PARAM_LAST_RSSI, &temp->args[3]);
 
 	printf("[CIDER]:Received CIDER packet %u bytes from %u:%u: \n", packetbuf_datalen(), from->u8[0], from->u8[1]);
 
-	if (temp->subType == CIDER_PING)
+	switch (temp->subType)
 	{
-		printf("[CIDER]:Received CIDER PING message\n");
-
-		struct neighbour n = initNeighbour();
-		n.addr = temp->base.src;
-		n.last_rssi = temp->rssi;
-		n.last_asn = tsch_get_current_asn();
-		n.txPW = getTxPowerInt(temp->txPower);
-		addNeighbour(&n);
-		printTable();
+		printf("[CIDER]: Received CIDER Message, type: %u\n",temp->subType);
+		case PING:
+			n.addr = temp->base.src;
+			n.last_rssi = temp->args[3];
+			n.last_asn = tsch_get_current_asn();
+			n.txPW = getTxPowerInt(temp->args[0]);
+			addNeighbour(&n);
+			printTable();
+			break;
+		case NEIGHBOUR_UPDATE:
+			break;
+		case WEIGHT_UPDATE:
+			break;
+		case CH_COMPETITION:
+			break;
+		case CH_ADVERT:
+			break;
+		case LP_PING:
+			break;
+		case COVERAGE_UPDATE:
+			break;
+		default:
+			printf("[CIDER]: Received CIDER Message, type: unknown\n");
 
 	}
-	if(CIDER_ping_sent == 1)
+	if (CIDER_ping_sent == 1)
 	{
 		printf("[CIDER]:Stop Ping Timer\n");
 		CIDER_ping_recvd = 1;
@@ -254,25 +271,35 @@ struct CIDER_PACKET createCIDERPacket()
 	tempTX = 0;
 	switch (CIDER_currentStep)
 	{
-		case 0: //PING message
+		case PING: //PING message
 #if DEBUG
 		printf("[CIDER]:SEND CIDER PING MESSAGE\n");
 #endif
 			CIDERPacket.base.dst = tsch_broadcast_address;
 			CIDERPacket.base.src = linkaddr_node_addr;
 			CIDERPacket.base.type = CIDER;
-			CIDERPacket.shortAddr = linkaddr_node_addr.u16;
-			CIDERPacket.subType = CIDER_PING;
+			CIDERPacket.subType = PING;
 			radio_value_t chan;
 			radio_result_t rv;
 			rv = NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &chan);
-			CIDERPacket.txPower = getTxPower8bit(chan);
+			CIDERPacket.args[0] = getTxPower8bit(chan);
 			break;
-		case 1: //neighbour update
+		case NEIGHBOUR_UPDATE:
 #if DEBUG
 		printf("[CIDER]:SEND CIDER NEIGHBOUR MESSAGE\n");
 #endif
 			break;
+		case WEIGHT_UPDATE:
+			break;
+		case CH_COMPETITION:
+			break;
+		case CH_ADVERT:
+			break;
+		case LP_PING:
+			break;
+		case COVERAGE_UPDATE:
+			break;
+
 		default:
 			//do nothing
 			break;
@@ -281,9 +308,10 @@ struct CIDER_PACKET createCIDERPacket()
 
 }
 
-void sendCIDERPing(){
+void sendCIDERPing()
+{
 
-	printf("[CIDER]: Send ping msg now, at %u\n",tsch_get_current_asn());
+	printf("[CIDER]: Send ping msg now, at %u\n", tsch_get_current_asn());
 	struct CIDER_PACKET CIDERPacket;
 	CIDERPacket = createCIDERPacket();
 	packetbuf_copyfrom(&CIDERPacket, sizeof(struct CIDER_PACKET));
@@ -293,7 +321,7 @@ void sendCIDERPing(){
 //#endif
 	broadcast_send(&cider_bc);
 	CIDER_ping_sent = 1;
-	if(!CIDER_ping_recvd)
+	if (!CIDER_ping_recvd)
 		etimer_set(&CIDER_ping_timer, CIDER_PING_INTERVAL);
 }
 
@@ -304,23 +332,25 @@ PROCESS_THREAD(dewi_cider_process, ev, data)
 	clock_time_t delay;
 	PROCESS_EXITHANDLER(broadcast_close(&cider_bc))
 	broadcast_open(&cider_bc, BROADCAST_CHANNEL_CIDER, &cider_bc_rx);
-	PROCESS_BEGIN();
+	PROCESS_BEGIN()
+	;
 
 	etimer_set(&CIDER_ping_timer, CLOCK_SECOND);
-		while (1)
+	while (1)
+	{
+		PROCESS_YIELD()
+		;
+		if (ev == PROCESS_EVENT_TIMER)
 		{
-			PROCESS_YIELD();
-			if (ev == PROCESS_EVENT_TIMER)
-			{
-				msgDelay = (linkaddr_node_addr.u16 & 0b0000111111111111);
-				delay = (msgDelay/1000.0) * CLOCK_SECOND;
+			msgDelay = (linkaddr_node_addr.u16 & 0b0000111111111111);
+			delay = (msgDelay / 1000.0) * CLOCK_SECOND;
 
-				printf("[CIDER]: linkaddr: 0x%x, Delay msg by: %d ms and CLOCKSECONDS: %d, at %u \n",linkaddr_node_addr.u16,msgDelay,delay,tsch_get_current_asn());
-				ctimer_set(&CIDER_send_ping_timer,delay,sendCIDERPing,NULL);
+			printf("[CIDER]: linkaddr: 0x%x, Delay msg by: %d ms and CLOCKSECONDS: %d, at %u \n", linkaddr_node_addr.u16, msgDelay, delay, tsch_get_current_asn());
+			ctimer_set(&CIDER_send_ping_timer, delay, sendCIDERPing, NULL);
 
-			}
 		}
+	}
 
-	PROCESS_END();
+PROCESS_END();
 }
 

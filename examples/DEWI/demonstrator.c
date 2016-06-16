@@ -163,15 +163,15 @@ PROCESS_BEGIN()
 
 				uint8_t randNum = rand() % 31;
 				uint8_t result;
-				printf("[APP]: change RED to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_RED | randNum)));
+				//printf("[APP]: change RED to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_RED | randNum)));
 				i2c_single_send(0x39, (LED_RED | randNum));
 				clock_delay_usec(50);
 				randNum = rand() % 31;
-				printf("[APP]: change GREE to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_GREEN | randNum)));
+				//printf("[APP]: change GREE to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_GREEN | randNum)));
 				i2c_single_send(0x39, (LED_GREEN | randNum));
 				clock_delay_usec(50);
 				randNum = rand() % 31;
-				printf("[APP]: change BLUE to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_BLUE | randNum)));
+				//printf("[APP]: change BLUE to: 0b"BYTETOBINARYPATTERN"\n", BYTETOBINARY((LED_BLUE | randNum)));
 				i2c_single_send(0x39, (LED_BLUE | randNum));
 
 				etimer_set(&randomColorTimer, TIMER);

@@ -37,8 +37,9 @@
  */
 
 #include "neighTable.h"
-static struct etimer NEIGH_timer;
+static struct etimer NEIGH_timer,NEIGH_Print;
 #define NEIGH_INTERVAL       (CLOCK_SECOND * 30)
+#define NEIGH_PRINT       (CLOCK_SECOND * 60)
 PROCESS(dewi_neighbourtable_process, "DEWI Neighbour Table PROCESS");
 
 AUTOSTART_PROCESSES();
@@ -197,6 +198,7 @@ PROCESS_THREAD(dewi_neighbourtable_process, ev, data)
 {
 	PROCESS_BEGIN();
 	etimer_set(&NEIGH_timer, NEIGH_INTERVAL);
+	etimer_set(&NEIGH_Print, NEIGH_PRINT);
 	printf("[NEIGH]: Neighbour table, start ***\n");
 	while (1)
 	{
@@ -204,6 +206,7 @@ PROCESS_THREAD(dewi_neighbourtable_process, ev, data)
 		PROCESS_YIELD()
 		;
 		if (ev == PROCESS_EVENT_TIMER){
+			if(etimer_expired(&NEIGH_timer)){
 			struct neighbour *n;
 			struct asn_t cur_asn = tsch_get_current_asn();
 			printf("[NEIGH]: Neighbour table, check for inactive members ***\n");
@@ -224,7 +227,12 @@ PROCESS_THREAD(dewi_neighbourtable_process, ev, data)
 				}
 
 			}
-			etimer_set(&NEIGH_timer, NEIGH_INTERVAL);
+			etimer_reset(&NEIGH_timer);
+			}
+			else if(etimer_expired(&NEIGH_Print)){
+				printTable();
+				etimer_reset(&NEIGH_Print);
+			}
 		}
 
 	}

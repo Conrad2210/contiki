@@ -143,6 +143,7 @@ PROCESS_THREAD(zoul_demo_process, ev, data)
     PROCESS_YIELD();
 
     if(ev == PROCESS_EVENT_TIMER) {
+
       leds_on(LEDS_PERIODIC);
 
       printf("-----------------------------------------\n"
