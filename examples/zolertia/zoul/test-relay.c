@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Loughborough University - Computer Science
+ * Copyright (c) 2016, Zolertia <http://www.zolertia.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,38 +27,63 @@
  * SUCH DAMAGE.
  *
  * This file is part of the Contiki operating system.
+ *
  */
-
 /**
+ * \addtogroup zoul-examples
+ * @{
+ *
+ * \defgroup zoul-relay-test A simple program to test a generic relay
+ *
+ * Demonstrates the use of a generic relay, connected by default at the ADC1
+ * connector of the RE-Mote
+ *
+ * @{
+ *
  * \file
- *         This node is part of the RPL multicast example. It basically
- *         represents a node that does not join the multicast group
- *         but still knows how to forward multicast packets
- *         The example will work with or without any number of these nodes
- *
- *         Also, performs some sanity checks for the contiki configuration
- *         and generates an error if the conf is bad
- *
+ *         A quick program to test a generic relay
  * \author
- *         George Oikonomou - <oikonomou@users.sourceforge.net>
+ *         Antonio Lignan <alinan@zolertia.com>
  */
-
+/*---------------------------------------------------------------------------*/
+#include <stdio.h>
 #include "contiki.h"
-#include "contiki-net.h"
-#include "net/ipv6/multicast/uip-mcast6.h"
-
-#if !NETSTACK_CONF_WITH_IPV6 || !UIP_CONF_ROUTER || !UIP_IPV6_MULTICAST || !UIP_CONF_IPV6_RPL
-#error "This example can not work with the current contiki configuration"
-#error "Check the values of: NETSTACK_CONF_WITH_IPV6, UIP_CONF_ROUTER, UIP_CONF_IPV6_RPL"
-#endif
+#include "dev/relay.h"
+#include "lib/sensors.h"
 /*---------------------------------------------------------------------------*/
-PROCESS(mcast_intermediate_process, "Intermediate Process");
-AUTOSTART_PROCESSES(&mcast_intermediate_process);
+PROCESS(remote_relay_process, "Generic relay test");
+AUTOSTART_PROCESSES(&remote_relay_process);
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(mcast_intermediate_process, ev, data)
+static struct etimer et;
+/*---------------------------------------------------------------------------*/
+PROCESS_THREAD(remote_relay_process, ev, data)
 {
   PROCESS_BEGIN();
+  SENSORS_ACTIVATE(relay);
 
+  /* Activate the relay and wait for 5 seconds */
+  relay.value(RELAY_ON);
+  etimer_set(&et, CLOCK_SECOND * 5);
+  printf("\nRelay: switch should be ON --> %u\n", relay.status(SENSORS_ACTIVE));
+  PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+
+  /* Now turn off and wait 5 seconds more */
+  relay.value(RELAY_OFF);
+  etimer_set(&et, CLOCK_SECOND * 5);
+  printf("Relay: switch should be OFF --> %u\n\n", relay.status(SENSORS_ACTIVE));
+  PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+
+  /* Let it spin and toggle each second */
+  while(1) {
+    etimer_set(&et, CLOCK_SECOND);
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+    relay.value(RELAY_TOGGLE);
+    printf("Relay: switch is now --> %u\n", relay.status(SENSORS_ACTIVE));
+  }
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
+/**
+ * @}
+ * @}
+ */
