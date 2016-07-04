@@ -39,5 +39,6 @@
 #include "lib/memb.h"
 #include "lib/mmem.h"
 #include "lib/random.h"
+#include "lib/util.h"
 
 #endif /* CONTIKI_LIB_H_ */

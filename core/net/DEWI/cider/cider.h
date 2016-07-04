@@ -38,6 +38,7 @@
 
 #ifndef DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_CIDER_CIDER_H_
 #define DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_CIDER_CIDER_H_
+
 #include "contiki.h"
 #include "cpu.h"
 #include "sys/etimer.h"
@@ -51,6 +52,7 @@
 #include "net/mac/tsch/tsch-schedule.h"
 
 #include "net/DEWI/scheduler/scheduler.h"
+
 
 #include <stdio.h>
 #include <stdint.h>

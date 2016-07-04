@@ -78,8 +78,8 @@ struct neighbour {
   uint8_t distance;
   int txPW;
 
-  /* CIDER/RLL related values, cluster stage, indication if parent or cs*/
-  uint8_t stage, myCH,myCS;
+  /* CIDER/RLL related values, cluster stage, indication if parent or cs, is low power device (LPD)*/
+  uint8_t stage, myCH,myCS, isLPD;
 
   /* CIDER related values, node Degree = number of neighbours, cluster degree = number of possible cluster nodes
    * lpDegree = number of low power devices in neighbourhood*/
@@ -105,7 +105,11 @@ void addNeighbour(struct neighbour *neigh);
 struct neighbour *getNeighbour(linkaddr_t *addr);
 int checkIfNeighbourExist(linkaddr_t *addr);
 int updateNeighbour(struct neighbour *neigh);
-struct neighbour initNeighbour();
+struct neighbour *initNeighbour();
+int getNumNeighbours();
+int getNumLPDevices();
+int getNumCluster();
+float getAvgRSSI();
 
 
 void printTable();

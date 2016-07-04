@@ -37,17 +37,24 @@
  */
 
 #include "neighTable.h"
-static struct etimer NEIGH_timer,NEIGH_Print;
-#define NEIGH_INTERVAL       (CLOCK_SECOND * 30)
-#define NEIGH_PRINT       (CLOCK_SECOND * 60)
-PROCESS(dewi_neighbourtable_process, "DEWI Neighbour Table PROCESS");
 
-AUTOSTART_PROCESSES();
+static struct etimer NEIGH_timer, NEIGH_Print;
+#define NEIGH_INTERVAL       (CLOCK_SECOND * 600)
+#define NEIGH_PRINT       (CLOCK_SECOND * 60)
+
 #define MAX_NEIGHBOURS CONF_MAX_NEIGHBOURS
 #define DEBUG DEBUG_PRINT
 
 MEMB(neighbours_memb, struct neighbour, MAX_NEIGHBOURS);
 LIST(neighbours_list);
+
+
+PROCESS(dewi_neighbourtable_process, "DEWI Neighbour Table PROCESS");
+
+AUTOSTART_PROCESSES();
+
+
+
 
 void copyNeighbour(struct neighbour *n1, struct neighbour *n2)
 {
@@ -64,6 +71,7 @@ void copyNeighbour(struct neighbour *n1, struct neighbour *n2)
 	n1->txPW = n2->txPW;
 	n1->weight = n2->weight;
 	n1->last_asn = n2->last_asn;
+	n1->isLPD = n2->isLPD;
 
 }
 
@@ -145,10 +153,16 @@ void printTable()
 {
 	struct neighbour *n;
 	printf("\n");
-	printf("**** Print Neighbour Table for Node: 0x%x\n", linkaddr_node_addr.u16);
+	printf("**** Print Neighbour Table for Node: 0x%x\n",
+			linkaddr_node_addr.u16);
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-		printf("Neigh: 0x%x last RSSI: %ddBm last ASN: %x.%lx TxPower: %d dBm\n",n->addr.u16, n->last_rssi, n->last_asn.ms1b, n->last_asn.ls4b,	n->txPW);
+		printf(
+				"Neigh: 0x%x last RSSI: %ddBm last ASN: %x.%lx TxPower: %d dBm is LPD: %d ND: %d CD: %d LPD: %d "
+						"myCH: %d myCS: %d Parent: 0x%x Stage: %d Weight: %d\n",
+				n->addr.u16, n->last_rssi, n->last_asn.ms1b, n->last_asn.ls4b,
+				n->txPW,n->isLPD, n->nodeDegree, n->clusterDegree, n->lpDegree, n->myCH,
+				n->myCS, n->parent, n->stage, n->weight);
 
 	}
 
@@ -169,73 +183,134 @@ void initNeighbourTable()
 	process_start(&dewi_neighbourtable_process, NULL);
 }
 
-struct neighbour initNeighbour()
+struct neighbour *initNeighbour()
 {
-	struct neighbour n;
-	n.addr = linkaddr_null;
-	n.clusterDegree = 0;
-	n.distance = 0;
-	n.last_rssi = 0;
-	n.lpDegree = 0;
-	n.myCH = 0;
-	n.myCS = 0;
-	n.nodeDegree = 0;
-	n.parent = linkaddr_null;
-	n.stage = 0;
-	n.txPW = 0;
-	n.weight = 0.0;
-	ASN_INIT(n.last_asn, 0, 0);
+	struct neighbour *n;
+	n->addr = linkaddr_null;
+	n->clusterDegree = 0;
+	n->distance = 0;
+	n->last_rssi = 0;
+	n->lpDegree = 0;
+	n->myCH = 0;
+	n->myCS = 0;
+	n->nodeDegree = 0;
+	n->parent = linkaddr_null;
+	n->stage = 0;
+	n->txPW = 0;
+	n->weight = 0.0;
+	n->isLPD = 0;
+	ASN_INIT(n->last_asn, 0, 0);
 	return n;
 }
 
-int deleteNeighbour(struct neighbour *neigh){
+int deleteNeighbour(struct neighbour *neigh)
+{
 
-	list_remove(neighbours_list,neigh);
-return 1;
+	list_remove(neighbours_list, neigh);
+	return 1;
+}
+
+int getNumNeighbours()
+{
+	struct neighbour *n;
+	int number = 0;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+		number++;
+	}
+
+	return number;
+}
+
+int getNumLPDevices()
+{
+	struct neighbour *n;
+	int number = 0;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+		if(n->isLPD == 1)
+			number++;
+	}
+
+	return number;
+}
+
+int getNumCluster()
+{
+	struct neighbour *n;
+	int number = 0;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+		if(n->distance <= (calcDistance(dBmTomW(0),dBmTomW(-100) * 0.8)))
+			number++;
+	}
+
+	return number;
+}
+
+float getAvgRSSI()
+{
+	struct neighbour *n;
+	int number = 0;
+	float RSSI = 0;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+			number++;
+			RSSI = RSSI + n->last_rssi;
+	}
+
+	return RSSI/number;
 }
 
 PROCESS_THREAD(dewi_neighbourtable_process, ev, data)
 {
-	PROCESS_BEGIN();
-	etimer_set(&NEIGH_timer, NEIGH_INTERVAL);
-	etimer_set(&NEIGH_Print, NEIGH_PRINT);
-	printf("[NEIGH]: Neighbour table, start ***\n");
-	while (1)
-	{
-
-		PROCESS_YIELD()
+	PROCESS_BEGIN()
 		;
-		if (ev == PROCESS_EVENT_TIMER){
-			if(etimer_expired(&NEIGH_timer)){
-			struct neighbour *n;
-			struct asn_t cur_asn = tsch_get_current_asn();
-			printf("[NEIGH]: Neighbour table, check for inactive members ***\n");
-			for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+		etimer_set(&NEIGH_timer, NEIGH_INTERVAL);
+		etimer_set(&NEIGH_Print, NEIGH_PRINT);
+		printf("[NEIGH]: Neighbour table, start ***\n");
+		while (1)
+		{
+
+			PROCESS_YIELD()
+			;
+			if (ev == PROCESS_EVENT_TIMER)
 			{
-
-				/* We break out of the loop if the address of the neighbor matches
-				 *
-				 *
-				 the address of the neighbor from which we received this
-				 broadcast message. */
-
-				if(ASN_DIFF(cur_asn,n->last_asn) > 3000)
+				if (etimer_expired(&NEIGH_timer))
 				{
-					printf("Remove Neighbour: 0x%x, because of inactivity\n",n->addr.u16);
-					deleteNeighbour(n);
-					n = list_head(neighbours_list);
+					struct neighbour *n;
+					struct asn_t cur_asn = tsch_get_current_asn();
+					printf(
+							"[NEIGH]: Neighbour table, check for inactive members ***\n");
+					for (n = list_head(neighbours_list); n != NULL; n =
+							list_item_next(n))
+					{
+
+						/* We break out of the loop if the address of the neighbor matches
+						 *
+						 *
+						 the address of the neighbor from which we received this
+						 broadcast message. */
+
+						if (ASN_DIFF(cur_asn,n->last_asn) > 3000)
+						{
+							printf(
+									"Remove Neighbour: 0x%x, because of inactivity\n",
+									n->addr.u16);
+							deleteNeighbour(n);
+							n = list_head(neighbours_list);
+						}
+
+					}
+					etimer_reset(&NEIGH_timer);
+				} else if (etimer_expired(&NEIGH_Print))
+				{
+					printTable();
+					etimer_reset(&NEIGH_Print);
 				}
+			}
 
-			}
-			etimer_reset(&NEIGH_timer);
-			}
-			else if(etimer_expired(&NEIGH_Print)){
-				printTable();
-				etimer_reset(&NEIGH_Print);
-			}
 		}
-
-	}
 	PROCESS_END();
 
 }

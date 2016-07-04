@@ -57,6 +57,12 @@
 //};
 
 
+//CIDER CONFIG
+#define CONF_M1 0.5;
+#define CONF_M2 0.3;
+#define CONF_M3 0.15;
+#define CONF_M4 0.05;
+
 #ifndef DEBUG_PRINT
 #define DEBUG_PRINT 0
 #undef DEBUG
