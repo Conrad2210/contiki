@@ -51,7 +51,7 @@ struct BasePacket{
 struct CIDER_PACKET{
 		struct BasePacket base;
 		enum CIDERsubpackettype subType;
-		int8_t args[4];
+		float args[4];
 };
 struct RLL_PACKET{
 		struct BasePacket base;

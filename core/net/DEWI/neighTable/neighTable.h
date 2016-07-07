@@ -105,7 +105,7 @@ void addNeighbour(struct neighbour *neigh);
 struct neighbour *getNeighbour(linkaddr_t *addr);
 int checkIfNeighbourExist(linkaddr_t *addr);
 int updateNeighbour(struct neighbour *neigh);
-struct neighbour *initNeighbour();
+struct neighbour initNeighbour();
 int getNumNeighbours();
 int getNumLPDevices();
 int getNumCluster();
