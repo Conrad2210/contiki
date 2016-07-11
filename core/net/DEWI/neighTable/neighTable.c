@@ -57,15 +57,11 @@ void copyNeighbour(struct neighbour *n1, struct neighbour *n2)
 {
 	if (n2->addr.u16 != 0)
 		n1->addr = n2->addr;
-
 	if (n2->last_rssi != 0)
 		n1->last_rssi = n2->last_rssi;
 
 	if (n2->clusterDegree != 0)
 		n1->clusterDegree = n2->clusterDegree;
-
-	if (n2->distance != 0)
-		n1->distance = n2->distance;
 
 	if (n2->lpDegree != 0)
 		n1->lpDegree = n2->lpDegree;
@@ -186,7 +182,7 @@ void printTable()
 						"myCH: %d myCS: %d Parent: 0x%x Stage: %d Weight: %d\n",
 				n->addr.u16, n->last_rssi, n->last_asn.ms1b, n->last_asn.ls4b,
 				n->txPW, n->isLPD, n->nodeDegree, n->clusterDegree, n->lpDegree,
-				n->myCH, n->myCS, n->parent, n->stage, n->weight);
+				n->myCH, n->myCS, n->parent, n->stage, (int) n->weight);
 
 	}
 
@@ -212,7 +208,6 @@ struct neighbour initNeighbour()
 	struct neighbour n;
 	n.addr = linkaddr_null;
 	n.clusterDegree = 0;
-	n.distance = 0;
 	n.last_rssi = 0;
 	n.lpDegree = 0;
 	n.myCH = 0;
@@ -265,7 +260,7 @@ int getNumCluster()
 	int number = 0;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-		if (n->distance <= (calcDistance(dBmTomW(0), dBmTomW(-100) * 0.8)))
+		if (n->last_rssi >= -90 * 0.8)
 			number++;
 	}
 
@@ -276,16 +271,17 @@ float getAvgRSSI()
 {
 	struct neighbour *n;
 	int number = 0;
-	float RSSI = 0;
+	int16_t RSSI = 0;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
 		number++;
 
-		printf("[NEIGH]: RSSI: %u\n",RSSI);
 		RSSI = RSSI + n->last_rssi;
+		printf("[NEIGH]: RSSI: %d\n", RSSI);
 	}
+	float myFloat = (float) RSSI / (float) number;
 
-	return RSSI / (float)number;
+	return myFloat < 0 ? myFloat * -1 : myFloat;
 }
 
 PROCESS_THREAD(dewi_neighbourtable_process, ev, data)

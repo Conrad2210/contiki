@@ -19,4 +19,6 @@ float mWTodBm(float mW);
 
 float dBmTomW(float dBm);
 
+void ftoa(float n, char *res, int afterpoint);
+
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_LIB_UTIL_H_ */

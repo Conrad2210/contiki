@@ -35,7 +35,7 @@
  *
  * \author Conrad Dandelski <conrad.dandelski@mycit.ie>
  */
-
+#include "contiki.h"
 #include "cider.h"
 #include "neighTable.h"
 #define CIDER_INTERVAL       (CLOCK_SECOND * 15)
@@ -164,10 +164,11 @@ static void cider_packet_received(struct broadcast_conn *c,
 {
 
 	struct CIDER_PACKET *temp = packetbuf_dataptr();
+	int16_t tempRSSI;
 	radio_result_t rv = (int8_t) NETSTACK_RADIO.get_value(RADIO_PARAM_LAST_RSSI,
-			&temp->args[3]);
+			&tempRSSI);
 
-	printf("[CIDER]: Received CIDER Message, type: %u\n", temp->subType);
+	printf("[CIDER]: Received CIDER Message, type: %u RSSI: %d\n", temp->subType,tempRSSI);
 
 	struct neighbour n = initNeighbour();
 	clock_time_t tempTime;
@@ -176,11 +177,10 @@ static void cider_packet_received(struct broadcast_conn *c,
 
 		case PING:
 			n.addr = temp->base.src;
-			n.last_rssi = temp->args[3];
+			n.last_rssi = tempRSSI;
 			n.last_asn = tsch_get_current_asn();
 			n.txPW = getTxPowerInt(temp->args[0]);
 			n.isLPD = temp->args[1];
-			n.distance = calcDistance(dBmTomW(n.txPW), dBmTomW(n.last_rssi));
 			addNeighbour(&n);
 			tempTime = etimer_expiration_time(&CIDER_timer);
 			printf("[CIDER]: set time to %d \n ", tempTime);
@@ -194,7 +194,8 @@ static void cider_packet_received(struct broadcast_conn *c,
 			break;
 		case NEIGHBOUR_UPDATE:
 			n.addr = temp->base.src;
-			n.last_rssi = temp->args[3];
+			n.last_rssi = tempRSSI;
+			n.last_asn = tsch_get_current_asn();
 			n.nodeDegree = temp->args[0];
 			n.lpDegree = temp->args[1];
 			n.clusterDegree = temp->args[2];
@@ -209,7 +210,8 @@ static void cider_packet_received(struct broadcast_conn *c,
 			break;
 		case WEIGHT_UPDATE:
 			n.addr = temp->base.src;
-			n.last_rssi = temp->args[3];
+			n.last_rssi = tempRSSI;
+			n.last_asn = tsch_get_current_asn();
 			n.weight = temp->args[0];
 			addNeighbour(&n);
 			tempTime = etimer_expiration_time(&CIDER_timer);
@@ -308,8 +310,8 @@ void CIDER_calcWeight()
 			+ CIDER_M3 * (float) CIDER_LPD + CIDER_M4 * CIDER_AvgRSSI;
 
 
-	printf("[CIDER]:ND: %u; CD: %u; LPD: %u; AVGRSSI: %u; Weight: %u\n", CIDER_ND, CIDER_CD,
-			CIDER_LPD, CIDER_AvgRSSI,CIDER_WEIGHT);
+	printf("[CIDER]:ND: %d; CD: %d; LPD: %d; AVGRSSI: %d; Weight: %d\n", CIDER_ND, CIDER_CD,
+			CIDER_LPD, (int)CIDER_AvgRSSI,(int)CIDER_WEIGHT);
 }
 struct CIDER_PACKET createCIDERPacket()
 {
@@ -331,11 +333,10 @@ struct CIDER_PACKET createCIDERPacket()
 			radio_result_t rv;
 			rv = NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &chan);
 			CIDERPacket.args[0] = getTxPower8bit(chan);
-#ifdef LPDEVICE
+
+			printf("[CIDER]:LPDEVICE; %d\n", LPDEVICE);
 			CIDERPacket.args[1] = LPDEVICE;
-#else
-			CIDERPacket.args[1] = 0;
-#endif
+
 			CIDER_ping_sent = 1;
 			if(CIDER_ping_recvd == 1 && CIDER_ping_sent == 1)
 				CIDER_currentStep = NEIGHBOUR_UPDATE;

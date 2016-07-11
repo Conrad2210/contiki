@@ -72,10 +72,8 @@ struct neighbour {
   /* The ->last_rssi and ->last_lqi fields hold the Received Signal
      Strength Indicator (RSSI) and CC2420 Link Quality Indicator (LQI)
      values that are received for the incoming broadcast packets. */
-  int8_t last_rssi;
+  int16_t last_rssi;
 
-  /* The used transmit power and distance to the neighbour, based on RSSI */
-  uint8_t distance;
   int txPW;
 
   /* CIDER/RLL related values, cluster stage, indication if parent or cs, is low power device (LPD)*/
