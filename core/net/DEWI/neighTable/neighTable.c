@@ -48,30 +48,50 @@ static struct etimer NEIGH_timer, NEIGH_Print;
 MEMB(neighbours_memb, struct neighbour, MAX_NEIGHBOURS);
 LIST(neighbours_list);
 
-
 PROCESS(dewi_neighbourtable_process, "DEWI Neighbour Table PROCESS");
 
 AUTOSTART_PROCESSES();
 
-
-
-
+//n1 is exisitng neighbour and n2 is the new data
 void copyNeighbour(struct neighbour *n1, struct neighbour *n2)
 {
-	n1->addr = n2->addr;
-	n1->last_rssi = n2->last_rssi;
-	n1->clusterDegree = n2->clusterDegree;
-	n1->distance = n2->distance;
-	n1->lpDegree = n2->lpDegree;
-	n1->myCH = n2->myCH;
-	n1->myCS = n2->myCS;
-	n1->nodeDegree = n2->nodeDegree;
-	n1->parent = n2->parent;
-	n1->stage = n2->stage;
-	n1->txPW = n2->txPW;
-	n1->weight = n2->weight;
-	n1->last_asn = n2->last_asn;
-	n1->isLPD = n2->isLPD;
+	if (n2->addr.u16 != 0)
+		n1->addr = n2->addr;
+	if (n2->last_rssi != 0)
+		n1->last_rssi = n2->last_rssi;
+
+	if (n2->clusterDegree != 0)
+		n1->clusterDegree = n2->clusterDegree;
+
+	if (n2->lpDegree != 0)
+		n1->lpDegree = n2->lpDegree;
+
+	if (n2->myCH != 0)
+		n1->myCH = n2->myCH;
+
+	if (n2->myCS != 0)
+		n1->myCS = n2->myCS;
+
+	if (n2->nodeDegree != 0)
+		n1->nodeDegree = n2->nodeDegree;
+
+	if (n2->parent.u16 != 0)
+		n1->parent = n2->parent;
+
+	if (n2->stage != 0)
+		n1->stage = n2->stage;
+
+	if (n2->txPW != 0)
+		n1->txPW = n2->txPW;
+
+	if (n2->weight != 0)
+		n1->weight = n2->weight;
+
+	if (n2->last_asn.ls4b != 0)
+		n1->last_asn = n2->last_asn;
+
+	if (n2->isLPD != 0)
+		n1->isLPD = n2->isLPD;
 
 }
 
@@ -109,10 +129,10 @@ void addNeighbour(struct neighbour *neigh)
 
 struct neighbour *getNeighbour(linkaddr_t *addr)
 {
-	struct neighbour *n;
+	struct neighbour *n = NULL;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-
+		printf("From 0x%x; Neigh: 0x%x\n", addr->u16, n->addr.u16);
 		/* We break out of the loop if the address of the neighbor matches
 		 the address of the neighbor from which we received this
 		 broadcast message. */
@@ -161,8 +181,8 @@ void printTable()
 				"Neigh: 0x%x last RSSI: %ddBm last ASN: %x.%lx TxPower: %d dBm is LPD: %d ND: %d CD: %d LPD: %d "
 						"myCH: %d myCS: %d Parent: 0x%x Stage: %d Weight: %d\n",
 				n->addr.u16, n->last_rssi, n->last_asn.ms1b, n->last_asn.ls4b,
-				n->txPW,n->isLPD, n->nodeDegree, n->clusterDegree, n->lpDegree, n->myCH,
-				n->myCS, n->parent, n->stage, n->weight);
+				n->txPW, n->isLPD, n->nodeDegree, n->clusterDegree, n->lpDegree,
+				n->myCH, n->myCS, n->parent, n->stage, (int) n->weight);
 
 	}
 
@@ -183,23 +203,22 @@ void initNeighbourTable()
 	process_start(&dewi_neighbourtable_process, NULL);
 }
 
-struct neighbour *initNeighbour()
+struct neighbour initNeighbour()
 {
-	struct neighbour *n;
-	n->addr = linkaddr_null;
-	n->clusterDegree = 0;
-	n->distance = 0;
-	n->last_rssi = 0;
-	n->lpDegree = 0;
-	n->myCH = 0;
-	n->myCS = 0;
-	n->nodeDegree = 0;
-	n->parent = linkaddr_null;
-	n->stage = 0;
-	n->txPW = 0;
-	n->weight = 0.0;
-	n->isLPD = 0;
-	ASN_INIT(n->last_asn, 0, 0);
+	struct neighbour n;
+	n.addr = linkaddr_null;
+	n.clusterDegree = 0;
+	n.last_rssi = 0;
+	n.lpDegree = 0;
+	n.myCH = 0;
+	n.myCS = 0;
+	n.nodeDegree = 0;
+	n.parent = linkaddr_null;
+	n.stage = 0;
+	n.txPW = 0;
+	n.weight = 0.0;
+	n.isLPD = 0;
+	ASN_INIT(n.last_asn, 0, 0);
 	return n;
 }
 
@@ -228,7 +247,7 @@ int getNumLPDevices()
 	int number = 0;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-		if(n->isLPD == 1)
+		if (n->isLPD == 1)
 			number++;
 	}
 
@@ -241,7 +260,7 @@ int getNumCluster()
 	int number = 0;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-		if(n->distance <= (calcDistance(dBmTomW(0),dBmTomW(-100) * 0.8)))
+		if (n->last_rssi >= -90 * 0.8)
 			number++;
 	}
 
@@ -252,14 +271,17 @@ float getAvgRSSI()
 {
 	struct neighbour *n;
 	int number = 0;
-	float RSSI = 0;
+	int16_t RSSI = 0;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-			number++;
-			RSSI = RSSI + n->last_rssi;
-	}
+		number++;
 
-	return RSSI/number;
+		RSSI = RSSI + n->last_rssi;
+		printf("[NEIGH]: RSSI: %d\n", RSSI);
+	}
+	float myFloat = (float) RSSI / (float) number;
+
+	return myFloat < 0 ? myFloat * -1 : myFloat;
 }
 
 PROCESS_THREAD(dewi_neighbourtable_process, ev, data)
