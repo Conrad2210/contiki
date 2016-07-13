@@ -53,7 +53,7 @@ static void colorRecvd(struct broadcast_conn *c, const linkaddr_t *from)
 	uint32_t R, G, B;
 
 	uint32_t temp = *(uint32_t *) packetbuf_dataptr();
-	printf("*** Received %u bytes from %u:%u: '0x%08x'\n", packetbuf_datalen(), from->u8[0], from->u8[1], temp);
+	printf("*** Received %u bytes from %x:%x: '0x%08x'\n", packetbuf_datalen(), from->u8[0], from->u8[1], temp);
 	R = (int) (temp & 0x00ff0000) >> 19;
 	G = (int) (temp & 0x0000ff00) >> 11;
 	B = (int) (temp & 0x000000ff) >> 3;
@@ -72,7 +72,7 @@ static void brightnessRecvd(struct broadcast_conn *c, const linkaddr_t *from)
 {
 //	  leds_toggle(LEDS_ALL);
 	lastBRIGHTNESS = *(uint8_t *)packetbuf_dataptr();
-	printf("*** Received %u bytes from %u:%u: '0x%08x'\n", packetbuf_datalen(), from->u8[0], from->u8[1],lastBRIGHTNESS);
+	printf("*** Received %u bytes from %x:%x: '0x%08x'\n", packetbuf_datalen(), from->u8[0], from->u8[1],lastBRIGHTNESS);
 	i2c_single_send(0x39, (LED_BRIGHTNESS | lastBRIGHTNESS));
 //	uint32_t R, G, B;
 //	uint32_t temp = *(uint32_t *) packetbuf_dataptr();

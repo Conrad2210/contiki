@@ -38,8 +38,8 @@
 #ifndef PROJECT_CONF_H_
 #define PROJECT_CONF_H_
 
-#define COLOUR_CHANNEL     129
-#define BRIGHTNESS_CHANNEL     130
+#define COLOUR_CHANNEL     132
+#define BRIGHTNESS_CHANNEL     133
 #define NETSTACK_CONF_RDC     nullrdc_driver
 
 
