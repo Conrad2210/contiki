@@ -38,11 +38,13 @@
 #include "contiki.h"
 #include "cider.h"
 #include "neighTable.h"
+#include "dev/leds.h"
+#include "project-conf.h"
 #define CIDER_INTERVAL       (CLOCK_SECOND * 15)
 #define DEBUG DEBUG_PRINT
 
 uint8_t CIDER_isActive = 0;
-enum CIDERsubpackettype CIDER_currentStep = PING;
+enum CIDERsubpackettype CIDER_currentStep = PING,CIDER_nextStep = UNDEFINED, CIDER_lastStep = UNDEFINED;
 uint8_t CIDER_ND = 0, CIDER_LPD = 0, CIDER_CD = 0;
 float CIDER_AvgRSSI = 0;
 float CIDER_M1 = 0.5;
@@ -53,7 +55,6 @@ float CIDER_WEIGHT = 0;
 struct CIDER_PACKET createCCIDERPacket();
 static struct etimer CIDER_timer;
 static struct ctimer CIDER_send_timer;
-uint8_t CIDER_ping_recvd = 0, CIDER_ping_sent = 0;
 PROCESS(dewi_cider_process, "DEWI cider PROCESS");
 
 uint8_t getTxPower8bit(int tx)
@@ -189,7 +190,7 @@ static void cider_packet_received(struct broadcast_conn *c,
 				etimer_stop(&CIDER_timer);
 				etimer_set(&CIDER_timer, CIDER_INTERVAL + tempTime);
 			}
-			CIDER_ping_recvd = 1;
+			CIDER_nextStep = NEIGHBOUR_UPDATE;
 			printTable();
 			break;
 		case NEIGHBOUR_UPDATE:
@@ -206,6 +207,7 @@ static void cider_packet_received(struct broadcast_conn *c,
 				etimer_stop(&CIDER_timer);
 				etimer_set(&CIDER_timer, CIDER_INTERVAL + tempTime);
 			}
+			CIDER_nextStep = WEIGHT_UPDATE;
 			printTable();
 			break;
 		case WEIGHT_UPDATE:
@@ -336,9 +338,8 @@ struct CIDER_PACKET createCIDERPacket()
 
 			printf("[CIDER]:LPDEVICE; %d\n", LPDEVICE);
 			CIDERPacket.args[1] = LPDEVICE;
-
-			CIDER_ping_sent = 1;
-			if(CIDER_ping_recvd == 1 && CIDER_ping_sent == 1)
+			CIDER_lastStep = CIDER_currentStep;
+			if(CIDER_lastStep == PING && CIDER_nextStep == NEIGHBOUR_UPDATE)
 				CIDER_currentStep = NEIGHBOUR_UPDATE;
 			break;
 		case NEIGHBOUR_UPDATE:
@@ -352,7 +353,9 @@ struct CIDER_PACKET createCIDERPacket()
 			CIDERPacket.args[0] = getNumNeighbours();
 			CIDERPacket.args[1] = getNumLPDevices();
 			CIDERPacket.args[2] = getNumCluster();
-			CIDER_currentStep = WEIGHT_UPDATE;
+			CIDER_lastStep = CIDER_currentStep;
+			if(CIDER_lastStep == NEIGHBOUR_UPDATE && CIDER_nextStep == WEIGHT_UPDATE)
+				CIDER_currentStep = WEIGHT_UPDATE;
 			break;
 		case WEIGHT_UPDATE:
 
@@ -363,9 +366,17 @@ struct CIDER_PACKET createCIDERPacket()
 			CIDERPacket.base.type = CIDER;
 			CIDERPacket.subType = WEIGHT_UPDATE;
 			CIDERPacket.args[0] = CIDER_WEIGHT;
-			CIDER_currentStep = WEIGHT_UPDATE;
+			if(CIDER_lastStep == WEIGHT_UPDATE && CIDER_nextStep == CH_COMPETITION)
+				CIDER_currentStep = CH_COMPETITION;
 			break;
 		case CH_COMPETITION:
+			printf("[CIDER]:Create CIDER CH Competition\n");
+			CIDERPacket.base.dst = tsch_broadcast_address;
+			CIDERPacket.base.src = linkaddr_node_addr;
+			CIDERPacket.base.type = CIDER;
+			CIDERPacket.subType = CH_COMPETITION;
+//			if(CIDER_lastStep == CH_COMPETITION && CIDER_nextStep == CH_ADVERT)
+//				CIDER_currentStep = CH_ADVERT;
 			break;
 		case CH_ADVERT:
 			break;
@@ -393,6 +404,44 @@ void sendCIDERPacket()
 	broadcast_send(&cider_bc);
 }
 
+void updateStatusLED(){
+	switch (CIDER_currentStep)
+		{
+			case PING: //PING message
+				leds_off(LEDS_WHITE);
+				leds_on(LEDS_RED);
+				break;
+			case NEIGHBOUR_UPDATE:
+				leds_off(LEDS_WHITE);
+				leds_on(LEDS_PURPLE);
+				break;
+			case WEIGHT_UPDATE:
+				leds_off(LEDS_WHITE);
+				leds_on(LEDS_YELLOW);
+				break;
+			case CH_COMPETITION:
+				leds_off(LEDS_WHITE);
+				leds_on(LEDS_BLUE);
+				break;
+			case CH_ADVERT:
+				leds_off(LEDS_WHITE);
+				leds_on(LEDS_WHITE);
+				break;
+			case LP_PING:
+				leds_off(LEDS_WHITE);
+				leds_on(LEDS_LIGHT_BLUE);
+				break;
+			case COVERAGE_UPDATE:
+				leds_off(LEDS_WHITE);
+				leds_on(LEDS_RED);
+				break;
+
+			default:
+				//do nothing
+				break;
+		}
+}
+
 PROCESS_THREAD(dewi_cider_process, ev, data)
 {
 	uint16_t msgDelay;
@@ -418,6 +467,8 @@ PROCESS_THREAD(dewi_cider_process, ev, data)
 						tsch_get_current_asn());
 				ctimer_set(&CIDER_send_timer, delay, sendCIDERPacket,
 				NULL);
+				updateStatusLED();
+
 
 			}
 		}

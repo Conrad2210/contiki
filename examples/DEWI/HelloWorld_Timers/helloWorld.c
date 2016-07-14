@@ -63,11 +63,11 @@ void config_timer(void){
 	REG(GPT_1_BASE + GPTIMER_TAMR) |= GPTIMER_TAMR_TAMR_PERIODIC;	//periodic mode
 	REG(GPT_1_BASE + GPTIMER_TAMR) |= GPTIMER_TAMR_TASNAPS;		//capture the value of the free-running timer at time-out
 	REG(GPT_1_BASE + GPTIMER_TAMR) |= GPTIMER_TAMR_TACDIR;		//counting up
-	REG(GPT_1_BASE + GPTIMER_TAILR) = clock;					//interval load	16.000.000
+	REG(GPT_1_BASE + GPTIMER_TAILR) = 16000000;					//interval load	16.000.000
 	REG(GPT_1_BASE + GPTIMER_IMR) |= GPTIMER_IMR_TATOIM;			//interrupt time out mode
 	
 	//Interrupt Vector
-	nvic_interrupt_enable(NVIC_INT_GPTIMER_1A);
+	//nvic_interrupt_enable(NVIC_INT_GPTIMER_1A);
 	
 	REG(GPT_1_BASE + GPTIMER_CTL) |= GPTIMER_CTL_TAEN;			//enable timer
 	
@@ -84,8 +84,8 @@ PROCESS_THREAD(helloWorld, ev, data)
 	//Values
 	clock = sys_ctrl_get_sys_clock();
 	flag = REG(GPT_1_BASE + GPTIMER_RIS) & GPTIMER_RIS_TATORIS;
-	timer = (REG(GPT_1_BASE + GPTIMER_TAV));	
-	interval = REG(GPT_1_BASE + GPTIMER_TAILR);	
+	timer = (REG(GPT_1_BASE + GPTIMER_TAV));
+	interval = REG(GPT_1_BASE + GPTIMER_TAILR);
 	
 	nvic_init();
 	
@@ -94,15 +94,15 @@ PROCESS_THREAD(helloWorld, ev, data)
 	PROCESS_BEGIN();
 	
 
-	/*while(1){
+	while(1){
 		//Update values
 		flag = REG(GPT_1_BASE + GPTIMER_RIS) & GPTIMER_RIS_TATORIS;
 		timer = (REG(GPT_1_BASE + GPTIMER_TAV));
-		
+
 		if (flag || timer == interval){
 			gptimer_1a_isr();
 		}
-	}*/
+	}
 
 	PROCESS_END();
 }

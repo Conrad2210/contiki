@@ -148,7 +148,7 @@ void(*const vectors[])(void) =
   default_handler,            /* 34 Watchdog timer, timer 0 */
   default_handler,            /* 35 Timer 0 subtimer A */
   default_handler,            /* 36 Timer 0 subtimer B */
-  gptimer_1a_isr,            	/* 37 Timer 1 subtimer A */
+  default_handler,            	/* 37 Timer 1 subtimer A */
   default_handler,            /* 38 Timer 1 subtimer B */
   default_handler,            /* 39 Timer 2 subtimer A */
   default_handler,            /* 40 Timer 2 subtimer B */

@@ -179,10 +179,10 @@ void printTable()
 	{
 		printf(
 				"Neigh: 0x%x last RSSI: %ddBm last ASN: %x.%lx TxPower: %d dBm is LPD: %d ND: %d CD: %d LPD: %d "
-						"myCH: %d myCS: %d Parent: 0x%x Stage: %d Weight: %d\n",
+						"myCH: %d myCS: %d Parent: 0x%x Stage: %d Weight: %d \n",
 				n->addr.u16, n->last_rssi, n->last_asn.ms1b, n->last_asn.ls4b,
 				n->txPW, n->isLPD, n->nodeDegree, n->clusterDegree, n->lpDegree,
-				n->myCH, n->myCS, n->parent, n->stage, (int) n->weight);
+				n->myCH, n->myCS, n->parent, n->stage, n->weight);
 
 	}
 
