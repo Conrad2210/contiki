@@ -40,8 +40,6 @@
 
 #define COLOUR_CHANNEL     129
 #define BRIGHTNESS_CHANNEL     130
-#define ADDRMasterSlave_CHANNEL	131
-#define BROADCAST_CHANNEL	132
 #define NETSTACK_CONF_RDC     nullrdc_driver
 
 
