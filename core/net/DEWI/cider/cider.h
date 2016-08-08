@@ -57,6 +57,13 @@
 #include <stdio.h>
 #include <stdint.h>
 
+
+
+void CIDER_setLPD(uint8_t is);
+uint8_t CIDER_getLPD();
+
 int CIDER_getIsActive();
 int CIDER_notify();
+void CIDER_reset();
+
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_CIDER_CIDER_H_ */

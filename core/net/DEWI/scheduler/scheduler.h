@@ -67,4 +67,7 @@ int initScheduler();
 
 void scheduleMessage(int timeslots, void* callback);
 
+void scheduler_reset();
+
+
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_SCHEDULER_SCHEDULER_H_ */

@@ -212,3 +212,12 @@ void scheduleMessage(int timeslots, void* callback){
 printf("[SCHEDULER]: Schedule msg in: %d timeslots, callback: %u",timeslots,callback);
 
 }
+
+void scheduler_reset(){
+	etimer_stop(&scheduleUpdate);
+	isCoord = 0;
+	activeSchedule = -1;
+	clearSchedule();
+	process_exit(&dewi_scheduler_node_process);
+	process_exit(&dewi_scheduler_coord_process);
+}

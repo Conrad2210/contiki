@@ -95,9 +95,10 @@ void copyNeighbour(struct neighbour *n1, struct neighbour *n2)
 
 }
 
-void addNeighbour(struct neighbour *neigh)
+uint8_t addNeighbour(struct neighbour *neigh)
 {
 	struct neighbour *n;
+	uint8_t newNeigh = 1;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
 
@@ -106,6 +107,11 @@ void addNeighbour(struct neighbour *neigh)
 		 broadcast message. */
 		if (linkaddr_cmp(&n->addr, &neigh->addr) == 1)
 		{
+			if(n->stage >= neigh->stage)
+			{
+				newNeigh = 0;
+
+			}
 			break;
 		}
 	}
@@ -119,12 +125,13 @@ void addNeighbour(struct neighbour *neigh)
 		 for now. */
 		if (n == NULL)
 		{
-			return;
+			return newNeigh;
 		}
 	}
 	copyNeighbour(n, neigh);
 
 	list_add(neighbours_list, n);
+	return newNeigh;
 }
 
 struct neighbour *getNeighbour(linkaddr_t *addr)
@@ -132,7 +139,6 @@ struct neighbour *getNeighbour(linkaddr_t *addr)
 	struct neighbour *n = NULL;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-		printf("From 0x%x; Neigh: 0x%x\n", addr->u16, n->addr.u16);
 		/* We break out of the loop if the address of the neighbor matches
 		 the address of the neighbor from which we received this
 		 broadcast message. */
@@ -173,13 +179,13 @@ void printTable()
 {
 	struct neighbour *n;
 	printf("\n");
-	printf("**** Print Neighbour Table for Node: 0x%x\n",
+	printf("**** Print Neighbour Table for Node: 0x%x \n",
 			linkaddr_node_addr.u16);
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
 		printf(
 				"Neigh: 0x%x last RSSI: %ddBm last ASN: %x.%lx TxPower: %d dBm is LPD: %d ND: %d CD: %d LPD: %d "
-						"myCH: %d myCS: %d Parent: 0x%x Stage: %d Weight: %d \n",
+						"myCH: %d myCS: %d Parent: 0x%4x Stage: %d Weight: %d \n",
 				n->addr.u16, n->last_rssi, n->last_asn.ms1b, n->last_asn.ls4b,
 				n->txPW, n->isLPD, n->nodeDegree, n->clusterDegree, n->lpDegree,
 				n->myCH, n->myCS, n->parent, n->stage, n->weight);
@@ -191,9 +197,6 @@ void printTable()
 
 void initNeighbourTable()
 {
-#if DEBUG
-	printf("[NEIGH]: Init Neighbourtable\n");
-#endif
 	/* This MEMB() definition defines a memory pool from which we allocate
 	 neighbor entries. */
 
@@ -216,7 +219,7 @@ struct neighbour initNeighbour()
 	n.parent = linkaddr_null;
 	n.stage = 0;
 	n.txPW = 0;
-	n.weight = 0.0;
+	n.weight = 0;
 	n.isLPD = 0;
 	ASN_INIT(n.last_asn, 0, 0);
 	return n;
@@ -277,11 +280,27 @@ float getAvgRSSI()
 		number++;
 
 		RSSI = RSSI + n->last_rssi;
-		printf("[NEIGH]: RSSI: %d\n", RSSI);
 	}
 	float myFloat = (float) RSSI / (float) number;
 
 	return myFloat < 0 ? myFloat * -1 : myFloat;
+}
+
+int getHighestWeight(){
+	int highestWeight = 0;
+	struct neighbour *n;
+
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+		printf(
+											"Highes weight> %d, current weight: %d\n",
+											highestWeight,n->weight);
+			if(n->weight > highestWeight){
+				highestWeight = n->weight;
+			}
+	}
+
+	return highestWeight;
 }
 
 PROCESS_THREAD(dewi_neighbourtable_process, ev, data)
@@ -290,7 +309,6 @@ PROCESS_THREAD(dewi_neighbourtable_process, ev, data)
 		;
 		etimer_set(&NEIGH_timer, NEIGH_INTERVAL);
 		etimer_set(&NEIGH_Print, NEIGH_PRINT);
-		printf("[NEIGH]: Neighbour table, start ***\n");
 		while (1)
 		{
 
@@ -302,8 +320,6 @@ PROCESS_THREAD(dewi_neighbourtable_process, ev, data)
 				{
 					struct neighbour *n;
 					struct asn_t cur_asn = tsch_get_current_asn();
-					printf(
-							"[NEIGH]: Neighbour table, check for inactive members ***\n");
 					for (n = list_head(neighbours_list); n != NULL; n =
 							list_item_next(n))
 					{
@@ -335,4 +351,14 @@ PROCESS_THREAD(dewi_neighbourtable_process, ev, data)
 		}
 	PROCESS_END();
 
+}
+
+void neighbourTable_reset()
+{
+	process_exit(&dewi_neighbourtable_process);
+	while(list_head(neighbours_list) != NULL)
+		list_remove(neighbours_list,list_head(neighbours_list));
+
+	etimer_stop(&NEIGH_timer);
+	etimer_stop(&NEIGH_Print);
 }

@@ -84,7 +84,7 @@ struct neighbour {
   uint16_t nodeDegree, clusterDegree, lpDegree;
 
   /* CIDER realted value: weight indication */
-  float weight;
+  int weight;
 
   /* last active ASN */
   struct asn_t last_asn;
@@ -99,7 +99,7 @@ struct neighbour {
 
 void initNeighbourTable();
 
-void addNeighbour(struct neighbour *neigh);
+uint8_t addNeighbour(struct neighbour *neigh);
 struct neighbour *getNeighbour(linkaddr_t *addr);
 int checkIfNeighbourExist(linkaddr_t *addr);
 int updateNeighbour(struct neighbour *neigh);
@@ -108,8 +108,10 @@ int getNumNeighbours();
 int getNumLPDevices();
 int getNumCluster();
 float getAvgRSSI();
+int getHighestWeight();
 
 
 void printTable();
+void neighbourTable_reset();
 
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_RLL_RLL_H_ */

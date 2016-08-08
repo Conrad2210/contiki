@@ -64,6 +64,8 @@ static struct etimer randomColorTimer;
 int counter = 0;
 uint8_t lastBRIGHTNESS = 0b00000001;
 
+void tsch_dewi_callback_joining_network(void);
+void tsch_dewi_callback_leaving_network(void);
 /*---------------------------------------------------------------------------*/
 
 //static struct rtimer rt;
@@ -105,17 +107,19 @@ PROCESS_THREAD(dewi_demo_start, ev, data)
 	tsch_set_coordinator(1);
 	setCoord(1);
 	initScheduler();
-
+	initNeighbourTable();
 #else
-	printf("Node: initialization start\n");
-	setCoord(0);
-	initScheduler();
+
+#endif
+
+#if LPDEVICE
+	CIDER_setLPD(1);
 #endif
 	radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, TXRADIOPOWER);
 	button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
 	BUTTON_PRESS_EVENT_INTERVAL);
 
-	initNeighbourTable();
+
 
 	//init RLL
 	//init CIDER
@@ -205,3 +209,17 @@ void uip_debug_lladdr_print()
 {
 }
 
+
+void tsch_dewi_callback_joining_network(void)
+{
+	printf("[APP]: joining network\n");
+	setCoord(0);
+	initScheduler();
+	initNeighbourTable();
+}
+void tsch_dewi_callback_leaving_network(void){
+	printf("[APP]: Leaving network\n");
+	scheduler_reset();
+	neighbourTable_reset();
+	CIDER_reset();
+}

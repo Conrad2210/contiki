@@ -37,7 +37,19 @@
  */
 
 enum packettype{SCHEDULE_UPDATE,CIDER,RLL};
-enum CIDERsubpackettype{UNDEFINED,KEEP_ALIVE, PING, NEIGHBOUR_UPDATE,WEIGHT_UPDATE,CH_COMPETITION,CH_ADVERT,LP_PING,COVERAGE_UPDATE};
+enum CIDERsubpackettype{UNDEFINED = 0,
+	KEEP_ALIVE = 1,
+	PING = 3,
+	NEIGHBOUR_UPDATE = 4,
+	WEIGHT_UPDATE = 5,
+	CH_COMPETITION = 6,
+	CH_ADVERT = 7,
+	LP_PING = 8,
+	COVERAGE_UPDATE = 9,
+	CH = 10,
+	CS = 11
+
+};
 enum RLLsubpackettype{RLL_PING};
 
 
@@ -51,7 +63,7 @@ struct BasePacket{
 struct CIDER_PACKET{
 		struct BasePacket base;
 		enum CIDERsubpackettype subType;
-		float args[4];
+		int args[4];
 };
 struct RLL_PACKET{
 		struct BasePacket base;
