@@ -582,39 +582,39 @@ void updateStatusLED()
 	switch (CIDER_currentStep)
 	{
 		case PING: //PING message
-			leds_off(LEDS_WHITE);
+			leds_off(LEDS_ALL);
 			leds_on(LEDS_RED);
 			break;
 		case NEIGHBOUR_UPDATE:
-			leds_off(LEDS_WHITE);
-			leds_on(LEDS_PURPLE);
+			leds_off(LEDS_ALL);
+			leds_on(LEDS_BLUE);
 			break;
 		case WEIGHT_UPDATE:
-			leds_off(LEDS_WHITE);
+			leds_off(LEDS_ALL);
 			leds_on(LEDS_YELLOW);
 			break;
 		case CH_COMPETITION:
-			leds_off(LEDS_WHITE);
+			leds_off(LEDS_ALL);
 			leds_on(LEDS_BLUE);
 			break;
 		case CH_ADVERT:
-			leds_off(LEDS_WHITE);
+			leds_off(LEDS_ALL);
 			leds_on(LEDS_GREEN);
 			break;
 		case LP_PING:
-			leds_off(LEDS_WHITE);
-			leds_on(LEDS_WHITE);
+			leds_off(LEDS_ALL);
+			leds_on(LEDS_ALL);
 			break;
 		case COVERAGE_UPDATE:
-			leds_off(LEDS_WHITE);
+			leds_off(LEDS_ALL);
 			leds_on(LEDS_RED);
 			break;
 		case CS:
-			leds_off(LEDS_WHITE);
+			leds_off(LEDS_ALL);
 			leds_on(LEDS_YELLOW);
 			break;
 		case CH:
-			leds_off(LEDS_WHITE);
+			leds_off(LEDS_ALL);
 			leds_on(LEDS_GREEN);
 			break;
 

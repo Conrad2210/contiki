@@ -1,11 +1,16 @@
 /*
- * test-tsch.c
+ * demonstrator-coordinator.c
  *
- *  Created on: Mar 30, 2016
+ *  Created on: Aug 10, 2016
  *      Author: user
  */
 
+#include "demonstrator.h"
+
+
 /*---------------------------------------------------------------------------*/
+
+
 #define BYTETOBINARYPATTERN "%d%d%d%d%d%d%d%d"
 #define BYTETOBINARY(byte)  \
   (byte & 0x80 ? 1 : 0), \
@@ -67,6 +72,7 @@ void printDEMOConfiguration()
 	printf("[DEMO]: TSCH SlotLength: %u\n", TSCH_CONF_DEFAULT_TIMESLOT_LENGTH);
 }
 
+
 PROCESS_THREAD(dewi_demo_start, ev, data)
 {
 	PROCESS_BEGIN()
@@ -76,19 +82,13 @@ PROCESS_THREAD(dewi_demo_start, ev, data)
 	printDEMOConfiguration();
 #endif
 
-#if ISCOORD
+
 	printf("Coordinator: initialization start\n");
 	tsch_set_coordinator(1);
 	setCoord(1);
 	initScheduler();
 	initNeighbourTable();
-#else
 
-#endif
-
-#if LPDEVICE
-	CIDER_setLPD(1);
-#endif
 	radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, TXRADIOPOWER);
 	//button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
 	//BUTTON_PRESS_EVENT_INTERVAL);

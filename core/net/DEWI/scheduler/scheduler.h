@@ -38,13 +38,13 @@
 #define DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_SCHEDULER_SCHEDULER_H_
 
 #include "contiki.h"
-#include "cpu.h"
+//#include "cpu.h"
 #include "sys/etimer.h"
 #include "sys/rtimer.h"
 #include "dev/leds.h"
 #include "dev/watchdog.h"
 #include "dev/serial-line.h"
-#include "dev/sys-ctrl.h"
+//#include "dev/sys-ctrl.h"
 #include "net/netstack.h"
 #include "net/rime/broadcast.h"
 #include "net/mac/tsch/tsch-schedule.h"
