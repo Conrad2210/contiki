@@ -86,6 +86,7 @@ PROCESS_THREAD(dewi_demo_start, ev, data)
 	printf("Coordinator: initialization start\n");
 	tsch_set_coordinator(1);
 	setCoord(1);
+	clock_wait(CLOCK_SECOND * 2);
 	initScheduler();
 	initNeighbourTable();
 

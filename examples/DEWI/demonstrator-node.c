@@ -64,9 +64,9 @@ PROCESS_THREAD(dewi_demo_start, ev, data)
 	PROCESS_BEGIN()
 	;
 
-#if DEBUG
-	printDEMOConfiguration();
-#endif
+//#if DEBUG
+//	printDEMOConfiguration();
+//#endif
 
 	radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, TXRADIOPOWER);
 	//button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,

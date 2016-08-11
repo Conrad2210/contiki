@@ -270,6 +270,17 @@ int getNumCluster()
 	return number;
 }
 
+
+void updateNeighListCS(){
+	struct neighbour *n;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+		if (n->last_rssi >= -90 * 0.8)
+			n->myCS = 1;
+	}
+
+}
+
 float getAvgRSSI()
 {
 	struct neighbour *n;
@@ -330,7 +341,7 @@ PROCESS_THREAD(dewi_neighbourtable_process, ev, data)
 						 the address of the neighbor from which we received this
 						 broadcast message. */
 
-						if (ASN_DIFF(cur_asn,n->last_asn) > 3000)
+						if (ASN_DIFF(cur_asn,n->last_asn) > 3000 && n->myCS == 0)
 						{
 							printf(
 									"Remove Neighbour: 0x%x, because of inactivity\n",

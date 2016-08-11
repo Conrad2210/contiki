@@ -193,7 +193,7 @@ int initScheduler()
 #if DEBUG
 		printf("[SCHEDULER]: Start Scheduler for coordinator\n");
 #endif
-		//if satrtup set CIDER active
+		//if startup set CIDER active
 		CIDER_notify();
 		process_start(&dewi_scheduler_coord_process, NULL);
 

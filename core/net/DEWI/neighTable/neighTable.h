@@ -109,6 +109,7 @@ int getNumLPDevices();
 int getNumCluster();
 float getAvgRSSI();
 int getHighestWeight();
+void updateNeighListCS();
 
 
 void printTable();
