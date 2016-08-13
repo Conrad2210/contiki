@@ -68,7 +68,7 @@ struct CIDER_PACKET{
 struct CIDER_PACKET_CH{
 	struct BasePacket base;
 	enum CIDERsubpackettype subType;
-	uint16_t address[20];
+	uint16_t address[73];
 	uint16_t nextCH;
 };
 struct RLL_PACKET{

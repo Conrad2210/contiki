@@ -45,6 +45,7 @@
 
 uint8_t CIDER_isActive = 0;
 uint8_t isLPD = 0;
+uint8_t stageCounter =0;
 enum CIDERsubpackettype CIDER_currentStep = PING, CIDER_nextStep = UNDEFINED,
 		CIDER_lastStep = UNDEFINED;
 uint8_t CIDER_ND = 0, CIDER_LPD = 0, CIDER_CD = 0;
@@ -448,8 +449,12 @@ struct CIDER_PACKET createCIDERPacket() {
 		CIDERPacket.args[2] = getNumCluster();
 		CIDER_lastStep = CIDER_currentStep;
 		if (CIDER_lastStep == NEIGHBOUR_UPDATE
-				&& CIDER_nextStep >= WEIGHT_UPDATE)
+				&& CIDER_nextStep >= WEIGHT_UPDATE || stageCounter == 5)
+		{
 			CIDER_currentStep = WEIGHT_UPDATE;
+			stageCounter = 0;
+		}else
+			stageCounter++;
 		PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
 			;
 			etimer_set(&CIDER_timer, CIDER_INTERVAL);
@@ -469,8 +474,12 @@ struct CIDER_PACKET createCIDERPacket() {
 		CIDERPacket.args[2] = getNumLPDevices();
 		CIDERPacket.args[3] = getNumCluster();
 		CIDER_lastStep = CIDER_currentStep;
-		if (CIDER_lastStep == WEIGHT_UPDATE && CIDER_nextStep >= CH_COMPETITION)
+		if (CIDER_lastStep == WEIGHT_UPDATE && CIDER_nextStep >= CH_COMPETITION  || stageCounter == 5)
+		{
 			CIDER_currentStep = CH_COMPETITION;
+			stageCounter = 0;
+		}else
+			stageCounter++;
 		PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
 			;
 			etimer_set(&CIDER_timer, CIDER_INTERVAL);
@@ -545,7 +554,7 @@ struct CIDER_PACKET_CH  createCHPacket(){
 	CIDERPacket.base.src = linkaddr_node_addr;
 	CIDERPacket.base.type = CIDER;
 	CIDERPacket.subType = CH;
-
+	printf("[CIDER]: CIDER_PACKET_CH size %u\n",sizeof(struct CIDER_PACKET_CH));
 	CIDER_lastStep = CIDER_currentStep;
 	CIDER_currentStep = CH;
 	PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
