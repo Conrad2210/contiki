@@ -253,32 +253,25 @@ static void cider_packet_received(struct broadcast_conn *c,
 
 		printTable();
 		break;
-	case CH_ADVERT:
-		n.addr = temp->base.src;
-		n.last_rssi = tempRSSI;
-		n.last_asn = tsch_get_current_asn();
-		n.parent = temp->base.src;
-		n.myCH = 1;
-		n.myCS = 0;
-		n.stage = CH;
-		newNeigh = addNeighbour(&n);
-
-		CIDER_nextStep = CS;
-		CIDER_currentStep = CS;
-		CIDER_lastStep = CS;
-		printTable();
-		updateStatusLED();
-		break;
 	case CH:
 		n.addr = temp->base.src;
 		n.last_rssi = tempRSSI;
 		n.last_asn = tsch_get_current_asn();
 		n.parent = temp->base.src;
-		n.myCH = 1;
 		n.myCS = 0;
 		n.stage = CH;
-		newNeigh = addNeighbour(&n);
+		int i;
+		for(i = 1; i < 45; i++)
+		{
+			printf("[CIDER]: Address: %u\n",temp->args[i]);
+			if(temp->args[i] == linkaddr_node_addr.u16)
+			{
+				printf("[CIDER]: Is my CH: %u\n",temp->args[i]);
+				n.myCH = 1;
+			}
+		}
 
+		newNeigh = addNeighbour(&n);
 		CIDER_nextStep = CS;
 		CIDER_currentStep = CS;
 		CIDER_lastStep = CS;
@@ -497,26 +490,31 @@ struct CIDER_PACKET createCIDERPacket() {
 			CIDERPacket.subType = CH_COMPETITION;
 			CIDERPacket.args[0] = CIDER_WEIGHT;
 			CIDER_lastStep = CIDER_currentStep;
-			CIDER_currentStep = CH_ADVERT;
+			CIDER_currentStep = CH;
 			PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
 				;
 				etimer_set(&CIDER_timer, CIDER_INTERVAL);
 				PROCESS_CONTEXT_END(&dewi_cider_process);
 		}
 		break;
-	case CH_ADVERT:
-		printf("[CIDER]:Create CIDER CH Advert\n");
-		printf("[CIDER]:I'm a CH\n");
+	case CH:
 		CIDERPacket.base.dst = tsch_broadcast_address;
-		CIDERPacket.base.src = linkaddr_node_addr;
-		CIDERPacket.base.type = CIDER;
-		CIDERPacket.subType = CH_ADVERT;
-		CIDERPacket.args[0] = CIDER_WEIGHT;
-		CIDER_lastStep = CIDER_currentStep;
-		updateMyCluster();
+			CIDERPacket.base.src = linkaddr_node_addr;
+			CIDERPacket.base.type = CIDER;
+			CIDERPacket.subType = CH;
+			int i;
+			for(i = 0; i < 45; i++)
+				CIDERPacket.args[i] = 0;
+
+			updateNeighListCS(&CIDERPacket.args,45);
+			CIDER_lastStep = CIDER_currentStep;
 			CIDER_currentStep = CH;
-		etimer_set(&CIDER_timer, CIDER_INTERVAL);
-		updateStatusLED();
+			PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
+				;
+				etimer_set(&CIDER_timer, CIDER_INTERVAL);
+				PROCESS_CONTEXT_END(&dewi_cider_process)
+			;
+
 		break;
 	case LP_PING:
 		printf("[CIDER]:Create CIDER LP PING MESSAGE\n");
@@ -542,45 +540,24 @@ struct CIDER_PACKET createCIDERPacket() {
 		break;
 	}
 
+	printf("[CIDER]: CIDER_PACKET size %u\n",sizeof(struct CIDER_PACKET));
 	return CIDERPacket;
 
 }
 
-struct CIDER_PACKET_CH  createCHPacket(){
-	struct CIDER_PACKET_CH CIDERPacket;
-	printf("[CIDER]:Create CIDER CH\n");
 
-	CIDERPacket.base.dst = tsch_broadcast_address;
-	CIDERPacket.base.src = linkaddr_node_addr;
-	CIDERPacket.base.type = CIDER;
-	CIDERPacket.subType = CH;
-	printf("[CIDER]: CIDER_PACKET_CH size %u\n",sizeof(struct CIDER_PACKET_CH));
-	CIDER_lastStep = CIDER_currentStep;
-	CIDER_currentStep = CH;
-	PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
-		;
-		etimer_set(&CIDER_timer, CIDER_INTERVAL);
-		PROCESS_CONTEXT_END(&dewi_cider_process)
-	;
-
-		return CIDERPacket;
-}
 
 void sendCIDERPacket() {
+	struct CIDER_PACKET CIDERPacket;
+	CIDERPacket = createCIDERPacket();
+	packetbuf_copyfrom(&CIDERPacket, sizeof(struct CIDER_PACKET));
 
-	if (CIDER_currentStep == CH) {
-		struct CIDER_PACKET_CH CIDERPacket;
-		CIDERPacket = createCHPacket();
-		packetbuf_copyfrom(&CIDERPacket, sizeof(struct CIDER_PACKET_CH));
-		packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
-		packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, 0);
-
-	} else {
-
-		struct CIDER_PACKET CIDERPacket;
-		CIDERPacket = createCIDERPacket();
-		packetbuf_copyfrom(&CIDERPacket, sizeof(struct CIDER_PACKET));
-	}
+//	if (CIDER_currentStep == CH) {
+//
+//		packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
+//		packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, 0);
+//
+//	}
 	broadcast_send(&cider_bc);
 }
 
@@ -601,10 +578,6 @@ void updateStatusLED() {
 	case CH_COMPETITION:
 		leds_off(LEDS_ALL);
 		leds_on(LEDS_BLUE);
-		break;
-	case CH_ADVERT:
-		leds_off(LEDS_ALL);
-		leds_on(LEDS_GREEN);
 		break;
 	case LP_PING:
 		leds_off(LEDS_ALL);

@@ -271,12 +271,18 @@ int getNumCluster()
 }
 
 
-void updateNeighListCS(){
+void updateNeighListCS(uint16_t *array,int size){
 	struct neighbour *n;
+	int i = 1;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
 		if (n->last_rssi >= -90 * 0.8)
+		{
 			n->myCS = 1;
+			array[i] = n->addr.u16;
+			if(i<size-1)
+				i++;
+		}
 	}
 
 }

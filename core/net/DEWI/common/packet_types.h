@@ -59,17 +59,10 @@ struct BasePacket{
 	enum packettype type;
 };
 
-
 struct CIDER_PACKET{
 		struct BasePacket base;
 		enum CIDERsubpackettype subType;
-		int args[4];
-};
-struct CIDER_PACKET_CH{
-	struct BasePacket base;
-	enum CIDERsubpackettype subType;
-	uint16_t address[73];
-	uint16_t nextCH;
+		uint16_t args[45];
 };
 struct RLL_PACKET{
 		struct BasePacket base;
