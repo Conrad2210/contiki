@@ -36,7 +36,7 @@
  * \author Conrad Dandelski <conrad.dandelski@mycit.ie>
  */
 
-enum packettype{SCHEDULE_UPDATE,CIDER,RLL};
+enum packettype{SCHEDULE_UPDATE,CIDER,RLL,APP};
 enum CIDERsubpackettype{UNDEFINED = 0,
 	KEEP_ALIVE = 1,
 	PING = 3,
@@ -51,6 +51,7 @@ enum CIDERsubpackettype{UNDEFINED = 0,
 
 };
 enum RLLsubpackettype{RLL_PING};
+enum APPsubpackettype{RESET,COLOR};
 
 
 struct BasePacket{
@@ -76,4 +77,11 @@ struct scheduleUpdate_Packet{
 		uint8_t schedule; // 0 = CIDER, 1 = RLL
 
 };
+
+struct APP_PACKET{
+	struct BasePacket base;
+	enum APPsubpackettype subType;
+	int color;
+};
+
 

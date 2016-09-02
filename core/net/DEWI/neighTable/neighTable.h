@@ -109,9 +109,9 @@ int getNumLPDevices();
 int getNumCluster();
 float getAvgRSSI();
 int getHighestWeight();
-void updateNeighListCS(uint16_t *array,int size);
-
-
+void updateNeighListCS(uint16_t *array, int size,linkaddr_t CHaddress);
+uint8_t checkIfReadyForNextStep(int currentStep);
+void updateNeighboursCH(uint16_t addr, linkaddr_t CHaddress);
 void printTable();
 void neighbourTable_reset();
 

@@ -116,6 +116,13 @@ PROCESS_THREAD(simpleDemo_start, ev, data)
 		//turn all leds off
 		i2c_single_send(0x39, 0b00000000);
 
+		i2c_single_send(0x39, LED_RED | 0b00011111);
+			clock_delay_usec(50);
+			i2c_single_send(0x39, LED_GREEN | 0b00011111);
+			clock_delay_usec(50);
+			i2c_single_send(0x39, LED_BLUE | 0b00011111);
+			clock_delay_usec(50);
+
 		//lock delay
 		clock_delay_usec(50);
 
