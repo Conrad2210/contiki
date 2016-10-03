@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Zolertia <http://www.zolertia.com>
+ * Copyright (c) 2016, Zolertia - http://www.zolertia.com
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,75 +29,80 @@
  * This file is part of the Contiki operating system.
  *
  */
-/* -------------------------------------------------------------------------- */
+/*---------------------------------------------------------------------------*/
 /**
- * \addtogroup remote-rtcc
+ * \addtogroup zoul-sensors
  * @{
  *
- * Driver for the RE-Mote RTCC (Real Time Clock Calendar)
+ * \defgroup zoul-ac-dimmer AC light dimmer with zero-crossing driver
+ *
+ * Driver for an AC light dimmer with zero-crossing driver
  * @{
  *
  * \file
- * RTCC configuration file
- *
- * \author
- *
- * Antonio Lignan <alinan@zolertia.com>
- * Aitor Mejias <amejias@zolertia.com>
- * Toni Lozano <tlozano@zolertia.com>
+ * Header file for an AC light dimmer with zero-crossing driver
  */
-/* -------------------------------------------------------------------------- */
-#ifndef RTCC_CONFIG_H_
-#define RTCC_CONFIG_H_
-/* -------------------------------------------------------------------------- */
-#include "rtcc.h"
+/*---------------------------------------------------------------------------*/
+#ifndef AC_DIMMER_H_
+#define AC_DIMMER_H_
 /* -------------------------------------------------------------------------- */
 /**
- * \name RTCC configuration macros
+ * \name AC dimmer default pins, ports and interrupt vector
  * @{
  */
-#define RTCC_SET_DEFAULT_CONFIG       1
-#define RTCC_CLEAR_INT_MANUALLY       1
-#define RTCC_SET_AUTOCAL              1
+#ifdef DIMMER_SYNC_CONF_PIN
+#define DIMMER_SYNC_PIN        DIMMER_SYNC_CONF_PIN
+#else
+#define DIMMER_SYNC_PIN        5
+#endif
+#ifdef DIMMER_SYNC_CONF_PORT
+#define DIMMER_SYNC_PORT       DIMMER_SYNC_CONF_PORT
+#else
+#define DIMMER_SYNC_PORT       GPIO_A_NUM
+#endif
+#ifdef DIMMER_GATE_CONF_PIN
+#define DIMMER_GATE_PIN        DIMMER_GATE_CONF_PIN
+#else
+#define DIMMER_GATE_PIN        4
+#endif
+#ifdef DIMMER_GATE_CONF_PORT
+#define DIMMER_GATE_PORT       DIMMER_GATE_CONF_PORT
+#else
+#define DIMMER_GATE_PORT       GPIO_A_NUM
+#endif
+#ifdef DIMMER_CONF_INT_VECTOR
+#define DIMMER_INT_VECTOR      DIMMER_CONF_INT_VECTOR
+#else
+#define DIMMER_INT_VECTOR      NVIC_INT_GPIO_PORT_A
+#endif
 /** @} */
 /* -------------------------------------------------------------------------- */
 /**
- * \name RTCC default configuration (if enabled by RTCC_SET_DEFAULT_CONFIG)
+ * \name AC dimmer values
  * @{
  */
-/* Reset values from the Application Manual */
-#define RTCC_DEFAULT_STATUS           0x00
-#define RTCC_DEFAULT_CTRL1            0x11
-#define RTCC_DEFAULT_CTRL2            0x00
-#define RTCC_DEFAULT_INTMASK          0xE0
-#define RTCC_DEFAULT_SQW              0x26
-#define RTCC_DEFAULT_TIMER_CTRL       0x23
+#define DIMMER_DEFAULT_START_VALUE     50
+#define DIMMER_DEFAULT_GATE_PULSE_US   15
+#define DIMMER_DEFAULT_MIN_DIMM_VALUE  10
+#define DIMMER_DEFAULT_MAX_DIMM_VALUE  80
 /** @} */
 /* -------------------------------------------------------------------------- */
 /**
- * \name RTCC default configuration structure
+ * \name AC dimmer return types
  * @{
  */
-typedef struct ab080x_register_config {
-  uint8_t reg;
-  uint8_t val;
-} ab080x_register_config_t;
-/* -------------------------------------------------------------------------- */
-static const ab080x_register_config_t ab080x_default_setting[] =
-{
-  { (CONFIG_MAP_OFFSET + STATUS_ADDR), RTCC_DEFAULT_STATUS },
-  { (CONFIG_MAP_OFFSET + CTRL_1_ADDR), RTCC_DEFAULT_CTRL1 },
-  { (CONFIG_MAP_OFFSET + CTRL_2_ADDR), RTCC_DEFAULT_CTRL2 },
-  { (CONFIG_MAP_OFFSET + INT_MASK_ADDR), RTCC_DEFAULT_INTMASK },
-  { (CONFIG_MAP_OFFSET + SQW_ADDR), RTCC_DEFAULT_SQW },
-  { (CONFIG_MAP_OFFSET + TIMER_CONTROL_ADDR), RTCC_DEFAULT_TIMER_CTRL },
-};
+#define DIMMER_ERROR             (-1)
+#define DIMMER_SUCCESS           0x00
 /** @} */
 /* -------------------------------------------------------------------------- */
-#endif /* ifndef RTCC_CONFIG_H_ */
+#define AC_DIMMER_ACTUATOR "AC light dimmer zero-cross"
+/* -------------------------------------------------------------------------- */
+extern const struct sensors_sensor ac_dimmer;
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+#endif /* RELAY_H_ */
 /* -------------------------------------------------------------------------- */
 /**
  * @}
  * @}
  */
-
