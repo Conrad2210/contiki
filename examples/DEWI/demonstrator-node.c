@@ -171,10 +171,14 @@ void tsch_dewi_callback_joining_network(void)
 	setCoord(0);
 	initScheduler();
 	initNeighbourTable();
+	leds_off(LEDS_ALL);
+	leds_on(LEDS_GREEN);
 }
 void tsch_dewi_callback_leaving_network(void){
 	printf("[APP]: Leaving network\n");
 	scheduler_reset();
 	neighbourTable_reset();
 	CIDER_reset();
+	leds_off(LEDS_ALL);
+	leds_on(LEDS_RED);
 }

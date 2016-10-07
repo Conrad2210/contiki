@@ -45,6 +45,7 @@
 #include "net/mac/tsch/tsch.h"
 
 const linkaddr_t coordinator_addr =    { { 1, 0 } };
+const linkaddr_t coordinator_addr1 =    { { 2, 0 } };
 const linkaddr_t destination_addr =    { { 1, 0 } };
 
 /*---------------------------------------------------------------------------*/
@@ -74,7 +75,9 @@ PROCESS_THREAD(unicast_test_process, ev, data)
 {
   PROCESS_BEGIN();
 
-  tsch_set_coordinator(linkaddr_cmp(&coordinator_addr, &linkaddr_node_addr));
+  if(linkaddr_cmp(&coordinator_addr, &linkaddr_node_addr) || linkaddr_cmp(&coordinator_addr1, &linkaddr_node_addr))
+	  tsch_set_coordinator(linkaddr_cmp(&coordinator_addr, &linkaddr_node_addr));
+
   NETSTACK_MAC.on();
 
   unicast_open(&uc, 146, &unicast_callbacks);

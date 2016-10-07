@@ -91,7 +91,7 @@ uint16_t setSchedule(ScheduleInfo_t schedule)
 	tempHandle = tsch_schedule_add_slotframe(schedule.handle, schedule.slotframeLength);
 
 	int i = 0;
-	for (i = 0; i < MAX_NUM_LINKS; i++)
+	for (i = 0; i < schedule.slotframeLength; i++)
 	{
 		if (schedule.links[i].isActive == 1)
 		{
