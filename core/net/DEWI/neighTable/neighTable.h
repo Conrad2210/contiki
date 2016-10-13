@@ -115,4 +115,6 @@ void updateNeighboursCH(uint16_t addr, linkaddr_t CHaddress);
 void printTable();
 void neighbourTable_reset();
 
+int checkIfCHinNetwork();
+
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_RLL_RLL_H_ */

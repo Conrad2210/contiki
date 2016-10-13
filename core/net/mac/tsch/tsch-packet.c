@@ -40,6 +40,7 @@
 
 #include "contiki.h"
 #include "net/packetbuf.h"
+#include "net/DEWI/scheduler/scheduler.h"
 #include "net/mac/tsch/tsch.h"
 #include "net/mac/tsch/tsch-packet.h"
 #include "net/mac/tsch/tsch-private.h"
@@ -277,6 +278,13 @@ tsch_packet_create_eb(uint8_t *buf, int buf_size,
   }
 #endif /* TSCH_PACKET_EB_WITH_SLOTFRAME_AND_LINK */
 
+  /* DEWI SCHEDULE INFORMATION */
+#if WITH_DEWI
+  {
+	  ies.dewi_schedule = getActiveSchedule();
+  }
+#endif /* WITH_DEWI */
+
   /* First add header-IE termination IE to stipulate that next come payload IEs */
   if((ret = frame80215e_create_ie_header_list_termination_1(buf + curr_len, buf_size - curr_len, &ies)) == -1) {
     return -1;
@@ -313,6 +321,12 @@ tsch_packet_create_eb(uint8_t *buf, int buf_size,
   curr_len += ret;
 
   if((ret = frame80215e_create_ie_tsch_slotframe_and_link(buf + curr_len, buf_size - curr_len, &ies)) == -1) {
+    return -1;
+  }
+
+  curr_len += ret;
+
+  if((ret = frame80215e_create_ie_dewi_schedule(buf + curr_len, buf_size - curr_len, &ies)) == -1) {
     return -1;
   }
   curr_len += ret;

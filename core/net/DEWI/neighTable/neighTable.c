@@ -40,7 +40,7 @@
 
 static struct etimer NEIGH_timer, NEIGH_Print;
 #define NEIGH_INTERVAL       (CLOCK_SECOND * 600)
-#define NEIGH_PRINT       (CLOCK_SECOND * 60)
+#define NEIGH_PRINT       (CLOCK_SECOND * 10)
 
 #define MAX_NEIGHBOURS CONF_MAX_NEIGHBOURS
 #define DEBUG DEBUG_PRINT
@@ -208,19 +208,38 @@ int checkIfNeighbourExist(linkaddr_t *addr)
 		return 0;
 }
 
+int checkIfCHinNetwork(int currentStep){
+	struct neighbour *n;
+	int isCH = 0;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+
+		/* We break out of the loop if the address of the neighbor matches
+		 the address of the neighbor from which we received this
+		 broadcast message. */
+		if (n->stage == currentStep)
+		{
+			isCH = 1;
+			break;
+		}
+	}
+	return isCH;
+}
+
 void printTable()
 {
 	struct neighbour *n;
 	printf("\n");
 	printf("**** Print Neighbour Table for Node: 0x%x \n", linkaddr_node_addr.u16);
+	int i = 1;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
 		printf(
-				"Neigh: 0x%x last RSSI: %ddBm last ASN: %x.%lx TxPower: %d dBm is LPD: %d ND: %d CD: %d LPD: %d "
-						"myCH: %d myCS: %d Parent: 0x%4x Stage: %d Weight: %d \n", n->addr.u16,
+				"[%u] Neigh: 0x%x last RSSI: %ddBm last ASN: %x.%lx TxPower: %d dBm is LPD: %d ND: %d CD: %d LPD: %d "
+						"myCH: %d myCS: %d Parent: 0x%4x Stage: %d Weight: %d \n",i, n->addr.u16,
 				n->last_rssi, n->last_asn.ms1b, n->last_asn.ls4b, n->txPW, n->isLPD, n->nodeDegree,
 				n->clusterDegree, n->lpDegree, n->myCH, n->myCS, n->parent, n->stage, n->weight);
-
+		i++;
 	}
 
 	printf("\n");

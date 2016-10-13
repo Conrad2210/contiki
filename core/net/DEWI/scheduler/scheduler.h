@@ -60,8 +60,11 @@
 
 uint16_t setSchedule(ScheduleInfo_t schedule);
 void clearSchedule();
+void setActiveSchedule(uint8_t schedule);
+uint8_t getActiveSchedule();
 
 void setCoord(int isCoordinator);
+int getCoord();
 
 int initScheduler();
 

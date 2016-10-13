@@ -62,15 +62,15 @@ PROCESS_THREAD(dewi_demo_process, ev, data) {
 		;
 		printf("Coordinator: initialization start\n");
 
-		tsch_schedule_create_minimal();
-		tsch_schedule_print();
+		setCoord(1);
+		initScheduler();
 
 		tsch_set_coordinator(1);
 		clock_wait(CLOCK_SECOND * 2);
 		initNeighbourTable();
 
 		radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER,
-				TXRADIOPOWER);
+				-24);
 		button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
 		BUTTON_PRESS_EVENT_INTERVAL);
 
@@ -99,8 +99,7 @@ PROCESS_THREAD(dewi_demo_process, ev, data) {
 					}
 
 					if (button_press_counter == 5) {
-						setCoord(1);
-						initScheduler();
+						CIDER_start();
 					}
 				}
 			} else if (ev == PROCESS_EVENT_TIMER) {
@@ -149,6 +148,7 @@ void uip_debug_lladdr_print() {
 
 void tsch_dewi_callback_joining_network(void) {
 printf("[APP]: joining network\n");
+setCoord(1);
 initScheduler();
 initNeighbourTable();
 leds_on(LEDS_GREEN);
@@ -158,4 +158,9 @@ printf("[APP]: Leaving network\n");
 scheduler_reset();
 neighbourTable_reset();
 CIDER_reset();
+}
+void tsch_dewi_callback_ka(void){
+	printf("[APP]: Keep Alive sent\n");
+	leds_off(LEDS_ALL);
+	leds_on(LEDS_YELLOW);
 }

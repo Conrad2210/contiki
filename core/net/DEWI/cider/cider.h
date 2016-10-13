@@ -66,4 +66,6 @@ int CIDER_getIsActive();
 int CIDER_notify();
 void CIDER_reset();
 
+void CIDER_start();
+
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_CIDER_CIDER_H_ */

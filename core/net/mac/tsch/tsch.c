@@ -235,6 +235,9 @@ static void
 keepalive_send()
 {
   if(tsch_is_associated) {
+#ifdef TSCH_LINK_KA_SEND
+	  TSCH_LINK_KA_SEND();
+#endif
     struct tsch_neighbor *n = tsch_queue_get_time_source();
     /* Simply send an empty packet */
     packetbuf_clear();
@@ -312,6 +315,9 @@ eb_input(struct input_packet *current_input)
         PRINTF("TSCH:! ASN drifted by %ld, leaving the network\n", asn_diff);
         tsch_disassociate();
       }
+#if WITH_DEWI
+      setActiveSchedule(eb_ies.dewi_schedule);
+#endif
 
       if(eb_ies.ie_join_priority >= TSCH_MAX_JOIN_PRIORITY) {
         /* Join priority unacceptable. Leave network. */

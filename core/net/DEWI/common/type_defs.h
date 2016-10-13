@@ -41,7 +41,7 @@
 #ifndef DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_COMMON_TYPE_DEFS_H_
 #define DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_COMMON_TYPE_DEFS_H_
 
-#define MAX_NUM_LINKS 2
+#define MAX_NUM_LINKS 51
 
 typedef struct{
 		  /* MAC address of neighbor */

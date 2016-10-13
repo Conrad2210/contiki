@@ -91,6 +91,7 @@ PROCESS_BEGIN()
 	i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN, I2C_SCL_FAST_BUS_SPEED);
 	i2c_single_send(0x39, (LED_BRIGHTNESS | lastBRIGHTNESS));
 
+	radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, -24);
 
 	PROCESS_EXITHANDLER(netflood_close(&app_netflood))
 	netflood_open(&app_netflood, CLOCK_SECOND, NETFLOOD_CHANNEL_APP, &app_netflood_rx);
@@ -181,4 +182,10 @@ void tsch_dewi_callback_leaving_network(void){
 	CIDER_reset();
 	leds_off(LEDS_ALL);
 	leds_on(LEDS_RED);
+}
+
+void tsch_dewi_callback_ka(void){
+	printf("[APP]: Keep Alive sent\n");
+	leds_off(LEDS_ALL);
+	leds_on(LEDS_YELLOW);
 }

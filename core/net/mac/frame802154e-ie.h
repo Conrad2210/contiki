@@ -80,6 +80,7 @@ struct ieee802154_ies {
   /* We include and parse only the sequence len and list and omit unused fields */
   uint16_t ie_hopping_sequence_len;
   uint8_t ie_hopping_sequence_list[TSCH_HOPPING_SEQUENCE_MAX_LEN];
+  uint8_t dewi_schedule;
 };
 
 /** Insert various Information Elements **/
@@ -111,6 +112,9 @@ int frame80215e_create_ie_tsch_timeslot(uint8_t *buf, int len,
     struct ieee802154_ies *ies);
 /* MLME sub-IE. TSCH channel hopping sequence. Used in EBs: hopping sequence */
 int frame80215e_create_ie_tsch_channel_hopping_sequence(uint8_t *buf, int len,
+    struct ieee802154_ies *ies);
+/* MLME sub-IE. TSCH channel hopping sequence. Used in EBs: hopping sequence */
+int frame80215e_create_ie_dewi_schedule(uint8_t *buf, int len,
     struct ieee802154_ies *ies);
 
 /* Parse all Information Elements of a frame */

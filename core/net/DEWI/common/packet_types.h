@@ -47,8 +47,8 @@ enum CIDERsubpackettype{UNDEFINED = 0,
 	LP_PING = 8,
 	COVERAGE_UPDATE = 9,
 	CH = 10,
-	CS = 11
-
+	CS_PING = 11,
+	CS = 12,
 };
 enum RLLsubpackettype{RLL_PING};
 enum APPsubpackettype{RESET,COLOR};
