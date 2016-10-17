@@ -41,4 +41,24 @@
 
 
 
+#include "contiki.h"
+//#include "cpu.h"
+#include "sys/etimer.h"
+#include "sys/rtimer.h"
+#include "dev/leds.h"
+#include "dev/watchdog.h"
+#include "dev/serial-line.h"
+//#include "dev/sys-ctrl.h"
+#include "net/rime/netflood.h"l
+#include "net/netstack.h"
+#include "net/DEWI/common/packet_types.h"
+
+
+#include <stdio.h>
+#include <stdint.h>
+
+void sendRLLMessage(struct APP_PACKET dataPacket);
+void rllInit();
+
+
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_RLL_RLL_H_ */

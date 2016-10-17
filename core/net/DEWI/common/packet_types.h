@@ -51,7 +51,7 @@ enum CIDERsubpackettype{UNDEFINED = 0,
 	CS = 12,
 	CH_CHILD = 13,
 };
-enum RLLsubpackettype{RLL_PING};
+enum RLLsubpackettype{RLL_PING,RLL_DATA};
 enum APPsubpackettype{RESET,COLOR};
 
 
@@ -60,7 +60,9 @@ struct BasePacket{
 	linkaddr_t dst;
 	enum packettype type;
 };
-
+struct APP_PACKET{
+	enum APPsubpackettype subType;
+};
 struct CIDER_PACKET{
 		struct BasePacket base;
 		enum CIDERsubpackettype subType;
@@ -70,6 +72,7 @@ struct RLL_PACKET{
 		struct BasePacket base;
 		enum RLLsubpackettype subType;
 		uint8_t stage;
+		struct APP_PACKET appData;
 
 };
 
@@ -77,12 +80,6 @@ struct scheduleUpdate_Packet{
 		struct BasePacket base;
 		uint8_t schedule; // 0 = CIDER, 1 = RLL
 
-};
-
-struct APP_PACKET{
-	struct BasePacket base;
-	enum APPsubpackettype subType;
-	int color;
 };
 
 
