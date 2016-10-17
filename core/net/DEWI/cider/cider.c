@@ -54,13 +54,41 @@ float CIDER_M1 = 0.5;
 float CIDER_M2 = 0.3;
 float CIDER_M3 = 0.15;
 float CIDER_M4 = 0.05;
-int CIDER_WEIGHT = 0;
+
+#ifdef CONF_ND_min
+float CIDER_ND_min = CONF_ND_min
+#endif
+#ifdef CONF_ND_max
+float CIDER_ND_max = CONF_ND_max
+#endif
+#ifdef CONF_CD_min
+float CIDER_CD_min = CONF_CD_min
+#endif
+#ifdef CONF_CD_max
+float CIDER_CD_max = CONF_CD_max
+#endif
+#ifdef CONF_LP_min
+float CIDER_LP_min = CONF_LP_min
+#endif
+#ifdef CONF_LP_max
+float CIDER_LP_max = CONF_LP_max
+#endif
+#ifdef CONF_RSSI_min
+float CIDER_RSSI_min = CONF_RSSI_min
+#endif
+#ifdef CONF_RSSI_max
+float CIDER_RSSI_max = CONF_RSSI_max
+#endif
+
+int CIDER_UTILITY = 0;
 struct CIDER_PACKET createCCIDERPacket();
 static struct etimer CIDER_timer;
-static struct ctimer CIDER_send_timer;
+static struct ctimer CIDER_send_timer, CIDER_state_timer;
 int started = 0;
 uint16_t delayTimeslot = 0;
-linkaddr_t parent = {{0,0}};
+linkaddr_t parent = { { 0, 0 } };
+uint8_t csPingCounter = 0;
+clock_time_t printStatusInterval = CLOCK_SECOND * 10;
 
 PROCESS(dewi_cider_process, "DEWI cider PROCESS");
 
@@ -173,15 +201,13 @@ static void cider_packet_received(struct broadcast_conn *c,
 	radio_result_t rv = (int8_t) NETSTACK_RADIO.get_value(RADIO_PARAM_LAST_RSSI,
 			&tempRSSI);
 
-
-
 	struct neighbour n = initNeighbour();
 
 	switch (temp->subType) {
 
 	case PING:
 		printf("[CIDER]: Received CIDER Message, type: PING RSSI: %d\n",
-				 tempRSSI);
+				tempRSSI);
 		n.addr = temp->base.src;
 		n.last_rssi = tempRSSI;
 		n.last_asn = tsch_get_current_asn();
@@ -190,11 +216,11 @@ static void cider_packet_received(struct broadcast_conn *c,
 		n.stage = PING;
 		newNeigh = addNeighbour(&n);
 
-
 		break;
 	case NEIGHBOUR_UPDATE:
-		printf("[CIDER]: Received CIDER Message, type: NEIGHBOUR_UPDATE RSSI: %d\n",
-				 tempRSSI);
+		printf(
+				"[CIDER]: Received CIDER Message, type: NEIGHBOUR_UPDATE RSSI: %d\n",
+				tempRSSI);
 		n.addr = temp->base.src;
 		n.last_rssi = tempRSSI;
 		n.last_asn = tsch_get_current_asn();
@@ -204,41 +230,41 @@ static void cider_packet_received(struct broadcast_conn *c,
 		n.stage = NEIGHBOUR_UPDATE;
 		newNeigh = addNeighbour(&n);
 
-
 		break;
-	case WEIGHT_UPDATE:
-		printf("[CIDER]: Received CIDER Message, type: WEIGHT_UPDATE RSSI: %d\n",
-				 tempRSSI);
+	case UTILITY_UPDATE:
+		printf(
+				"[CIDER]: Received CIDER Message, type: UTILITY_UPDATE RSSI: %d\n",
+				tempRSSI);
 		n.addr = temp->base.src;
 		n.last_rssi = tempRSSI;
 		n.last_asn = tsch_get_current_asn();
-		n.weight = temp->args[0];
+		n.utility = temp->args[0];
 		n.nodeDegree = temp->args[1];
 		n.lpDegree = temp->args[2];
 		n.clusterDegree = temp->args[3];
-		n.stage = WEIGHT_UPDATE;
+		n.stage = UTILITY_UPDATE;
 		newNeigh = addNeighbour(&n);
-
 
 		break;
 	case CH_COMPETITION:
-		printf("[CIDER]: Received CIDER Message, type: CH_COMPETITION RSSI: %d\n",
-				 tempRSSI);
+		printf(
+				"[CIDER]: Received CIDER Message, type: CH_COMPETITION RSSI: %d\n",
+				tempRSSI);
 		n.addr = temp->base.src;
 		n.last_rssi = tempRSSI;
 		n.last_asn = tsch_get_current_asn();
-		n.weight = temp->args[0];
+		n.utility = temp->args[0];
 		n.nodeDegree = temp->args[1];
 		n.lpDegree = temp->args[2];
 		n.clusterDegree = temp->args[3];
+		n.tier = temp->args[4];
 		n.stage = CH_COMPETITION;
 		newNeigh = addNeighbour(&n);
-
 
 		break;
 	case CH:
 		printf("[CIDER]: Received CIDER Message, type: CH RSSI: %d\n",
-				 tempRSSI);
+				tempRSSI);
 		if (CIDER_currentStep != PING || stageCounter > 5) {
 			n.addr = temp->base.src;
 			n.last_rssi = tempRSSI;
@@ -255,17 +281,16 @@ static void cider_packet_received(struct broadcast_conn *c,
 				updateNeighboursCH(temp->args[i], temp->base.src);
 			}
 
-			if(isCH == 1)
-			{
+			if (isCH == 1) {
 				n.myCH = 1;
+				n.tier = temp->args[0];
+				setTier(temp->args[0]);
 				parent = temp->base.src;
 				CIDER_nextStep = CS;
 				CIDER_currentStep = CS;
 				CIDER_lastStep = CS;
 
-			}
-			else
-			{
+			} else {
 				n.myCH = 0;
 				parent = linkaddr_null;
 				CIDER_nextStep = CS_PING;
@@ -275,14 +300,13 @@ static void cider_packet_received(struct broadcast_conn *c,
 
 			newNeigh = addNeighbour(&n);
 
-
 			updateStatusLED();
 		}
 
 		break;
 	case LP_PING:
 		printf("[CIDER]: Received CIDER Message, type: LP_PING RSSI: %d\n",
-				 tempRSSI);
+				tempRSSI);
 		n.addr = temp->base.src;
 		n.last_rssi = tempRSSI;
 		n.last_asn = tsch_get_current_asn();
@@ -291,30 +315,37 @@ static void cider_packet_received(struct broadcast_conn *c,
 		n.stage = LP_PING;
 		newNeigh = addNeighbour(&n);
 
-
 		break;
 	case CS_PING:
 		printf("[CIDER]: Received CIDER Message, type: CS_PING RSSI: %d\n",
-				 tempRSSI);
+				tempRSSI);
 		n.addr = temp->base.src;
 		n.last_rssi = tempRSSI;
 		n.last_asn = tsch_get_current_asn();
-		n.weight = temp->args[0];
+		n.utility = temp->args[0];
 		n.nodeDegree = temp->args[1];
 		n.lpDegree = temp->args[2];
 		n.clusterDegree = temp->args[3];
 		n.stage = CS_PING;
 		newNeigh = addNeighbour(&n);
 
+		if (CIDER_currentStep == CH)
+			csPingCounter++;
+
+		if (csPingCounter >= 10) {
+			csPingCounter = 0;
+			CIDER_nextStep = CH_CHILD;
+			CIDER_currentStep = CH_CHILD;
+		}
 
 		break;
 	case CS:
 		printf("[CIDER]: Received CIDER Message, type: CS RSSI: %d\n",
-				 tempRSSI);
+				tempRSSI);
 		n.addr = temp->base.src;
 		n.last_rssi = tempRSSI;
 		n.last_asn = tsch_get_current_asn();
-		n.weight = temp->args[0];
+		n.utility = temp->args[0];
 		n.nodeDegree = temp->args[1];
 		n.lpDegree = temp->args[2];
 		n.clusterDegree = temp->args[3];
@@ -322,6 +353,33 @@ static void cider_packet_received(struct broadcast_conn *c,
 		n.parent.u16 = temp->args[4];
 		newNeigh = addNeighbour(&n);
 
+		break;
+	case CH_CHILD:
+		if (linkaddr_cmp(&temp->base.dst, &linkaddr_node_addr)) {
+			printf(
+					"[CIDER]: Received CIDER Message, type: CH_CHILD for me RSSI: %d\n",
+					tempRSSI);
+			n.addr = temp->base.src;
+			n.last_rssi = tempRSSI;
+			n.last_asn = tsch_get_current_asn();
+			n.utility = temp->args[0];
+			n.nodeDegree = temp->args[1];
+			n.lpDegree = temp->args[2];
+			n.clusterDegree = temp->args[3];
+			n.stage = CH;
+			n.parent.u16 = temp->args[4];
+			parent.u16 = temp->args[4];
+			n.tier = temp->args[5];
+			setTier(temp->args[5] + 1);
+			newNeigh = addNeighbour(&n);
+
+			CIDER_nextStep = CH;
+			CIDER_currentStep = CH;
+			CIDER_lastStep = CH;
+		} else {
+			printf(
+					"[CIDER]: Received CIDER Message, type: CH_CHILD but not for me\n");
+		}
 
 		break;
 	case COVERAGE_UPDATE:
@@ -334,18 +392,14 @@ static void cider_packet_received(struct broadcast_conn *c,
 
 	}
 
-	PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
 		;
-		if (CIDER_currentStep < CH && stageCounter > 3) {
+		if (CIDER_currentStep < CH && stageCounter >= 2) {
 			if (!isLPD && checkIfReadyForNextStep(CIDER_currentStep) == 1) {
 				CIDER_currentStep = CIDER_currentStep + 1;
 			} else if (isLPD) {
 				CIDER_currentStep = LP_PING;
 			}
-			stageCounter = 0;
 		}
-		stageCounter++;
-		PROCESS_CONTEXT_END(&dewi_cider_process);
 }
 
 static const struct broadcast_callbacks cider_bc_rx = { cider_packet_received };
@@ -373,9 +427,9 @@ void CIDER_start() {
 	if (started == 0) {
 		started = 1;
 		PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
-		;
-		etimer_set(&CIDER_timer, CIDER_INTERVAL);
-		PROCESS_CONTEXT_END(&dewi_cider_process);
+			;
+			etimer_set(&CIDER_timer, CIDER_INTERVAL);
+			PROCESS_CONTEXT_END(&dewi_cider_process);
 	}
 }
 
@@ -421,29 +475,67 @@ void CIDER_createSchedule() {
 	}
 }
 
-void CIDER_calcWeight() {
-	CIDER_ND = getNumNeighbours();
-	CIDER_LPD = getNumLPDevices();
-	CIDER_CD = getNumCluster();
-	CIDER_AvgRSSI = getAvgRSSI();
+float featureScale(float value, float min, float max) {
+	float featuredValue = 0;
+	float numerator = value - (min);
+	float denominator = max - (min);
+	featuredValue = numerator / denominator;
 
-	CIDER_WEIGHT = (CIDER_M1 * (float) CIDER_ND + CIDER_M2 * (float) CIDER_CD
-			+ CIDER_M3 * (float) CIDER_LPD + CIDER_M4 * CIDER_AvgRSSI) * 1000;
+	printf(
+			"[CIDER]: Value: %d, min: %d, max: %d, numerator: %d, denominator: %d, featuredValue: %d\n",
+			(int) (value * 1000), (int) (min * 1000), (int) (max * 1000),
+			(int) (numerator * 1000), (int) (denominator * 1000),
+			(int) (featuredValue * 1000));
+
+	return featuredValue;
+}
+
+void CIDER_calcUtility() {
+
+	CIDER_AvgRSSI = getAvgRSSI();
+	CIDER_ND = getNumNeighbours();
+	CIDER_CD = getNumCluster();
+	CIDER_LPD = getNumLPDevices();
+	printf("[CIDER]:Calc ND feature scale %d\n", CIDER_ND);
+	if (CIDER_ND == 0 || CIDER_CD == 0) {
+		CIDER_UTILITY = 0;
+		printf("[CIDER]:Calc ND feature scale %d\n", CIDER_ND);
+		printf("[CIDER]:Calc CD feature scale %d\n", CIDER_CD);
+
+		printf("[CIDER]:Return\n");
+		return;
+	}
+	printf("[CIDER]:Calc ND feature scale %d\n", CIDER_ND);
+	CIDER_ND = featureScale((float)CIDER_ND,CIDER_ND_min,CIDER_ND_max);
+	CIDER_CD = featureScale((float)CIDER_CD,CIDER_CD_min,CIDER_CD_max);
+
+	if (CIDER_LPD == 0) {
+
+		CIDER_AvgRSSI = featureScale((float)CIDER_AvgRSSI,CIDER_RSSI_min,CIDER_RSSI_max);
+		CIDER_UTILITY = (CIDER_M1 * (float) CIDER_ND
+				+ (CIDER_M2 + CIDER_M3) * (float) CIDER_CD
+				+ CIDER_M4 * CIDER_AvgRSSI) * 1000;
+	} else {
+		CIDER_LPD = featureScale((float)CIDER_LPD,CIDER_LP_min,CIDER_LP_max);
+		CIDER_UTILITY = (CIDER_M1 * (float) CIDER_ND
+				+ CIDER_M2 * (float) CIDER_CD + CIDER_M3 * (float) CIDER_LPD
+				+ CIDER_M4 * CIDER_AvgRSSI) * 1000;
+	}
 
 }
 
 uint8_t checkIfCHCompetition() {
 	uint8_t shouldCH = 0;
 	printf("[CIDER]: Check if I should become CH, my Weigth: %d \n",
-			CIDER_WEIGHT);
-	if (CIDER_WEIGHT >= getHighestWeight()) {
+			CIDER_UTILITY);
+	if (CIDER_UTILITY >= getHighestUtility()) {
 		shouldCH = 1;
 
-		printf("[CIDER]: I should become CH, my Weigth: %d \n", CIDER_WEIGHT);
+		printf("[CIDER]: I should become CH, my Weigth: %d \n", CIDER_UTILITY);
 	} else {
 
 		printf("[CIDER]: I should NOT become CH, my Weigth: %d \n",
-				CIDER_WEIGHT);
+				CIDER_UTILITY);
 	}
 
 	return shouldCH;
@@ -474,8 +566,11 @@ struct CIDER_PACKET createCIDERPacket() {
 		CIDERPacket.args[0] = getTxPower8bit(chan);
 		CIDERPacket.args[1] = isLPD;
 		CIDER_lastStep = CIDER_currentStep;
-		if (CIDER_lastStep == PING && CIDER_nextStep >= NEIGHBOUR_UPDATE)
+		if ((CIDER_lastStep == PING && CIDER_nextStep >= NEIGHBOUR_UPDATE) || stageCounter >= 2) {
 			CIDER_currentStep = NEIGHBOUR_UPDATE;
+			stageCounter = 0;
+		} else
+			stageCounter++;
 		PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
 			;
 			etimer_set(&CIDER_timer, CIDER_INTERVAL);
@@ -495,8 +590,8 @@ struct CIDER_PACKET createCIDERPacket() {
 		CIDERPacket.args[2] = getNumCluster();
 		CIDER_lastStep = CIDER_currentStep;
 		if (CIDER_lastStep == NEIGHBOUR_UPDATE
-				&& CIDER_nextStep >= WEIGHT_UPDATE || stageCounter == 5) {
-			CIDER_currentStep = WEIGHT_UPDATE;
+				&& CIDER_nextStep >= UTILITY_UPDATE || stageCounter == 5) {
+			CIDER_currentStep = UTILITY_UPDATE;
 			stageCounter = 0;
 		} else
 			stageCounter++;
@@ -506,20 +601,20 @@ struct CIDER_PACKET createCIDERPacket() {
 			PROCESS_CONTEXT_END(&dewi_cider_process)
 		;
 		break;
-	case WEIGHT_UPDATE:
+	case UTILITY_UPDATE:
 
-		printf("[CIDER]:Create CIDER Weight Update\n");
-		CIDER_calcWeight();
+		printf("[CIDER]:Create CIDER Utility Update\n");
+		CIDER_calcUtility();
 		CIDERPacket.base.dst = tsch_broadcast_address;
 		CIDERPacket.base.src = linkaddr_node_addr;
 		CIDERPacket.base.type = CIDER;
-		CIDERPacket.subType = WEIGHT_UPDATE;
-		CIDERPacket.args[0] = CIDER_WEIGHT;
+		CIDERPacket.subType = UTILITY_UPDATE;
+		CIDERPacket.args[0] = CIDER_UTILITY;
 		CIDERPacket.args[1] = getNumNeighbours();
 		CIDERPacket.args[2] = getNumLPDevices();
 		CIDERPacket.args[3] = getNumCluster();
 		CIDER_lastStep = CIDER_currentStep;
-		if (CIDER_lastStep == WEIGHT_UPDATE && CIDER_nextStep >= CH_COMPETITION
+		if (CIDER_lastStep == UTILITY_UPDATE && CIDER_nextStep >= CH_COMPETITION
 				|| stageCounter == 5) {
 			CIDER_currentStep = CH_COMPETITION;
 			stageCounter = 0;
@@ -532,15 +627,21 @@ struct CIDER_PACKET createCIDERPacket() {
 		;
 		break;
 	case CH_COMPETITION:
-		printf("[CIDER]:Create CIDER Weight Update\n");
+		printf("[CIDER]:Create CIDER Utility Update\n");
 		if (checkIfCHCompetition() == 1) {
 			printf("[CIDER]:Create CIDER CH Competition\n");
 			printf("[CIDER]:I should become a CH\n");
+			if (getTier() == -1)
+				setTier(0);
+			else
+				setTier(getTier() + 1);
+
 			CIDERPacket.base.dst = tsch_broadcast_address;
 			CIDERPacket.base.src = linkaddr_node_addr;
 			CIDERPacket.base.type = CIDER;
 			CIDERPacket.subType = CH_COMPETITION;
-			CIDERPacket.args[0] = CIDER_WEIGHT;
+			CIDERPacket.args[0] = CIDER_UTILITY;
+			CIDERPacket.args[1] = getTier();
 			CIDER_lastStep = CIDER_currentStep;
 			CIDER_currentStep = CH;
 			PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
@@ -559,12 +660,14 @@ struct CIDER_PACKET createCIDERPacket() {
 		}
 		break;
 	case CH:
+		printf("[CIDER]:Create CH MESSAGE\n");
 		CIDERPacket.base.dst = tsch_broadcast_address;
 		CIDERPacket.base.src = linkaddr_node_addr;
 		CIDERPacket.base.type = CIDER;
 		CIDERPacket.subType = CH;
+		CIDERPacket.args[0] = getTier();
 		int i;
-		for (i = 0; i < 45; i++)
+		for (i = 1; i < 45; i++)
 			CIDERPacket.args[i] = 0;
 
 		updateNeighListCS(&CIDERPacket.args, 45, linkaddr_node_addr);
@@ -595,33 +698,32 @@ struct CIDER_PACKET createCIDERPacket() {
 		break;
 	case CS_PING:
 		printf("[CIDER]: Check if there is an CH\n");
-		if(checkIfCHinNetwork(CH) == 0 && checkIfCHCompetition() == 1){
+		if (checkIfCHinNetwork(CH) == 0 && checkIfCHCompetition() == 1) {
 			printf("[CIDER]:Create CIDER CH Competition\n");
 			printf("[CIDER]:I should become a CH\n");
 			CIDERPacket.base.dst = tsch_broadcast_address;
 			CIDERPacket.base.src = linkaddr_node_addr;
 			CIDERPacket.base.type = CIDER;
 			CIDERPacket.subType = CH_COMPETITION;
-			CIDERPacket.args[0] = CIDER_WEIGHT;
+			CIDERPacket.args[0] = CIDER_UTILITY;
 			CIDERPacket.args[1] = getNumNeighbours();
 			CIDERPacket.args[2] = getNumLPDevices();
 			CIDERPacket.args[3] = getNumCluster();
 			CIDER_lastStep = CIDER_currentStep;
 			CIDER_currentStep = CH;
-		}else{
+		} else {
 			printf("[CIDER]:Create CIDER CS PING MESSAGE\n");
 
 			CIDERPacket.base.dst = tsch_broadcast_address;
 			CIDERPacket.base.src = linkaddr_node_addr;
 			CIDERPacket.base.type = CIDER;
 			CIDERPacket.subType = CS_PING;
-			CIDERPacket.args[0] = CIDER_WEIGHT;
+			CIDERPacket.args[0] = CIDER_UTILITY;
 			CIDERPacket.args[1] = getNumNeighbours();
 			CIDERPacket.args[2] = getNumLPDevices();
 			CIDERPacket.args[3] = getNumCluster();
 			rv = NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &chan);
 		}
-
 
 		PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
 			;
@@ -636,23 +738,50 @@ struct CIDER_PACKET createCIDERPacket() {
 		CIDERPacket.base.src = linkaddr_node_addr;
 		CIDERPacket.base.type = CIDER;
 		CIDERPacket.subType = CS;
-		CIDERPacket.args[0] = CIDER_WEIGHT;
+		CIDERPacket.args[0] = CIDER_UTILITY;
 		CIDERPacket.args[1] = getNumNeighbours();
 		CIDERPacket.args[2] = getNumLPDevices();
 		CIDERPacket.args[3] = getNumCluster();
 		CIDERPacket.args[4] = parent.u16;
 		rv = NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &chan);
-		if(linkaddr_cmp(&parent,&linkaddr_null) == 1)
-		{
-		PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
-			;
-			etimer_set(&CIDER_timer, CIDER_INTERVAL);
-			PROCESS_CONTEXT_END(&dewi_cider_process)
-		;
+		if (linkaddr_cmp(&parent, &linkaddr_null) == 1) {
+			PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
+				;
+				etimer_set(&CIDER_timer, CIDER_INTERVAL);
+				PROCESS_CONTEXT_END(&dewi_cider_process);
 		}
+
 		break;
 
 	case COVERAGE_UPDATE:
+		break;
+	case CH_CHILD:
+		printf("[CIDER]:Create CH_CHILD MESSAGE\n");
+
+		printf("[CIDER]:Create CH_CHILD Addr 0x%4x\n",
+				getCHChildAddress(CS_PING).u16);
+		CIDERPacket.base.dst = getCHChildAddress(CS_PING);
+		;
+		CIDERPacket.base.src = linkaddr_node_addr;
+		CIDERPacket.base.type = CIDER;
+		CIDERPacket.subType = CH_CHILD;
+		CIDERPacket.args[0] = CIDER_UTILITY;
+		CIDERPacket.args[1] = getNumNeighbours();
+		CIDERPacket.args[2] = getNumLPDevices();
+		CIDERPacket.args[3] = getNumCluster();
+		CIDERPacket.args[4] = linkaddr_node_addr.u16;
+
+		CIDERPacket.args[5] = getTier();
+		rv = NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &chan);
+		if (linkaddr_cmp(&parent, &linkaddr_null) == 1) {
+			PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
+				;
+				etimer_set(&CIDER_timer, CIDER_INTERVAL);
+				PROCESS_CONTEXT_END(&dewi_cider_process);
+		}
+
+		CIDER_lastStep = CIDER_currentStep;
+		CIDER_currentStep = CH;
 		break;
 
 	default:
@@ -691,7 +820,7 @@ void updateStatusLED() {
 		leds_off(LEDS_ALL);
 		leds_on(LEDS_BLUE);
 		break;
-	case WEIGHT_UPDATE:
+	case UTILITY_UPDATE:
 		leds_off(LEDS_ALL);
 		leds_on(LEDS_YELLOW);
 		break;
@@ -726,6 +855,15 @@ void updateStatusLED() {
 	}
 }
 
+void printStatus() {
+	printf("[CIDER]: Stage: %u, Parent: 0x%4x, Tier: %d\n", CIDER_currentStep,
+			parent.u16, getTier());
+	PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
+		;
+		ctimer_set(&CIDER_state_timer, printStatusInterval, printStatus, NULL);
+		PROCESS_CONTEXT_END(&dewi_cider_process);
+}
+
 PROCESS_THREAD(dewi_cider_process, ev, data) {
 
 	uint16_t msgDelay;
@@ -735,6 +873,7 @@ PROCESS_THREAD(dewi_cider_process, ev, data) {
 	PROCESS_BEGIN()
 		;
 
+		printStatus();
 		while (1) {
 			PROCESS_YIELD()
 			;
@@ -781,7 +920,7 @@ CIDER_lastStep = UNDEFINED;
 CIDER_ND = 0, CIDER_LPD = 0, CIDER_CD = 0;
 CIDER_AvgRSSI = 0;
 
-CIDER_WEIGHT = 0;
+CIDER_UTILITY = 0;
 etimer_stop(&CIDER_timer);
 ctimer_stop(&CIDER_send_timer);
 process_exit(&dewi_cider_process);

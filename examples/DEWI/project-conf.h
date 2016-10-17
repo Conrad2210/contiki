@@ -63,6 +63,17 @@
 #define CONF_M3 0.15;
 #define CONF_M4 0.05;
 
+//CIDER FeatureScale config
+
+#define CONF_ND_min 1.0;
+#define CONF_ND_max 4.0;
+#define CONF_CD_min 1.0;
+#define CONF_CD_max 4.0;
+#define CONF_LP_min 1.0;
+#define CONF_LP_max 4.0;
+#define CONF_RSSI_min -94.0;
+#define CONF_RSSI_max -20.0;
+
 #ifndef DEBUG_PRINT
 #define DEBUG_PRINT 1
 

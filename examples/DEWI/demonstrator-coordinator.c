@@ -62,12 +62,12 @@ PROCESS_THREAD(dewi_demo_process, ev, data) {
 		;
 		printf("Coordinator: initialization start\n");
 
+		initNeighbourTable();
 		setCoord(1);
 		initScheduler();
 
 		tsch_set_coordinator(1);
 		clock_wait(CLOCK_SECOND * 2);
-		initNeighbourTable();
 
 		radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER,
 				-24);

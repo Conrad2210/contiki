@@ -168,10 +168,10 @@ void uip_debug_lladdr_print()
 
 void tsch_dewi_callback_joining_network(void)
 {
+	initNeighbourTable();
 	printf("[APP]: joining network\n");
 	setCoord(0);
 	initScheduler();
-	initNeighbourTable();
 	leds_off(LEDS_ALL);
 	leds_on(LEDS_GREEN);
 }

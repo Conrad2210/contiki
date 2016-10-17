@@ -76,15 +76,19 @@ struct neighbour {
 
   int txPW;
 
-  /* CIDER/RLL related values, cluster stage, indication if parent or cs, is low power device (LPD)*/
+  /* CIDER/RLL related values, cluster stage, indication if parent or cs, is low power device (LPD), tier*/
   uint8_t stage, myCH,myCS, isLPD;
+  int8_t tier;
 
   /* CIDER related values, node Degree = number of neighbours, cluster degree = number of possible cluster nodes
    * lpDegree = number of low power devices in neighbourhood*/
   uint16_t nodeDegree, clusterDegree, lpDegree;
 
   /* CIDER realted value: weight indication */
-  int weight;
+  int utility;
+
+  /* RLL related values, cluster stage, indication if parent or cs, is low power device (LPD)*/
+
 
   /* last active ASN */
   struct asn_t last_asn;
@@ -108,13 +112,13 @@ int getNumNeighbours();
 int getNumLPDevices();
 int getNumCluster();
 float getAvgRSSI();
-int getHighestWeight();
+int getHighestUtility();
 void updateNeighListCS(uint16_t *array, int size,linkaddr_t CHaddress);
 uint8_t checkIfReadyForNextStep(int currentStep);
 void updateNeighboursCH(uint16_t addr, linkaddr_t CHaddress);
 void printTable();
 void neighbourTable_reset();
-
+linkaddr_t getCHChildAddress();
 int checkIfCHinNetwork();
 
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_RLL_RLL_H_ */

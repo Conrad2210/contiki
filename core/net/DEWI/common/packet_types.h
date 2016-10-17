@@ -41,7 +41,7 @@ enum CIDERsubpackettype{UNDEFINED = 0,
 	KEEP_ALIVE = 1,
 	PING = 3,
 	NEIGHBOUR_UPDATE = 4,
-	WEIGHT_UPDATE = 5,
+	UTILITY_UPDATE = 5,
 	CH_COMPETITION = 6,
 	CH_ADVERT = 7,
 	LP_PING = 8,
@@ -49,6 +49,7 @@ enum CIDERsubpackettype{UNDEFINED = 0,
 	CH = 10,
 	CS_PING = 11,
 	CS = 12,
+	CH_CHILD = 13,
 };
 enum RLLsubpackettype{RLL_PING};
 enum APPsubpackettype{RESET,COLOR};

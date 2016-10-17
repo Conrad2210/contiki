@@ -58,6 +58,7 @@
 #include <stdint.h>
 
 
+
 uint16_t setSchedule(ScheduleInfo_t schedule);
 void clearSchedule();
 void setActiveSchedule(uint8_t schedule);
@@ -72,5 +73,6 @@ void scheduleMessage(int timeslots, void* callback);
 
 void scheduler_reset();
 
-
+int8_t getTier();
+void setTier(int8_t);
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_SCHEDULER_SCHEDULER_H_ */

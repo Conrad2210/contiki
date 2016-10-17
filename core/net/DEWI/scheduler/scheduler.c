@@ -47,6 +47,7 @@ int activeSchedule = -1;
 PROCESS(dewi_scheduler_coord_process, "DEWI scheduler PROCESS for coordinator");
 PROCESS(dewi_scheduler_node_process, "DEWI scheduler PROCESS for node");
 
+int8_t tier = -1;
 void setActiveSchedule(uint8_t schedule) {
 
 	if (activeSchedule != schedule) {
@@ -122,6 +123,13 @@ struct scheduleUpdate_Packet createScheduleUpdate() {
 	return temp;
 }
 
+int8_t getTier(){
+	return tier;
+}
+void setTier(int8_t tempTier){
+	tier = tempTier;
+}
+
 PROCESS_THREAD(dewi_scheduler_coord_process, ev, data) {
 	PROCESS_EXITHANDLER()
 	PROCESS_BEGIN()
@@ -165,6 +173,7 @@ if (isCoord) {
 printf("[SCHEDULER]: Start Scheduler for coordinator\n");
 #endif
 //if startup set CIDER active
+setTier(-1);
 setActiveSchedule(0);
 process_start(&dewi_scheduler_coord_process, NULL);
 
@@ -172,6 +181,7 @@ process_start(&dewi_scheduler_coord_process, NULL);
 #if DEBUG
 printf("[SCHEDULER]: Start Scheduler for node\n");
 #endif
+setTier(-1);
 process_start(&dewi_scheduler_node_process, NULL);
 }
 return 1;
