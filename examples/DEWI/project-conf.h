@@ -90,7 +90,7 @@
 #if LPDEVICE
 #define TXRADIOPOWER -24 //-24dBm
 #else
-#define TXRADIOPOWER -24 //0dBm
+#define TXRADIOPOWER 0 //0dBm
 #endif
 /* Needed for cc2420 platforms only */
 /* Disable DCO calibration (uses timerB) */

@@ -57,6 +57,7 @@ void setActiveSchedule(uint8_t schedule) {
 		activeSchedule = schedule;
 		switch (activeSchedule) {
 		case 0: //do stuff for CIDER;
+
 			CIDER_notify();
 			break;
 		case 1: //todo: stuff for RLL

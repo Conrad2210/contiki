@@ -37,19 +37,18 @@
  */
 
 enum packettype{SCHEDULE_UPDATE,CIDER,RLL,APP};
-enum CIDERsubpackettype{UNDEFINED = 0,
-	KEEP_ALIVE = 1,
-	PING = 3,
-	NEIGHBOUR_UPDATE = 4,
-	UTILITY_UPDATE = 5,
-	CH_COMPETITION = 6,
-	CH_ADVERT = 7,
-	LP_PING = 8,
-	COVERAGE_UPDATE = 9,
-	CH = 10,
-	CS_PING = 11,
-	CS = 12,
-	CH_CHILD = 13,
+enum CIDERsubpackettype{
+	PING = 1,
+	NEIGHBOUR_UPDATE = 2,
+	UTILITY_UPDATE = 3,
+	CH_COMPETITION = 4,
+	CH = 5,
+	CS_PING = 6,
+	CS = 7,
+	CH_PROMOTE = 10,
+	LP_PING = 11,
+	UNDEFINED = 100,
+	KEEP_ALIVE = 101,
 };
 enum RLLsubpackettype{RLL_PING};
 enum APPsubpackettype{RESET,COLOR};

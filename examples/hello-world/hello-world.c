@@ -38,18 +38,60 @@
  */
 
 #include "contiki.h"
+#include "etimer.h"
 
 #include <stdio.h> /* For printf() */
 /*---------------------------------------------------------------------------*/
 PROCESS(hello_world_process, "Hello world process");
-AUTOSTART_PROCESSES(&hello_world_process);
+PROCESS(hello_world_process_1, "Hello world process");
+struct etimer timera, timerb, timerc;
+AUTOSTART_PROCESSES(&hello_world_process,&hello_world_process_1);
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(hello_world_process, ev, data)
 {
   PROCESS_BEGIN();
-
+  etimer_set(&timera, CLOCK_SECOND*5);
+  etimer_set(&timerc, CLOCK_SECOND*6);
   printf("Hello, world\n");
+  while(1){
+	  PROCESS_YIELD();
+	  if(ev == PROCESS_EVENT_TIMER)
+	  {
+
+		  if(&timera == data)
+		  {
+			  printf("[APP]: TimerA: %u expired\n",data);
+			  etimer_set(&timera, CLOCK_SECOND*5);
+
+		  }
+		  else if(&timerc == data){
+
+			  printf("[APP]: TimerC: %u expired\n",data);
+			  etimer_set(&timerc, CLOCK_SECOND*5);
+		  }
+	  }
+  }
   
+  PROCESS_END();
+}
+
+PROCESS_THREAD(hello_world_process_1, ev, data)
+{
+  PROCESS_BEGIN();
+  etimer_set(&timerb, CLOCK_SECOND*7);
+  printf("Hello, world\n");
+  while(1){
+	  PROCESS_YIELD();
+	  if(ev == PROCESS_EVENT_TIMER)
+	  {
+		  printf("[APP]: TimerB: %u expired\n",data);
+		  if(&timerb == data)
+			  printf("[APP] yeah data is the same\n");
+
+		  etimer_set(&timerb, CLOCK_SECOND*5);
+	  }
+  }
+
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/

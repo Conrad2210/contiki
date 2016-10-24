@@ -77,13 +77,13 @@ void copyNeighbour(struct neighbour *n1, struct neighbour *n2) {
 	if (n2->parent.u16 != 0)
 		n1->parent = n2->parent;
 
-	if (n2->stage != 0)
-		n1->stage = n2->stage;
+	if (n2->state != 0)
+		n1->state = n2->state;
 
 	if (n2->txPW != 0)
 		n1->txPW = n2->txPW;
 
-	if (n2->utility != 0)
+	if (n2->utility != 0.0)
 		n1->utility = n2->utility;
 
 	if (n2->last_asn.ls4b != 0)
@@ -143,7 +143,7 @@ struct neighbour *getNeighbour(linkaddr_t *addr) {
 
 }
 
-uint8_t checkIfReadyForNextStep(int currentStep) {
+uint8_t checkIfReadyForNextState(int currentState) {
 	struct neighbour *n;
 	uint8_t ready = 1;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n)) {
@@ -151,7 +151,7 @@ uint8_t checkIfReadyForNextStep(int currentStep) {
 		/* We break out of the loop if the address of the neighbor matches
 		 the address of the neighbor from which we received this
 		 broadcast message. */
-		if (currentStep > n->stage) {
+		if (currentState > n->state) {
 			ready = 0;
 			break;
 		}
@@ -169,6 +169,7 @@ void updateNeighboursCH(uint16_t addr, linkaddr_t CHaddress) {
 		 broadcast message. */
 		if (addr == n->addr.u16) {
 			n->parent = CHaddress;
+			n->state = 7;
 			break;
 		}
 
@@ -193,7 +194,7 @@ int checkIfNeighbourExist(linkaddr_t *addr) {
 		return 0;
 }
 
-int checkIfCHinNetwork(int currentStep) {
+int checkIfCHinNetwork(int currentState) {
 	struct neighbour *n;
 	int isCH = 0;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n)) {
@@ -201,7 +202,7 @@ int checkIfCHinNetwork(int currentStep) {
 		/* We break out of the loop if the address of the neighbor matches
 		 the address of the neighbor from which we received this
 		 broadcast message. */
-		if (n->stage == currentStep) {
+		if (n->state == currentState) {
 			isCH = 1;
 			break;
 		}
@@ -218,11 +219,11 @@ void printTable() {
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n)) {
 		printf(
 				"[%u] Neigh: 0x%x last RSSI: %ddBm last ASN: %x.%lx TxPower: %d dBm is LPD: %d ND: %d CD: %d LPD: %d "
-						"myCH: %d myCS: %d Parent: 0x%2x Tier: %d Stage: %d Utility: %d \n",
+						"myCH: %d myCS: %d Parent: 0x%2x Tier: %d state: %d Utility: %d \n",
 				i, n->addr.u16, n->last_rssi, n->last_asn.ms1b,
 				n->last_asn.ls4b, n->txPW, n->isLPD, n->nodeDegree,
 				n->clusterDegree, n->lpDegree, n->myCH, n->myCS, n->parent,
-				n->tier, n->stage, n->utility);
+				n->tier, n->state, (uint16_t)(n->utility * 1000.0));
 		i++;
 	}
 
@@ -249,9 +250,9 @@ struct neighbour initNeighbour() {
 	n.myCS = 0;
 	n.nodeDegree = 0;
 	n.parent = linkaddr_null;
-	n.stage = 0;
+	n.state = 0;
 	n.txPW = 0;
-	n.utility = 0;
+	n.utility = 0.0;
 	n.isLPD = 0;
 	n.tier = -1;
 	ASN_INIT(n.last_asn, 0, 0);
@@ -325,13 +326,13 @@ float getAvgRSSI() {
 	return myFloat;
 }
 
-int getHighestUtility() {
-	int highestUtility = 0;
+float getHighestUtility() {
+	float highestUtility = 0.0;
 	struct neighbour *n;
 
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n)) {
-		printf("Highes utility> %d, current utility: %d\n", highestUtility,
-				n->utility);
+		printf("Highes utility> %d, current utility: %d\n", (uint16_t)(highestUtility * 1000.0),
+				(uint16_t)(n->utility * 1000.0));
 		if (n->utility > highestUtility) {
 			highestUtility = n->utility;
 		}
@@ -340,22 +341,22 @@ int getHighestUtility() {
 	return highestUtility;
 }
 
-linkaddr_t getCHChildAddress(int stage) {
-
-	int highestUtility = 0;
-	struct neighbour *n, tempN = initNeighbour();
+linkaddr_t getCHChildAddress(uint8_t state) {
+	linkaddr_t returnAddr = linkaddr_null;
+	float highestUtility = 0;
+	struct neighbour *n;
 
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n)) {
-		if (n->stage == stage) {
-			if (n->utility > tempN.utility) {
+		if (n->state == state) {
+			if (n->utility > highestUtility) {
 
-				tempN.utility = n->utility;
-				tempN.addr = n->addr;
+				highestUtility = n->utility;
+				linkaddr_copy(&returnAddr,& n->addr);
 			}
 		}
 	}
 
-	return tempN.addr;
+	return returnAddr;
 }
 
 PROCESS_THREAD(dewi_neighbourtable_process, ev, data) {
