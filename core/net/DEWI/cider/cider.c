@@ -10,6 +10,15 @@
 #include "dev/leds.h"
 #include "project-conf.h"
 
+
+
+#if CIDER_LOG_LEVEL >= 1
+#define DEBUG DEBUG_PRINT
+#else /* TSCH_LOG_LEVEL */
+#define DEBUG DEBUG_NONE
+#endif /* TSCH_LOG_LEVEL */
+#include "net/net-debug.h"
+
 /***************************************/
 /***************************************/
 /*				Macros 				   */
@@ -66,7 +75,7 @@ float CIDER_M4 = CONF_M4
 /*				Variables			   */
 /***************************************/
 /***************************************/
-uint8_t sendCounter = 0, currentState = PING;
+int8_t sendCounter = 0, currentState = PING;
 float utility = 0;
 uint8_t delayTimeslot = 0;
 float avgRSSI = 0;
@@ -78,9 +87,10 @@ uint8_t CIDER_isActive = 0;
 uint8_t isLPD = 0;
 int started = 0;
 
-linkaddr_t parent = { { 0, 0 } };
+linkaddr_t parent = {{0,0}};
 uint8_t csPingCounter = 0;
 clock_time_t ciderInterval = (CLOCK_SECOND * 0.5);
+clock_time_t ciderKAInterval = (CLOCK_SECOND * 30);
 
 /***************************************/
 /***************************************/
@@ -88,7 +98,7 @@ clock_time_t ciderInterval = (CLOCK_SECOND * 0.5);
 /***************************************/
 /***************************************/
 static struct etimer cider_timer, print_timer;
-static struct ctimer send_timer, cider_competition_timer;
+static struct ctimer send_timer, cider_competition_timer, ka_timer;
 
 /***************************************/
 /***************************************/
@@ -98,7 +108,9 @@ static struct ctimer send_timer, cider_competition_timer;
 void startSendTimer();
 void updateState();
 void callbackSendTimer();
+void callbackKATimer();
 void calcUtility();
+void printCIDERStatus();
 float featureScale(float value, float min, float max);
 uint8_t compareUtilities();
 linkaddr_t checkForCSPingMember();
@@ -152,8 +164,7 @@ PROCESS_THREAD(dewi_cider_process, ev, data)
 				}
 				else if (&print_timer == data)
 				{
-					printf("[CIDER]: Stage: %u, Parent: 0x%4x, Tier: %d\n", currentState,
-							parent.u16, getTier());
+					printCIDERStatus();
 					etimer_set(&print_timer, CLOCK_SECOND * 10);
 				}
 			}
@@ -207,22 +218,22 @@ ctimer_set(&send_timer, delay, callbackSendTimer, NULL);
 
 void updateState()
 {
-printf("[CIDER]: Check CIDER state\n");
+PRINTF("[CIDER]: Check CIDER state ASN:  \n");
 uint8_t checkNeighboursState = checkIfReadyForNextState(currentState);
 switch (currentState)
 {
 	case PING:
-		printf("[CIDER]: Current State: Ping\n");
+		PRINTF("[CIDER]: Current State: Ping \n");
 		if (sendCounter >= 2 && checkNeighboursState == 1)
 		{
 			if (isLPDevice == 1)
 			{
-				printf("[CIDER]: Change State to: LP_PING\n");
+				PRINTF("[CIDER]: Change State to: LP_PING \n");
 				currentState = LP_PING;
 			}
 			else
 			{
-				printf("[CIDER]: Change State to: NEIGHBOUR_UPDATE\n");
+				PRINTF("[CIDER]: Change State to: NEIGHBOUR_UPDATE \n");
 				currentState = NEIGHBOUR_UPDATE;
 			}
 			sendCounter = 0;
@@ -231,10 +242,10 @@ switch (currentState)
 		break;
 
 	case NEIGHBOUR_UPDATE:
-		printf("[CIDER]: Current State: NEIGHBOUR_UPDATE\n");
+		PRINTF("[CIDER]: Current State: NEIGHBOUR_UPDATE \n");
 		if (sendCounter >= 2 && checkNeighboursState == 1)
 		{
-			printf("[CIDER]: Change State to: UTILITY_UPDATE\n");
+			PRINTF("[CIDER]: Change State to: UTILITY_UPDATE \n");
 			currentState = UTILITY_UPDATE;
 			sendCounter = 0;
 		}
@@ -242,19 +253,19 @@ switch (currentState)
 		break;
 
 	case UTILITY_UPDATE:
-		printf("[CIDER]: Current State: UTILITY_UPDATE\n");
+		PRINTF("[CIDER]: Current State: UTILITY_UPDATE \n");
 		calcUtility();
 		if (sendCounter >= 4 && checkNeighboursState == 1)
 		{
 
 			if (compareUtilities() == 1)
 			{
-				printf("[CIDER]: Change State to: CH_COMPETITION\n");
+				PRINTF("[CIDER]: Change State to: CH_COMPETITION \n");
 				currentState = CH_COMPETITION;
 			}
 			else
 			{
-				printf("[CIDER]: Change State to: CS_PING\n");
+				PRINTF("[CIDER]: Change State to: CS_PING \n");
 				currentState = CS_PING;
 			}
 			sendCounter = 0;
@@ -263,12 +274,15 @@ switch (currentState)
 		break;
 
 	case CH_COMPETITION:
-		printf("[CIDER]: Current State: CH_COMPETITION\n");
+		PRINTF("[CIDER]: Current State: CH_COMPETITION \n");
+		PRINTF("[CIDER]: sendCounter: %u, checkNeighboursState: %u ctimer_expired: %u\n",sendCounter,checkNeighboursState,ctimer_expired(&cider_competition_timer));
 		if (sendCounter >= 2 && checkNeighboursState == 1
 				&& ctimer_expired(&cider_competition_timer) == 1)
 		{
-			printf("[CIDER]: Change State to: CH\n");
+			PRINTF("[CIDER]: Change State to: CH \n");
 			currentState = CH;
+			if(getTier() == -1)
+				setTier(0);
 
 			sendCounter = 0;
 		}
@@ -276,24 +290,24 @@ switch (currentState)
 		break;
 
 	case CH:
-		printf("[CIDER]: Current State: CH\n");
+		PRINTF("[CIDER]: Current State: CH \n");
 		if (sendCounter > 2) ciderInterval = CLOCK_SECOND * 5;
 		startSendTimer();
 		break;
 
 	case CS:
-		printf("[CIDER]: Current State: CS\n");
+		PRINTF("[CIDER]: Current State: CS \n");
 		if (sendCounter <= 2) startSendTimer();
 		if (sendCounter > 2) ciderInterval = CLOCK_SECOND * 5;
 
 		break;
 	case CS_PING:
-		printf("[CIDER]: Current State: CS_PING\n");
-		if (checkCHinRange() == 0 && sendCounter >= 10)
+		PRINTF("[CIDER]: Current State: CS_PING \n");
+		if (checkCHinRange() == 0 && sendCounter >= 20)
 		{
 			if (compareUtilities() == 1)
 			{
-				printf("[CIDER]: Change State to: CH_COMPETITION\n");
+				PRINTF("[CIDER]: Change State to: CH_COMPETITION \n");
 				currentState = CH_COMPETITION;
 			}
 		}
@@ -301,10 +315,10 @@ switch (currentState)
 		break;
 
 	case CH_PROMOTE:
-		printf("[CIDER]: Current State: CH_PROMOTE\n");
-		if (sendCounter >= 2)
+		PRINTF("[CIDER]: Current State: CH_PROMOTE \n");
+		if (sendCounter >= 1)
 		{
-			printf("[CIDER]: Change State to: CH\n");
+			PRINTF("[CIDER]: Change State to: CH \n");
 			currentState = CH;
 			sendCounter = 0;
 			csPingCounter = 0;
@@ -333,14 +347,14 @@ switch (currentState)
 {
 	case PING: //PING message
 
-		printf("[CIDER]:Create CIDER PING MESSAGE\n");
+		PRINTF("[CIDER]:Create CIDER PING MESSAGE \n");
 		CIDERPacket.subType = PING;
 		rv = NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &chan);
 		CIDERPacket.args[0] = getTxPower8bit(chan);
 		CIDERPacket.args[1] = isLPD;
 		break;
 	case NEIGHBOUR_UPDATE:
-		printf("[CIDER]:Create CIDER NEIGHBOUR MESSAGE\n");
+		PRINTF("[CIDER]:Create CIDER NEIGHBOUR MESSAGE \n");
 		CIDERPacket.subType = NEIGHBOUR_UPDATE;
 		CIDERPacket.args[0] = getNumNeighbours();
 		CIDERPacket.args[1] = getNumLPDevices();
@@ -348,18 +362,19 @@ switch (currentState)
 		break;
 	case UTILITY_UPDATE:
 
-		printf("[CIDER]:Create CIDER Utility Update\n");
+		PRINTF("[CIDER]:Create CIDER Utility Update \n");
 		CIDERPacket.subType = UTILITY_UPDATE;
 		CIDERPacket.args[0] = (uint16_t) (utility * 1000);
 		break;
 	case CH_COMPETITION:
-		printf("[CIDER]:Create CH_COMPETITION message\n");
+		PRINTF("[CIDER]:Create CH_COMPETITION message \n");
 		CIDERPacket.subType = CH_COMPETITION;
 		CIDERPacket.args[0] = (uint16_t) (utility * 1000);
 		break;
 	case CH:
-		printf("[CIDER]:Create CH MESSAGE\n");
+		PRINTF("[CIDER]:Create CH MESSAGE \n");
 		CIDERPacket.subType = CH;
+		CIDERPacket.args[0] = getTier();
 		int i;
 		for (i = 1; i < 45; i++)
 		{
@@ -368,16 +383,14 @@ switch (currentState)
 		updateNeighListCS(&CIDERPacket.args, 45, linkaddr_node_addr);
 		break;
 	case LP_PING:
-		printf("[CIDER]:Create CIDER LP PING MESSAGE\n");
+		PRINTF("[CIDER]:Create CIDER LP PING MESSAGE \n");
 		CIDERPacket.subType = LP_PING;
 		rv = NETSTACK_RADIO.get_value(RADIO_PARAM_TXPOWER, &chan);
 		CIDERPacket.args[0] = getTxPower8bit(chan);
 		CIDERPacket.args[1] = isLPD;
 		break;
 	case CS_PING:
-		printf("[CIDER]: Check if there is an CH\n");
-
-		printf("[CIDER]:Create CIDER CS PING MESSAGE\n");
+		PRINTF("[CIDER]:Create CIDER CS PING MESSAGE \n");
 		CIDERPacket.subType = CS_PING;
 		CIDERPacket.args[0] = (uint16_t) (utility * 1000);
 		CIDERPacket.args[1] = getNumNeighbours();
@@ -385,7 +398,7 @@ switch (currentState)
 		CIDERPacket.args[3] = getNumCluster();
 		break;
 	case CS:
-		printf("[CIDER]:Create CIDER CS MESSAGE\n");
+		PRINTF("[CIDER]:Create CIDER CS MESSAGE \n");
 		CIDERPacket.subType = CS;
 		CIDERPacket.args[0] = (uint16_t) (utility * 1000);
 		CIDERPacket.args[1] = getNumNeighbours();
@@ -395,11 +408,12 @@ switch (currentState)
 		break;
 	case CH_PROMOTE:
 
-		printf("[CIDER]:Create CH_Promote MESSAGE\n");
+		PRINTF("[CIDER]:Create CH_Promote MESSAGE \n");
 		CIDERPacket.base.dst = checkForCSPingMember();
 		CIDERPacket.base.src = linkaddr_node_addr;
 		CIDERPacket.base.type = CIDER;
 		CIDERPacket.subType = CH_PROMOTE;
+		CIDERPacket.args[0] = getTier();
 		break;
 
 	default:
@@ -427,16 +441,23 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 {
 
 struct CIDER_PACKET *temp = packetbuf_dataptr();
-CIDER_start();
+if(started == 0)
+	CIDER_start();
 int16_t tempRSSI;
 uint8_t newNeigh;
 radio_result_t rv = (int8_t) NETSTACK_RADIO.get_value(RADIO_PARAM_LAST_RSSI, &tempRSSI);
 
-struct neighbour n = initNeighbour();
+struct neighbour n;
+
+
+initNeighbour(&n);
+
+getNeighbour(from,&n);
+
 switch (temp->subType)
 {
 	case PING:
-		printf("[CIDER]: Ping Message received from 0x%4x\n", from->u16);
+		PRINTF("[CIDER]: Ping Message received from 0x%4x \n", from->u16);
 		n.addr = temp->base.src;
 		n.last_rssi = tempRSSI;
 		n.last_asn = tsch_get_current_asn();
@@ -446,7 +467,7 @@ switch (temp->subType)
 		newNeigh = addNeighbour(&n);
 		break;
 	case NEIGHBOUR_UPDATE:
-		printf("[CIDER]: Neighbour Update received from 0x%4x\n", from->u16);
+		PRINTF("[CIDER]: Neighbour Update received from 0x%4x \n", from->u16);
 		n.addr = temp->base.src;
 		n.last_rssi = tempRSSI;
 		n.last_asn = tsch_get_current_asn();
@@ -457,7 +478,7 @@ switch (temp->subType)
 		newNeigh = addNeighbour(&n);
 		break;
 	case UTILITY_UPDATE:
-		printf("[CIDER]: Utility Update received from 0x%4x\n", from->u16);
+		PRINTF("[CIDER]: Utility Update received from 0x%4x \n", from->u16);
 		n.addr = temp->base.src;
 		n.last_rssi = tempRSSI;
 		n.last_asn = tsch_get_current_asn();
@@ -466,7 +487,7 @@ switch (temp->subType)
 		newNeigh = addNeighbour(&n);
 		break;
 	case CS:
-		printf("[CIDER]: CS message received from 0x%4x\n", from->u16);
+		PRINTF("[CIDER]: CS message received from 0x%4x \n", from->u16);
 		n.addr = temp->base.src;
 		n.last_rssi = tempRSSI;
 		n.last_asn = tsch_get_current_asn();
@@ -479,11 +500,11 @@ switch (temp->subType)
 		newNeigh = addNeighbour(&n);
 		break;
 	case CH_COMPETITION:
-		printf("[CIDER]: CH Competition received from 0x%4x\n", from->u16);
+		PRINTF("[CIDER]: CH Competition received from 0x%4x \n", from->u16);
 		if (currentState == CH_COMPETITION && ctimer_expired(&cider_competition_timer))
 		{
 			clock_time_t delayTime = rand() % (5 + 1);
-			printf("[CIDER]: Delay Competition message by %d s\n", delayTime);
+			PRINTF("[CIDER]: Delay Competition message by %d s \n", delayTime);
 			ctimer_set(&cider_competition_timer, delayTime, callbackCompetitionTimer, NULL);
 		}
 
@@ -495,7 +516,7 @@ switch (temp->subType)
 		newNeigh = addNeighbour(&n);
 		break;
 	case CH:
-		printf("[CIDER]: CH message received from 0x%4x\n", from->u16);
+		PRINTF("[CIDER]: CH message received from 0x%4x \n", from->u16);
 		n.addr = temp->base.src;
 		n.last_rssi = tempRSSI;
 		n.last_asn = tsch_get_current_asn();
@@ -503,6 +524,7 @@ switch (temp->subType)
 		n.myCS = 0;
 		n.myCH = 0;
 		n.parent = temp->base.src;
+		n.tier = temp->args[0];
 		int i;
 		int isCH = 0;
 		for (i = 1; i < 45; i++)
@@ -517,14 +539,20 @@ switch (temp->subType)
 		{
 			ctimer_stop(&cider_competition_timer);
 			n.myCH = 1;
+			setTier(temp->args[0]);
 			parent = temp->base.src;
 			currentState = CS;
 
 		}
+		if(linkaddr_cmp(&parent,&temp->base.src) == 1)
+		{
+			ctimer_stop(&ka_timer);
+			ctimer_set(&ka_timer,ciderKAInterval,callbackKATimer,NULL);
+		}
 		newNeigh = addNeighbour(&n);
 		break;
 	case CS_PING:
-		printf("[CIDER]: CS_PING received from 0x%4x\n", from->u16);
+		PRINTF("[CIDER]: CS_PING received from 0x%4x \n", from->u16);
 		n.addr = temp->base.src;
 		n.last_rssi = tempRSSI;
 		n.last_asn = tsch_get_current_asn();
@@ -533,32 +561,45 @@ switch (temp->subType)
 		n.lpDegree = temp->args[2];
 		n.clusterDegree = temp->args[3];
 		n.state = CS_PING;
+		if (currentState == CH && sendCounter >= 2) {
+			n.msgCounter = n.msgCounter + 1;
+		}
+
 		newNeigh = addNeighbour(&n);
-
-		if (currentState == CH && sendCounter >= 2) csPingCounter++;
-
-		if (csPingCounter >= 10) {
+		linkaddr_t tempAddr = checkForChildCH(CS_PING);
+		if (linkaddr_cmp(&tempAddr,&linkaddr_null) == 0) {
 			currentState = CH_PROMOTE;
 			sendCounter = 0;
 		}
 		break;
 
 	case CH_PROMOTE:
-		printf("[CIDER]: CH_PROMOTE received from 0x%4x\n", from->u16);
-		printf("[CIDER]: CH_PROMOTE for 0x%4x, my address\n", temp->base.dst.u16,linkaddr_node_addr.u16);
+		PRINTF("[CIDER]: CH_PROMOTE received from 0x%4x \n", from->u16);
+		PRINTF("[CIDER]: CH_PROMOTE for 0x%4x, my address: 0x%4x \n", temp->base.dst.u16,linkaddr_node_addr.u16);
 		if (temp->base.dst.u16 == linkaddr_node_addr.u16)
 		{
 			currentState = CH_COMPETITION;
+
+			setTier(temp->args[0] + 1);
+			sendCounter = 0;
 			parent = temp->base.src;
 			n.addr = temp->base.src;
 			n.last_rssi = tempRSSI;
 			n.last_asn = tsch_get_current_asn();
 			n.state = CH;
 			n.myCH = 1;
+		n.tier = temp->args[0];
+			newNeigh = addNeighbour(&n);
 		}
 		else
 		{
-			printf("[CIDER]: CH_PROMOTE not meant for me\n");
+			PRINTF("[CIDER]: CH_PROMOTE not meant for me \n");
+		}
+
+		if(linkaddr_cmp(&parent,&temp->base.src) == 1)
+		{
+			ctimer_stop(&ka_timer);
+			ctimer_set(&ka_timer,ciderKAInterval,callbackKATimer,NULL);
 		}
 
 		break;
@@ -574,7 +615,7 @@ struct CIDER_PACKET CIDERPacket;
 CIDERPacket.base.dst = tsch_broadcast_address;
 CIDERPacket.base.src = linkaddr_node_addr;
 CIDERPacket.base.type = CIDER;
-printf("[CIDER]:Create CH MESSAGE\n");
+PRINTF("[CIDER]:Create CH MESSAGE \n");
 CIDERPacket.subType = CH;
 int i;
 for (i = 1; i < 45; i++)
@@ -592,13 +633,43 @@ broadcast_send(&cider_bc);
 
 }
 
+void callbackKATimer(){
+	PRINTF("[CIDER]: callbackKATimer expired, reset CIDER \n");
+	sendCounter = -3;
+	currentState = PING;
+	utility = 0;
+	delayTimeslot = 0;
+	avgRSSI = 0;
+	neighDegree = 0;
+	clusterDegree = 0;
+	lpDegree = 0;
+
+	linkaddr_copy(&parent,&linkaddr_null);
+	csPingCounter = 0;
+	ciderInterval = (CLOCK_SECOND * 0.5);
+	ciderKAInterval = (CLOCK_SECOND * 30);
+
+	etimer_stop(&cider_timer);
+	ctimer_stop(&cider_competition_timer);
+	ctimer_stop(&send_timer);
+	ctimer_stop(&ka_timer);
+	ciderInterval = CLOCK_SECOND * 0.5;
+	updateStatusLED();
+	clearTable();
+	printCIDERStatus();
+	printTable();
+	PROCESS_CONTEXT_BEGIN(&dewi_cider_process);
+	etimer_set(&cider_timer,ciderInterval);
+	PROCESS_CONTEXT_END(&dewi_cider_process);
+}
+
 int CIDER_notify()
 {
 //todo: Implement check if RLL;
 if (CIDER_isActive == 0)
 {
 	CIDER_isActive = 1;
-	printf("[CIDER]: Start Cider\n");
+	PRINTF("[CIDER]: Start Cider \n");
 	process_start(&dewi_cider_process, NULL);
 
 }
@@ -615,14 +686,12 @@ return 1;
 
 void CIDER_start()
 {
-if (started == 0)
-{
 	started = 1;
 	PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
 		;
 		etimer_set(&cider_timer, ciderInterval);
 		PROCESS_CONTEXT_END(&dewi_cider_process);
-}
+
 }
 
 int CIDER_getIsActive()
@@ -647,7 +716,7 @@ if (CIDER_isActive == 1)
 	temp.handle = 0x00;
 	temp.slotframeLength = 51;
 	int i;
-	printf("[CIDER]: Create CIDER schedule\n");
+	PRINTF("[CIDER]: Create CIDER schedule \n");
 	for (i = 0; i < temp.slotframeLength; i++)
 	{
 		temp.links[i].addr = &tsch_broadcast_address;
@@ -714,9 +783,6 @@ float numerator = value - (min);
 float denominator = max - (min);
 featuredValue = numerator / denominator;
 
-printf("[CIDER]: Value: %d, min: %d, max: %d, numerator: %d, denominator: %d, featuredValue: %d\n",
-		(int) (value * 1000), (int) (min * 1000), (int) (max * 1000), (int) (numerator * 1000),
-		(int) (denominator * 1000), (int) (featuredValue * 1000));
 
 return featuredValue;
 }
@@ -724,9 +790,6 @@ return featuredValue;
 uint8_t compareUtilities()
 {
 float highestNeighbourUtility = (float) getHighestUtility();
-
-printf("[CIDER]: My Utility: %d, highestNeighbour utility: %d\n", (uint16_t) (utility * 1000),
-		(uint16_t) (highestNeighbourUtility * 1000));
 if (utility >= highestNeighbourUtility)
 	return 1;
 else return 0;
@@ -734,9 +797,7 @@ else return 0;
 
 linkaddr_t checkForCSPingMember()
 {
-linkaddr_t returnAddr = getCHChildAddress(CS_PING);
-if (linkaddr_cmp(&returnAddr, &linkaddr_null) == 1) returnAddr = getCHChildAddress(CS);
-printf("[CIDER]: Next CH is: %d\n", returnAddr.u16);
+linkaddr_t returnAddr = checkForChildCH(CS_PING);
 return returnAddr;
 }
 
@@ -896,7 +957,14 @@ switch (currentState)
 		break;
 }
 }
+void printCIDERStatus(){
 
+	PRINTF("******** CIDER STATUS *********\n");
+	PRINTF("sendCounter: %u, currentState: %u, utility: %u, avgRSSI: %u, neighDegree: %u, clusterDegree: %u, lpDegree: %u, "
+			"isActive: %u, started: %u, Parent: 0x%4x, Tier: %d\n",sendCounter, currentState,
+			(uint8_t)(utility * 1000), (uint8_t)(avgRSSI * 1000), (uint8_t)(neighDegree * 1000), (uint8_t)(clusterDegree * 1000),
+			(uint8_t)(lpDegree * 1000),CIDER_isActive,started,	parent.u16, getTier());
+}
 void CIDER_reset()
 {
 CIDER_isActive = 0;
@@ -905,7 +973,7 @@ started = 0;
 currentState = PING;
 neighDegree = 0, lpDegree = 0, clusterDegree = 0;
 avgRSSI = 0.0;
-
+setTier(-1);
 utility = 0.0;
 etimer_stop(&cider_timer);
 etimer_stop(&print_timer);

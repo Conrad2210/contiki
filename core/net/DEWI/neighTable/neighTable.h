@@ -98,16 +98,19 @@ struct neighbour {
      this neighbor. */
 //  uint8_t last_seqno;
 
+  // Msg counter for ping msg's
+  uint8_t msgCounter;
+
 
 };
 
 void initNeighbourTable();
 
 uint8_t addNeighbour(struct neighbour *neigh);
-struct neighbour *getNeighbour(linkaddr_t *addr);
+void getNeighbour(linkaddr_t *addr ,struct neighbour *neigh);
 int checkIfNeighbourExist(linkaddr_t *addr);
 int updateNeighbour(struct neighbour *neigh);
-struct neighbour initNeighbour();
+void initNeighbour(struct neighbour *n);
 int getNumNeighbours();
 int getNumLPDevices();
 int getNumCluster();
@@ -117,8 +120,12 @@ void updateNeighListCS(uint16_t *array, int size,linkaddr_t CHaddress);
 uint8_t checkIfReadyForNextState(int currentState);
 void updateNeighboursCH(uint16_t addr, linkaddr_t CHaddress);
 void printTable();
+void printNeighbour(struct neighbour *n);
 void neighbourTable_reset();
 linkaddr_t getCHChildAddress(uint8_t state);
 int checkIfCHinNetwork();
+void clearTable();
+
+linkaddr_t checkForChildCH(uint8_t state);
 
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_RLL_RLL_H_ */

@@ -70,7 +70,7 @@ PROCESS_THREAD(dewi_demo_process, ev, data) {
 		clock_wait(CLOCK_SECOND * 2);
 
 		radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER,
-				-24);
+				-15);
 		button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
 		BUTTON_PRESS_EVENT_INTERVAL);
 

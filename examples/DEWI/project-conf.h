@@ -74,18 +74,15 @@
 #define CONF_RSSI_min -94.0;
 #define CONF_RSSI_max -20.0;
 
-#ifndef DEBUG_PRINT
-#define DEBUG_PRINT 1
-
-
-#undef DEBUG
-#define DEBUG DEBUG_PRINT
+#define CIDER_LOG_LEVEL 1
+#define NEIGHBOURTABLE_LOG_LEVEL 1
+#define TSCH_LOG_LEVEL 3
 
 
 
 #ifndef LPDEVICE
 #define LPDEVICE 0
-#endif
+
 
 #if LPDEVICE
 #define TXRADIOPOWER -24 //-24dBm

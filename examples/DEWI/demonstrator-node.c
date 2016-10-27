@@ -91,7 +91,7 @@ PROCESS_BEGIN()
 	i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN, I2C_SCL_FAST_BUS_SPEED);
 	i2c_single_send(0x39, (LED_BRIGHTNESS | lastBRIGHTNESS));
 
-	radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, -24);
+	radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, -15);
 
 	PROCESS_EXITHANDLER(netflood_close(&app_netflood))
 	netflood_open(&app_netflood, CLOCK_SECOND, NETFLOOD_CHANNEL_APP, &app_netflood_rx);
