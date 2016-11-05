@@ -54,10 +54,6 @@
 #include "net/DEWI/scheduler/scheduler.h"
 
 
-#include <stdio.h>
-#include <stdint.h>
-
-
 
 void CIDER_setLPD(uint8_t is);
 uint8_t CIDER_getLPD();

@@ -52,7 +52,7 @@ static void app_netflood_packet_received(struct broadcast_conn *c, const linkadd
 {
 	struct APP_PACKET *temp = packetbuf_dataptr();
 	printf("[APP]: Received APP Packet %u bytes from %u:%u: '0x%04x'\n", packetbuf_datalen(), from->u8[0], from->u8[1], *(uint16_t *) packetbuf_dataptr());
-	if(temp->subType == RESET)
+	if(temp->subType == APP_RESET)
 	{
 		tsch_dewi_callback_leaving_network();
 		tsch_dewi_callback_joining_network();
@@ -91,7 +91,7 @@ PROCESS_BEGIN()
 	i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN, I2C_SCL_FAST_BUS_SPEED);
 	i2c_single_send(0x39, (LED_BRIGHTNESS | lastBRIGHTNESS));
 
-	radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, -15);
+	radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, -24);
 
 	PROCESS_EXITHANDLER(netflood_close(&app_netflood))
 	netflood_open(&app_netflood, CLOCK_SECOND, NETFLOOD_CHANNEL_APP, &app_netflood_rx);

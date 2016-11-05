@@ -30,12 +30,14 @@
 
 /**
  * \file
- *         Scheduler header file
+ *         CIDER header file
+ *         see 'CIDER - Clustering In Dense EnviRonments' - XXX - 2016
  *
  * \author Conrad Dandelski <conrad.dandelski@mycit.ie>
  */
-#ifndef DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_SCHEDULER_SCHEDULER_H_
-#define DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_SCHEDULER_SCHEDULER_H_
+
+#ifndef DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_CIDER_CIDER_H_
+#define DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_CIDER_CIDER_H_
 
 #include "contiki.h"
 //#include "cpu.h"
@@ -49,26 +51,21 @@
 #include "net/rime/broadcast.h"
 #include "net/mac/tsch/tsch-schedule.h"
 
-#include "net/DEWI/common/type_defs.h"
-#include "net/DEWI/common/packet_types.h"
-#include "net/DEWI/cider/cider.h"
-#include "net/DEWI/rll/rll.h"
+#include "net/DEWI/scheduler/scheduler.h"
+
+
+#include <stdio.h>
+#include <stdint.h>
 
 
 
-uint16_t setSchedule(ScheduleInfo_t schedule);
-void clearSchedule();
-void setActiveSchedule(uint8_t schedule);
-uint8_t getActiveSchedule();
+void CIDER_setLPD(uint8_t is);
+uint8_t CIDER_getLPD();
 
-void setCoord(int isCoordinator);
-int getCoord();
+int CIDER_getIsActive();
+int CIDER_notify();
+void CIDER_reset();
 
-int initScheduler();
+void CIDER_start();
 
-
-void scheduler_reset();
-
-int8_t getTier();
-void setTier(int8_t);
-#endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_SCHEDULER_SCHEDULER_H_ */
+#endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_CIDER_CIDER_H_ */

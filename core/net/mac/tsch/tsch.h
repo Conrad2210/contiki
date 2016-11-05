@@ -161,6 +161,8 @@ void tsch_set_join_priority(uint8_t jp);
 void tsch_set_eb_period(uint32_t period);
 /* Set the node as PAN coordinator */
 void tsch_set_coordinator(int enable);
+
+int tsch_get_coordinator();
 /* Set the pan as secured or not */
 void tsch_set_pan_secured(int enable);
 /* returns the current asn*/

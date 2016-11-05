@@ -38,20 +38,28 @@
 
 enum packettype{SCHEDULE_UPDATE,CIDER,RLL,APP};
 enum CIDERsubpackettype{
-	PING = 1,
-	NEIGHBOUR_UPDATE = 2,
-	UTILITY_UPDATE = 3,
-	CH_COMPETITION = 4,
-	CH = 5,
-	CS_PING = 6,
-	CS = 7,
-	CH_PROMOTE = 10,
-	LP_PING = 11,
-	UNDEFINED = 100,
-	KEEP_ALIVE = 101,
+	CIDER_PING = 1,
+	CIDER_NEIGHBOUR_UPDATE = 2,
+	CIDER_UTILITY_UPDATE = 3,
+	CIDER_CH_COMPETITION = 4,
+	CIDER_CH = 5,
+	CIDER_CS_PING = 6,
+	CIDER_CS = 7,
+	CIDER_CH_PROMOTE = 10,
+	CIDER_LP_PING = 11,
+	CIDER_COMPLETE = 100,
+	CIDER_UNCOMPLETE = 101,
+	CIDER_UNDEFINED = 200
 };
 enum RLLsubpackettype{RLL_PING};
-enum APPsubpackettype{RESET,COLOR};
+enum COLOURINGsubpackttype{
+	COLOUR_RELEASE = 0,
+	COLOUR_UPDATE = 1,
+	COLOUR_COMPLETE = 100,
+	COLOUR_UNCOMPLETE = 101
+};
+
+enum APPsubpackettype{APP_RESET,COLOR};
 
 
 struct BasePacket{
@@ -60,10 +68,17 @@ struct BasePacket{
 	enum packettype type;
 };
 
+struct COLOURING_PACKET{
+		struct BasePacket base;
+		enum COLOURINGsubpackttype subType;
+		uint16_t args[45];
+};
+
 struct CIDER_PACKET{
 		struct BasePacket base;
 		enum CIDERsubpackettype subType;
 		uint16_t args[45];
+		linkaddr_t parent;
 };
 struct RLL_PACKET{
 		struct BasePacket base;

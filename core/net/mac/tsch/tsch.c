@@ -153,7 +153,9 @@ PROCESS(tsch_pending_events_process, "TSCH: pending events process");
 static void packet_input(void);
 
 /* Getters and setters */
-
+int tsch_get_coordinator(){
+	return tsch_is_coordinator;
+}
 /*---------------------------------------------------------------------------*/
 void
 tsch_set_coordinator(int enable)
@@ -211,7 +213,7 @@ tsch_reset(void)
 #if TSCH_AUTOSELECT_TIME_SOURCE
   best_neighbor_eb_count = 0;
   nbr_table_register(eb_stats, NULL);
-  tsch_set_eb_period(TSCH_EB_PERIOD);
+  //tsch_set_eb_period(TSCH_EB_PERIOD);
 #endif
 }
 
@@ -235,9 +237,6 @@ static void
 keepalive_send()
 {
   if(tsch_is_associated) {
-#ifdef TSCH_LINK_KA_SEND
-	  TSCH_LINK_KA_SEND();
-#endif
     struct tsch_neighbor *n = tsch_queue_get_time_source();
     /* Simply send an empty packet */
     packetbuf_clear();

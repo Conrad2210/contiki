@@ -15,7 +15,6 @@
 #include "dev/leds.h"
 #include "dev/uart.h"
 #include "dev/button-sensor.h"
-#include "dev/adc-zoul.h"
 #include "dev/zoul-sensors.h"
 #include "dev/watchdog.h"
 #include "dev/serial-line.h"
@@ -31,9 +30,6 @@
 #include "net/DEWI/rll/rll.h"
 #include "net/DEWI/cider/cider.h"
 #include "net/DEWI/neighTable/neighTable.h"
-#include <stdio.h>
-#include <stdint.h>
 
 
-void init_coordinator(void);
 #endif /* DEWI_NIMBUS_CONTIKI_EXAMPLES_DEWI_DEMONSTRATOR_H_ */

@@ -70,7 +70,7 @@ PROCESS_THREAD(dewi_demo_process, ev, data) {
 		clock_wait(CLOCK_SECOND * 2);
 
 		radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER,
-				-15);
+				-24);
 		button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
 		BUTTON_PRESS_EVENT_INTERVAL);
 
@@ -80,8 +80,8 @@ PROCESS_THREAD(dewi_demo_process, ev, data) {
 		printf("DEWI Application\n");
 
 		printf("with external LED\n");
-		leds_off(LEDS_ALL);
 		leds_on(LEDS_GREEN);
+		leds_off(LEDS_ALL);
 		while (1) {
 
 			PROCESS_YIELD()
@@ -113,7 +113,7 @@ PROCESS_THREAD(dewi_demo_process, ev, data) {
 					temp.base.dst = tsch_broadcast_address;
 					;
 					temp.base.src = linkaddr_node_addr;
-					temp.subType = RESET;
+					temp.subType = APP_RESET;
 
 					packetbuf_copyfrom(&temp, sizeof(struct APP_PACKET));
 					packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
