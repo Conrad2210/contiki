@@ -36,36 +36,17 @@
  * \author Conrad Dandelski <conrad.dandelski@mycit.ie>
  */
 
-#ifndef DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_CIDER_CIDER_H_
-#define DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_CIDER_CIDER_H_
+#ifndef DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_CIDER_COLOURING_H
+#define DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_CIDER_COLOURING_H
 
 #include "contiki.h"
-//#include "cpu.h"
 #include "sys/etimer.h"
-#include "sys/rtimer.h"
-#include "dev/leds.h"
-#include "dev/watchdog.h"
-#include "dev/serial-line.h"
-//#include "dev/sys-ctrl.h"
-#include "net/netstack.h"
 #include "net/rime/broadcast.h"
 #include "net/mac/tsch/tsch-schedule.h"
-
 #include "net/DEWI/scheduler/scheduler.h"
 
-
-#include <stdio.h>
-#include <stdint.h>
-
-
-
-void CIDER_setLPD(uint8_t is);
-uint8_t CIDER_getLPD();
-
-int CIDER_getIsActive();
-int CIDER_notify();
-void CIDER_reset();
-
-void CIDER_start();
+void COLOURING_init();
+void COLOURING_start();
+void COLOURING_Reset();
 
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_CIDER_CIDER_H_ */

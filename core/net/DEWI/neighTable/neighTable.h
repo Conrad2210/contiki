@@ -75,7 +75,7 @@ struct neighbour
 		int txPW;
 
 		/* CIDER/RLL related values, cluster state, indication if parent or cs, is low power device (LPD), tier*/
-		uint8_t state, myCH, myCS, isLPD;
+		uint8_t CIDERState,COLOURINGState,RLLState, myCH, myCS,myChildCH, isLPD;
 		int8_t tier;
 
 		/* CIDER related values, node Degree = number of neighbours, cluster degree = number of possible cluster nodes
@@ -103,9 +103,42 @@ struct neighbour
 		 *
 		 **********************************************/
 
-		uint16_t randNumber;
 		uint8_t colour;
-		uint8_t SDI;
+		uint16_t randNumber;
+		uint16_t SDI;
+		uint8_t CHDegree;
+		uint8_t UCDegree;
+		uint8_t CDegree;
+		uint8_t dV;
+		uint8_t sDegree;
+
+};
+
+
+struct nodes_status{
+		uint8_t activeProtocol; //0=CIDER;1=Colouring;2=RLL;
+		uint8_t CIDERState;
+		uint8_t COLOURINGState;
+		uint8_t RLLState;
+		linkaddr_t parent;
+		uint8_t tier;
+		uint8_t isLPD;
+
+		uint8_t colour;
+		uint16_t randNumber;
+		uint16_t SDI;
+		uint8_t CHDegree;
+		uint8_t UCDegree;
+		uint8_t CDegree;
+		uint8_t dV;
+		uint8_t sDegree;
+		uint16_t hSDI;
+
+		float neighDegree;
+		float clusterDegree;
+		float lpDegree;
+		float avgRSSI;
+		float utility;
 
 };
 
@@ -134,6 +167,68 @@ uint8_t checkForPromotion(uint8_t state);
 linkaddr_t getChildCHAddress(uint8_t state);
 uint8_t checkNodesUnclustered();
 uint8_t checkChildCH();
+uint8_t getCHDegree();
+uint8_t getColoredNodes();
+uint8_t getUncoloredNodes();
+uint8_t getSDegree();
+uint8_t getDV();
+uint8_t calcColour();
+uint8_t validColour();
 
+
+
+
+
+void printNodeStatus();
+int8_t getTier();
+void setTier(int8_t);
+int8_t getColour();
+void setColour(int8_t);
+int8_t getActiveProtocol();
+void setActiveProtocol(int8_t);
+int8_t getCIDERState();
+void setCIDERState(int8_t);
+int8_t getCOLOURINGState();
+void setCOLOURINGState(int8_t);
+int8_t getRLLState();
+void setRLLState(int8_t);
+int8_t getLPD();
+void setLPD(int8_t);
+
+linkaddr_t getParentStatus();
+void setParentStatus(linkaddr_t addr);
+
+uint16_t getRandNumberStatus();
+void setRandNumberStatus(uint16_t);
+uint16_t getSDIStatus();
+void setSDIStatus(uint16_t);
+uint8_t getUCDegreeStatus();
+void setUCDegreeStatus(uint8_t);
+uint8_t getCDegreeStatus();
+void setCDegreeStatus(uint8_t);
+uint8_t getDVStatus();
+void setDVStatus(uint8_t);
+uint8_t getSDegreeStatus();
+void setSDegreeStatus(uint8_t);
+
+int8_t getCHDegreeStatus();
+void setCHDegreeStatus(int8_t act);
+
+void setHSDIStatus(uint16_t);
+uint16_t getHSDIStatus();
+
+float getNeighDegree();
+void setNeighDegree(float);
+float getClusDegree();
+void setClusDegree(float);
+float getLPDegree();
+void setLPDegree(float);
+float getAVGRSSI();
+void setAVGRSSI(float);
+float getUtility();
+void setUtility(float);
+
+
+void calcSDIs();
 
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_RLL_RLL_H_ */

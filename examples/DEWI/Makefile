@@ -8,6 +8,7 @@ MODULES += core/net/DEWI/cider
 MODULES += core/net/DEWI/rll
 MODULES += core/net/DEWI/scheduler
 MODULES += core/net/DEWI/neighTable
+MODULES += core/net/DEWI/colouring
 MODULES += core/net/mac/tsch
 
 all: $(CONTIKI_PROJECT)

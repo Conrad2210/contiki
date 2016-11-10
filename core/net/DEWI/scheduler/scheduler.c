@@ -39,63 +39,64 @@
 #include "scheduler.h"
 
 #define DEBUG DEBUG_PRINT
-#define SCHEDULE_INTERVAL       (CLOCK_SECOND * 5)
-static struct etimer scheduleUpdate;
-int isCoord = 0;
-int activeSchedule = -1;
-
-PROCESS(dewi_scheduler_coord_process, "DEWI scheduler PROCESS for coordinator");
-PROCESS(dewi_scheduler_node_process, "DEWI scheduler PROCESS for node");
+uint8_t isCoord = 0;
+uint8_t activeSchedule = -1;
 
 int8_t tier = -1;
-void setActiveSchedule(uint8_t schedule) {
+void setActiveSchedule(uint8_t schedule)
+{
 
-	if (activeSchedule != schedule) {
-		printf(
-				"[SCHEDULER]: new schedule received, Schedule %u is active now\n",
-				schedule);
+	if (activeSchedule != schedule)
+	{
+		printf("[SCHEDULER]: new schedule received, Schedule %u is active now\n", schedule);
 		activeSchedule = schedule;
-		switch (activeSchedule) {
-		case 0: //do stuff for CIDER;
+		switch (activeSchedule)
+		{
+			case 0: //do stuff for CIDER;
 
-			CIDER_notify();
-			break;
-		case 1: //todo: stuff for RLL
-			break;
-		default:
-			//just do nothing
-			break;
+				CIDER_notify();
+				break;
+			case 1: //todo: stuff for RLL
+				break;
+			default:
+				//just do nothing
+				break;
 		}
 	}
 }
 
-void setCoord(int isCoordinator) {
+void setCoord(uint8_t isCoordinator)
+{
 	isCoord = isCoordinator;
 }
 
-int getCoord() {
+uint8_t getCoord()
+{
 	return isCoord;
 }
 
-uint8_t getActiveSchedule() {
+uint8_t getActiveSchedule()
+{
 	return (uint8_t) activeSchedule;
 }
 
-uint16_t setSchedule(ScheduleInfo_t schedule) {
+uint16_t setSchedule(ScheduleInfo_t schedule)
+{
 
 	tsch_schedule_remove_all_slotframes();
-	struct tsch_slotframe *tempHandle = tempHandle =
-			tsch_schedule_add_slotframe(schedule.handle,
-					schedule.slotframeLength);
+	struct tsch_slotframe *tempHandle = tempHandle = tsch_schedule_add_slotframe(schedule.handle,
+			schedule.slotframeLength);
 
-	int i = 0;
-	for (i = 0; i < MAX_NUM_LINKS; i++) {
-		if (schedule.links[i].isActive == 1) {
+	uint8_t i = 0;
+	for (i = 0; i < MAX_NUM_LINKS; i++)
+	{
+		if (schedule.links[i].isActive == 1)
+		{
 			linkInfo_t temp = schedule.links[i];
 
-			if (tsch_schedule_add_link(tempHandle, temp.link_options,
-					temp.link_type, temp.addr, temp.timeslot,
-					temp.channel_offset) == NULL) {
+			if (tsch_schedule_add_link(tempHandle, temp.link_options, temp.link_type, temp.addr,
+					temp.timeslot, temp.channel_offset) == NULL)
+			{
 				break;
 			}
 		}
@@ -105,101 +106,47 @@ uint16_t setSchedule(ScheduleInfo_t schedule) {
 
 }
 
-void clearSchedule() {
+void clearSchedule()
+{
 
-	int i;
+	uint8_t i;
 	//remove everyhing except ADV slot
-	for (i = 1; i < MAX_NUM_LINKS; i++) {
+	for (i = 1; i < MAX_NUM_LINKS; i++)
+	{
 		tsch_schedule_remove_link(tsch_schedule_get_slotframe_by_handle(0),
 				tsch_schedule_get_link_by_handle(i));
 	}
 }
 
-struct scheduleUpdate_Packet createScheduleUpdate() {
-	struct scheduleUpdate_Packet temp;
-	temp.base.dst = tsch_broadcast_address;
-	temp.base.src = linkaddr_node_addr;
 
-	temp.schedule = 0;
-	return temp;
-}
+uint8_t initScheduler()
+{
 
-int8_t getTier(){
-	return tier;
-}
-void setTier(int8_t tempTier){
-	tier = tempTier;
-}
-
-PROCESS_THREAD(dewi_scheduler_coord_process, ev, data) {
-	PROCESS_EXITHANDLER()
-	PROCESS_BEGIN()
-		;
-
-		/* Configure the user button */
-
-		while (1) {
-			PROCESS_YIELD()
-			;
-			if (ev == PROCESS_EVENT_TIMER) {
-
-			}
-		}
-
-	PROCESS_END();
-}
-
-PROCESS_THREAD(dewi_scheduler_node_process, ev, data) {
-struct scheduleUpdate_Packet scheduleUpdatePacket;
-PROCESS_EXITHANDLER()
-PROCESS_BEGIN()
-	;
-
-//etimer_set(&scheduleUpdate, SCHEDULE_INTERVAL);
-
-	while (1) {
-		PROCESS_YIELD()
-		;
-		if (ev == PROCESS_EVENT_TIMER) {
-
-		}
-	}
-
-PROCESS_END();
-}
-
-int initScheduler() {
-if (isCoord) {
+	if (isCoord)
+	{
 #if DEBUG
-printf("[SCHEDULER]: Start Scheduler for coordinator\n");
+		printf("[SCHEDULER]: Start Scheduler for coordinator\n");
 #endif
 //if startup set CIDER active
-setTier(-1);
-setActiveSchedule(0);
-process_start(&dewi_scheduler_coord_process, NULL);
-
-} else {
+		setTier(-1);
+		setActiveSchedule(0);
+	}
+	else
+	{
 #if DEBUG
-printf("[SCHEDULER]: Start Scheduler for node\n");
+		printf("[SCHEDULER]: Start Scheduler for node\n");
 #endif
-setTier(-1);
-process_start(&dewi_scheduler_node_process, NULL);
-}
-return 1;
-}
+		setTier(-1);
+	}
 
-void scheduleMessage(int timeslots, void* callback) {
-
-printf("[SCHEDULER]: Schedule msg in: %d timeslots, callback: %u", timeslots,
-	callback);
-
+	COLOURING_init();
+	return 1;
 }
 
-void scheduler_reset() {
-etimer_stop(&scheduleUpdate);
-isCoord = 0;
-activeSchedule = -1;
-clearSchedule();
-process_exit(&dewi_scheduler_node_process);
-process_exit(&dewi_scheduler_coord_process);
+void scheduler_reset()
+{
+	isCoord = 0;
+	activeSchedule = -1;
+	clearSchedule();
 }
+

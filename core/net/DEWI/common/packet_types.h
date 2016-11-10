@@ -36,7 +36,7 @@
  * \author Conrad Dandelski <conrad.dandelski@mycit.ie>
  */
 
-enum packettype{SCHEDULE_UPDATE,CIDER,RLL,APP};
+enum packettype{SCHEDULE_UPDATE,CIDER,RLL,COLOURING,APP};
 enum CIDERsubpackettype{
 	CIDER_PING = 1,
 	CIDER_NEIGHBOUR_UPDATE = 2,
@@ -53,10 +53,12 @@ enum CIDERsubpackettype{
 };
 enum RLLsubpackettype{RLL_PING};
 enum COLOURINGsubpackttype{
-	COLOUR_RELEASE = 0,
 	COLOUR_UPDATE = 1,
-	COLOUR_COMPLETE = 100,
-	COLOUR_UNCOMPLETE = 101
+	COLOUR_RELEASE = 2,
+	COLOUR_WAIT_COMPLETE = 100,
+	COLOUR_COMPLETE = 101,
+	COLOUR_UNCOMPLETE = 102,
+	COLOUR_FINISHED = 103
 };
 
 enum APPsubpackettype{APP_RESET,COLOR};
@@ -71,7 +73,7 @@ struct BasePacket{
 struct COLOURING_PACKET{
 		struct BasePacket base;
 		enum COLOURINGsubpackttype subType;
-		uint16_t args[45];
+		uint16_t args[5];
 };
 
 struct CIDER_PACKET{
