@@ -52,7 +52,7 @@ enum CIDERsubpackettype{UNDEFINED = 0,
 	CH_CHILD = 13,
 };
 enum RLLsubpackettype{RLL_PING,RLL_DATA};
-enum APPsubpackettype{RESET,COLOR};
+enum APPsubpackettype{RESET,COLOR,BRIGHTNESS,SENSORDATA,TOPOLOGYREQUEST,TOPOLOGYREPLY,MASTERMSG,CHILDMSG};
 
 
 struct BasePacket{
@@ -62,6 +62,7 @@ struct BasePacket{
 };
 struct APP_PACKET{
 	enum APPsubpackettype subType;
+	uint16_t values[23];
 };
 struct CIDER_PACKET{
 		struct BasePacket base;

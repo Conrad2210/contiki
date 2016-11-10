@@ -49,7 +49,7 @@
 #include "dev/watchdog.h"
 #include "dev/serial-line.h"
 //#include "dev/sys-ctrl.h"
-#include "net/rime/netflood.h"l
+#include "net/rime/netflood.h"
 #include "net/netstack.h"
 #include "net/DEWI/common/packet_types.h"
 
