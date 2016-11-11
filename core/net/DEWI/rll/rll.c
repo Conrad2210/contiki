@@ -77,7 +77,7 @@ PROCESS_THREAD(dewi_rll_process, ev, data) {
 	PROCESS_BEGIN()
 		;
 etimer_set(&RLL_timer,CLOCK_SECOND*5);
-	netflood_open(&rll_flood,2*CLOCK_SECOND,RLL_channel,&rll_netflood_rx);
+	netflood_open(&rll_flood,2*CLOCK_SECOND,BROADCAST_CHANNEL_RLL,&rll_netflood_rx);
 		while (1) {
 			PROCESS_YIELD();
 			if (ev == PROCESS_EVENT_TIMER) {

@@ -132,7 +132,7 @@ void handleSensorsEvent(process_data_t data){
 			// this packet is broadcasted via RLL
 			printf("[APP]: Create App packet\n");
 			struct APP_PACKET temp;
-			temp.subType = COLOR;
+			temp.subType = APP_COLOR;
 			temp.values[0] = (uint16_t) 0;
 			temp.values[1] = (uint16_t) 0;
 			temp.values[2] = (uint16_t) 0;
@@ -158,7 +158,7 @@ void handleSerialInput(process_data_t data){
 		list_init(topologyInfo_list);
 		// poll topology data from network
 		struct APP_PACKET temp;
-		temp.subType = TOPOLOGYREQUEST;
+		temp.subType = APP_TOPOLOGYREQUEST;
 		sendRLLMessage(temp);
 
 		// set a flag to wait for topology updates
@@ -174,7 +174,7 @@ void handleSerialInput(process_data_t data){
 
 		// broadcast brightness information to other nodes
 		struct APP_PACKET temp;
-		temp.subType = BRIGHTNESS;
+		temp.subType = APP_BRIGHTNESS;
 		temp.values[0] = (uint16_t) lastBRIGHTNESS;
 		sendRLLMessage(temp);
 
@@ -189,7 +189,7 @@ void handleSerialInput(process_data_t data){
 
 		// put color in application packet and send it
 		struct APP_PACKET temp;
-		temp.subType = COLOR;
+		temp.subType = APP_COLOR;
 		temp.values[0] = R;
 		temp.values[1] = G;
 		temp.values[2] = B;
@@ -222,7 +222,7 @@ void handleProcessEvent(data){
 				CC2538_SENSORS_VALUE_TYPE_CONVERTED);
 
 		struct APP_PACKET temp;
-		temp.subType = SENSORDATA;
+		temp.subType = APP_SENSORDATA;
 		temp.values[0] = linkaddr_node_addr.u8[0];
 		temp.values[1] = linkaddr_node_addr.u8[1];
 		temp.values[2] = (uint16_t) temperature;
@@ -269,7 +269,7 @@ void handleMasterMessage(struct APP_PACKET data){
 
 		// create child response to join master
 		struct APP_PACKET temp;
-		temp.subType = CHILDMSG;
+		temp.subType = APP_CHILDMSG;
 		temp.values[0] = linkaddr_node_addr.u8[0];
 		temp.values[1] = linkaddr_node_addr.u8[1];
 		temp.values[2] = master_addr1.u8[0];
@@ -428,32 +428,32 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 void applicationDataCallback(struct APP_PACKET data, uint8_t seq) {
 	printf("[APP]: Data received: Type: %d, SeqNo: %d\n", data.subType, seq);
 
-	if (data.subType == COLOR){ // received color packet, set LED color
+	if (data.subType == APP_COLOR){ // received color packet, set LED color
 		uint16_t R, G, B;
 		R = data.values[0];
 		G = data.values[1];
 		B = data.values[2];
 		setColor(R, G, B);
 
-	} else if (data.subType == BRIGHTNESS){ // received brightness packet, set LED brightness
+	} else if (data.subType == APP_BRIGHTNESS){ // received brightness packet, set LED brightness
 		uint16_t brightness = data.values[0];
 		i2c_single_send(0x39, LED_BRIGHTNESS | brightness);
 
-	} else if ((data.subType == SENSORDATA) && isGateway){ // received sensor data, forward them to serial port if this is the gateway
+	} else if ((data.subType == APP_SENSORDATA) && isGateway){ // received sensor data, forward them to serial port if this is the gateway
 		printf("node(%d:%d) Temperature = '%dC' \r\n",data.values[0], data.values[1], data.values[2]);
 		sendBatteryStatusByserialP(data.values[3], data.values[0], data.values[1]);
 
-	} else if (data.subType == TOPOLOGYREQUEST){ // topology information has been requested, reply with data if master
+	} else if (data.subType == APP_TOPOLOGYREQUEST){ // topology information has been requested, reply with data if master
 		handleTopologyRequest();
 
-	} else if (data.subType == TOPOLOGYREPLY && waitForTopologyUpdate) { // topology information received, store information
+	} else if (data.subType == APP_TOPOLOGYREPLY && waitForTopologyUpdate) { // topology information received, store information
 		handleTopologyReply(data);
 
-	} else if (data.subType == MASTERMSG){ // received master advertisement, respond to master node
+	} else if (data.subType == APP_MASTERMSG){ // received master advertisement, respond to master node
 		// this is for building a dummy topology and isn't needed when topology is created by CIDER
 		handleMasterMessage(data);
 
-	} else if (data.subType == CHILDMSG){ // received child response
+	} else if (data.subType == APP_CHILDMSG){ // received child response
 		// this is for building a dummy topology and isn't needed when topology is created by CIDER
 		handleChildMessage(data);
 
