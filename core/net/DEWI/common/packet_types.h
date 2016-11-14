@@ -38,7 +38,7 @@
 
 #ifndef DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_COMMON_PACKET_TYPES_H_
 #define DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_COMMON_PACKET_TYPES_H_
-
+#include "mac/tsch/tsch-asn.h"
 enum packettype
 {
 	SCHEDULE_UPDATE, CIDER, RLL, COLOURING, APP
@@ -109,7 +109,7 @@ struct RLL_PACKET
 {
 		struct BasePacket base;
 		enum RLLsubpackettype subType;
-		uint8_t stage;
+		struct asn_t timeSend;
 		struct APP_PACKET appData;
 
 };

@@ -57,11 +57,12 @@ void setActiveSchedule(uint8_t schedule)
 				CIDER_notify();
 				break;
 			case 1: //todo: stuff for RLL
+				RLL_notify();
 				break;
 			default:
 				//just do nothing
-				break;
-		}
+				break;		}
+
 	}
 }
 
@@ -140,6 +141,7 @@ uint8_t initScheduler()
 	}
 
 	COLOURING_init();
+	RLL_init();
 	return 1;
 }
 

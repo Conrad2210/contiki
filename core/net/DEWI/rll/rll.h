@@ -58,7 +58,9 @@
 #include <stdint.h>
 
 void sendRLLMessage(struct APP_PACKET dataPacket);
-void rllInit();
+void RLL_init();
+void RLL_start();
+void RLL_notify();
 
 
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_RLL_RLL_H_ */
