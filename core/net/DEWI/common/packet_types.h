@@ -53,7 +53,8 @@ enum CIDERsubpackettype
 	CIDER_CS_PING = 6,
 	CIDER_CS = 7,
 	CIDER_CH_PROMOTE = 10,
-	CIDER_LP_PING = 11,
+	CIDER_CH_PROMOTE_ACK = 11,
+	CIDER_LP_PING = 12,
 	CIDER_COMPLETE = 100,
 	CIDER_UNCOMPLETE = 101,
 	CIDER_UNDEFINED = 200
@@ -93,6 +94,7 @@ struct COLOURING_PACKET
 
 struct APP_PACKET
 {
+		struct BasePacket base;
 		enum APPsubpackettype subType;
 		uint16_t values[23];
 };

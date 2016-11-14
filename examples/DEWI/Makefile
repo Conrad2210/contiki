@@ -1,6 +1,6 @@
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 
-CONTIKI_PROJECT = example-dewi
+CONTIKI_PROJECT = example-dewi demonstrator-node demonstrator-coordinator
 LDFLAGS+=-lm
 CFLAGS+=-lm
 TARGET_LIBFILES+=-lm

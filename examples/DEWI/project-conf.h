@@ -73,6 +73,7 @@
 #define CONF_LP_max 5.0;
 #define CONF_RSSI_min -94.0;
 #define CONF_RSSI_max -30.0;
+#define CLUSTER_RADIUS -50
 
 #define CIDER_LOG_LEVEL 1
 #define NEIGHBOURTABLE_LOG_LEVEL 1

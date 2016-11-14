@@ -169,7 +169,6 @@ uint8_t getCHDegree()
 
 		if (n->CIDERState == 5)
 		{
-			printNeighbour(n);
 			numCH = numCH + 1;
 		}
 	}
@@ -189,7 +188,6 @@ uint8_t getColoredNodes()
 		 broadcast message. */
 		if (n->CIDERState == 5 && n->colour != 0)
 		{
-			printNeighbour(n);
 			numCH = numCH + 1;
 		}
 	}
@@ -209,7 +207,6 @@ uint8_t getUncoloredNodes()
 		if (n->CIDERState == 5 && n->colour == 0)
 		{
 
-			printNeighbour(n);
 			numCH = numCH + 1;
 		}
 	}
@@ -228,7 +225,6 @@ uint8_t getDV()
 
 		if (n->CIDERState == 5)
 		{
-			printNeighbour(n);
 			if (n->CHDegree > dv) dv = n->CHDegree;
 		}
 	}
@@ -249,7 +245,6 @@ void calcSDIs()
 		if (n->CIDERState == 5)
 		{
 			n->SDI = (getDVStatus() + 1) * n->sDegree + n->UCDegree + n->randNumber;
-			printNeighbour(n);
 			if (n->SDI > hSDI && n->colour == 0) hSDI = n->SDI;
 		}
 	}
@@ -298,7 +293,7 @@ uint8_t validColour()
 	uint8_t colourUniqe = 1;
 	uint8_t numNeigh = 0;
 
-	if(getColour() == 0)return 0;
+	if (getColour() == 0) return 0;
 	struct neighbour *n;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
@@ -312,10 +307,9 @@ uint8_t validColour()
 		}
 	}
 
-	if(numNeigh > 3)
+	if (numNeigh > 3)
 		return 1;
-	else
-		return colourUniqe;
+	else return colourUniqe;
 }
 uint8_t getSDegree()
 {
@@ -451,6 +445,7 @@ int checkIfCHinNetwork(int currentState)
 void printTable()
 {
 	struct neighbour *n;
+	printNodeStatus();
 	PRINTF("\n");PRINTF("**** Print Neighbour Table for Node: 0x%x \n", linkaddr_node_addr.u16);
 	int i = 1;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
@@ -459,10 +454,10 @@ void printTable()
 		{
 			PRINTF(
 					"[%u] Neigh: 0x%x last RSSI: %ddBm last ASN: %x.%lx TxPower: %d dBm is LPD: %d ND: %d CD: %d LPD: %d "
-					"myCH: %d myCS: %d, myChildCH: %d, Parent: 0x%2x Tier: %d CIDERState: %d Utility: %d MsgCount: %d\n",
+					"myCH: %d myCS: %d, myChildCH: %d, Parent: 0x%2x Tier: %d, Colour: %d, CIDERState: %d Utility: %d MsgCount: %d\n",
 					i, n->addr.u16, n->last_rssi, n->last_asn.ms1b, n->last_asn.ls4b, n->txPW,
 					n->isLPD, n->nodeDegree, n->clusterDegree, n->lpDegree, n->myCH, n->myCS,n->myChildCH,
-					n->parent, n->tier, n->CIDERState, (uint16_t) (n->utility * 1000.0), n->msgCounter);
+					n->parent, n->tier,n->colour, n->CIDERState, (uint16_t) (n->utility * 1000.0), n->msgCounter);
 		}
 		else if (getActiveProtocol() == 1)
 		{
@@ -474,10 +469,10 @@ void printTable()
 		{
 			PRINTF(
 					"[%u] Neigh: 0x%x last RSSI: %ddBm last ASN: %x.%lx TxPower: %d dBm is LPD: %d ND: %d CD: %d LPD: %d "
-					"myCH: %d myCS: %d, myChildCH: %d, Parent: 0x%2x Tier: %d CIDERState: %d Utility: %d\n", i,
+					"myCH: %d myCS: %d, myChildCH: %d, Parent: 0x%2x Tier: %d, Colour: %d, CIDERState: %d Utility: %d\n", i,
 					n->addr.u16, n->last_rssi, n->last_asn.ms1b, n->last_asn.ls4b, n->txPW,
 					n->isLPD, n->nodeDegree, n->clusterDegree, n->lpDegree, n->myCH, n->myCS,n->myChildCH,
-					n->parent, n->tier, n->CIDERState, (uint16_t) (n->utility * 1000.0));
+					n->parent, n->tier,n->colour, n->CIDERState, (uint16_t) (n->utility * 1000.0));
 
 		}
 		i++;
@@ -585,10 +580,19 @@ int getNumCluster()
 	int number = 0;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-		if (n->last_rssi >= -90 * 0.8) number++;
+		if (n->last_rssi >= CLUSTER_RADIUS) number++;
 	}
 
 	return number;
+}
+void resetMSGCounter()
+{
+	struct neighbour *n;
+	int i = 2;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+		n->msgCounter = 0;
+	}
 }
 
 void updateNeighListCS(uint16_t *array, int size, linkaddr_t CHaddress)
@@ -597,9 +601,10 @@ void updateNeighListCS(uint16_t *array, int size, linkaddr_t CHaddress)
 	int i = 2;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-		if (((n->last_rssi >= -90 * 0.8) && (n->CIDERState == 6))
-				|| (linkaddr_cmp(&CHaddress, &n->parent) == 1))
+		if (((n->last_rssi >= CLUSTER_RADIUS) && (n->CIDERState == 6))
+				|| (linkaddr_cmp(&CHaddress, &n->parent) == 1 && n->myChildCH == 0))
 		{
+			PRINTF("[NEIGH]: updateNeighListCS, child: 0x%4x\n",n->addr.u16);
 			n->myCS = 1;
 			if (n->myChildCH == 0) n->CIDERState = 7;
 			n->parent = CHaddress;
@@ -633,7 +638,7 @@ float getHighestUtility()
 
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-			if (n->utility > highestUtility)
+		if (n->utility > highestUtility)
 		{
 			highestUtility = n->utility;
 		}
@@ -675,7 +680,7 @@ uint8_t checkForPromotion(uint8_t CIDERState)
 		{
 			msgCount = msgCount + n->msgCounter;
 
-			if (msgCount >= 10)
+			if (msgCount >= 5)
 			{
 
 				return 1;
@@ -709,21 +714,27 @@ linkaddr_t getChildCHAddress(uint8_t CIDERState)
 
 		}
 	}
-	if (msgCount >= 10)
+	if (msgCount >=5)
 	{
-		for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
-		{
-			if (linkaddr_cmp(&tempAddr, &n->addr))
-			{
-				n->myChildCH = 1;
-				return tempAddr;
-			}
-		}
+
+		return tempAddr;
 	}
 	else
 	{
 		return linkaddr_null;
 
+	}
+}
+
+void setChildCH(linkaddr_t child)
+{
+	struct neighbour *n;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+		if (linkaddr_cmp(&child, &n->addr))
+		{
+			n->myChildCH = 1;
+		}
 	}
 }
 
@@ -881,10 +892,12 @@ void setLPD(int8_t LPD)
 ownStatus.isLPD = LPD;
 }
 
-linkaddr_t getParentStatus(){
+linkaddr_t getParentStatus()
+{
 return ownStatus.parent;
 }
-void setParentStatus(linkaddr_t addr){
+void setParentStatus(linkaddr_t addr)
+{
 ownStatus.parent = addr;
 }
 

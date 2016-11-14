@@ -71,7 +71,7 @@ PROCESS_BEGIN()
 
 	netflood_open(&app_netflood, CLOCK_SECOND, NETFLOOD_CHANNEL_APP, &app_netflood_rx);
 
-	radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, -24);
+	radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, 0);
 	printf("DEWI Application\n");
 	while (1)
 		{

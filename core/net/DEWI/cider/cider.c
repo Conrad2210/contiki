@@ -303,7 +303,7 @@ switch (currentState)
 					else
 					{
 						ctimer_set(&completeWaitTimer, CLOCK_SECOND * 5, callbackCompleteWaitTimer,
-								NULL);
+						NULL);
 					}
 				}
 			}
@@ -328,6 +328,7 @@ switch (currentState)
 			{
 				PRINTF("[CIDER]: Change State to: CH_COMPETITION \n");
 				currentState = CIDER_CH_COMPETITION;
+				sendCounter = 0;
 				printNodeStatus();
 			}
 		}
@@ -337,15 +338,27 @@ switch (currentState)
 
 	case CIDER_CH_PROMOTE:
 		PRINTF("[CIDER]: Current State: CH_PROMOTE \n");
-		if (sendCounter >= 1)
+		if (sendCounter >= 2)
 		{
 			PRINTF("[CIDER]: Change State to: CH \n");
 			currentState = CIDER_CH;
 			sendCounter = 0;
-			csPingCounter = 0;
+			resetMSGCounter();
 			printNodeStatus();
 		}
 		updateStatusLED();
+		startSendTimer();
+		break;
+	case CIDER_CH_PROMOTE_ACK:
+		PRINTF("[CIDER]: Current State: CIDER_CH_PROMOTE_ACK \n");
+		if (sendCounter >= 2)
+		{
+			PRINTF("[CIDER]: Change State to: CH \n");
+			currentState = CIDER_CH;
+			sendCounter = 0;
+			resetMSGCounter();
+			printNodeStatus();
+		}
 		startSendTimer();
 		break;
 
@@ -441,6 +454,16 @@ switch (currentState)
 		CIDERPacket.subType = CIDER_CH_PROMOTE;
 		CIDERPacket.parent = linkaddr_node_addr;
 		CIDERPacket.args[0] = getTier();
+		PRINTF("[CIDER] Promote MSG for: 0x%4x\n",CIDERPacket.base.dst.u16);
+
+		break;
+
+	case CIDER_CH_PROMOTE_ACK:
+		PRINTF("[CIDER]:Create CIDER_CH_PROMOTE_ACK MESSAGE \n");
+		CIDERPacket.base.dst = parent;
+		CIDERPacket.base.src = linkaddr_node_addr;
+		CIDERPacket.base.type = CIDER;
+		CIDERPacket.subType = CIDER_CH_PROMOTE_ACK;
 
 		break;
 
@@ -545,11 +568,12 @@ switch (temp->subType)
 		break;
 	case CIDER_CH:
 
-		if(currentState == CIDER_CH_COMPETITION && n.myCH == 0)
+		if (currentState == CIDER_CH_COMPETITION && n.myCH == 0)
 		{
 			ctimer_stop(&cider_competition_timer);
 			ctimer_stop(&cider_competitionWait_timer);
 			currentState = CIDER_CS_PING;
+			sendCounter = 0;
 		}
 		PRINTF("[CIDER]: CH message received from 0x%4x \n", from->u16);
 		n.addr = temp->base.src;
@@ -571,7 +595,8 @@ switch (temp->subType)
 			}
 			updateNeighboursCH(temp->args[i], temp->base.src, temp->args[0]);
 		}
-		if (currentState != CIDER_CS && currentState != CIDER_CH && isCH == 1)
+		if (currentState == CIDER_CS_PING
+				&& isCH == 1 && n.myCH == 0)
 		{
 			ctimer_stop(&cider_competition_timer);
 			n.myCH = 1;
@@ -579,12 +604,12 @@ switch (temp->subType)
 			parent = temp->base.src;
 			setParentStatus(parent);
 			currentState = CIDER_CS;
+			sendCounter = 0;
 
 		}
 		if (linkaddr_cmp(&parent, &temp->base.src) == 1)
 		{
-			if(currentState == CIDER_CS)
-				setColour(temp->args[1]);
+			if (currentState == CIDER_CS) setColour(temp->args[1]);
 			ctimer_stop(&ka_timer);
 			ctimer_set(&ka_timer, ciderKAInterval, callbackKATimer, NULL);
 		}
@@ -615,9 +640,9 @@ switch (temp->subType)
 
 	case CIDER_CH_PROMOTE:
 		PRINTF("[CIDER]: CH_PROMOTE received from 0x%4x \n", from->u16);
-		if (temp->base.dst.u16 == linkaddr_node_addr.u16)
+		if ((linkaddr_cmp(&temp->base.dst,&linkaddr_node_addr)) && (currentState == CIDER_CS || currentState == CIDER_CS_PING))
 		{
-			currentState = CIDER_CH_COMPETITION;
+			currentState = CIDER_CH_PROMOTE_ACK;
 
 			setTier(temp->args[0] + 1);
 			sendCounter = 0;
@@ -642,6 +667,21 @@ switch (temp->subType)
 			ctimer_set(&ka_timer, ciderKAInterval, callbackKATimer, NULL);
 		}
 
+		break;
+	case CIDER_CH_PROMOTE_ACK:
+		PRINTF("[CIDER]: CIDER_CH_PROMOTE_ACK received from 0x%4x \n", from->u16);
+
+		n.addr = temp->base.src;
+		n.last_rssi = tempRSSI;
+		n.last_asn = tsch_get_current_asn();
+		n.parent = temp->base.dst;
+		n.CIDERState = CIDER_CH;
+		if (linkaddr_cmp(&temp->base.dst, &linkaddr_node_addr) == 1)
+		{
+			n.myChildCH = 1;
+		}
+
+		newNeigh = addNeighbour(&n);
 		break;
 	case CIDER_COMPLETE:
 		if (currentState == CIDER_CH)
@@ -863,7 +903,7 @@ return returnAddr;
 
 uint8_t checkCHinRange()
 {
-if (checkIfCHinNetwork(CIDER_CH) == 1)
+if (checkIfCHinNetwork(CIDER_CH) == 1 || checkIfCHinNetwork(CIDER_CH_COMPETITION) == 1)
 	return 1;
 else return 0;
 }
@@ -973,6 +1013,7 @@ return txInt;
 
 void updateStatusLED()
 {
+PRINTF("[CIDER]: Change LED Colour to: %d\n",currentState);
 switch (currentState)
 {
 	case CIDER_PING: //PING message
@@ -1105,10 +1146,10 @@ void callbackCompetitionWaitTimer()
 {
 PRINTF("[CIDER]: Change State to: CH \n");
 currentState = CIDER_CH;
+sendCounter = 0;
 printNodeStatus();
 if (getTier() == -1) setTier(0);
-if(getCoord() == 0)tsch_set_eb_period(TSCH_CONF_EB_PERIOD);
-sendCounter = 0;
+if (getCoord() == 0) tsch_set_eb_period(TSCH_CONF_EB_PERIOD);
 
 }
 
@@ -1142,6 +1183,6 @@ PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
 	;
 	etimer_set(&cider_timer, ciderInterval);
 	PROCESS_CONTEXT_END(&dewi_cider_process);
-	 COLOURING_Reset();
+COLOURING_Reset();
 }
 

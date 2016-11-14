@@ -155,6 +155,8 @@ int getNumCluster();
 float getAvgRSSI();
 float getHighestUtility();
 void updateNeighListCS(uint16_t *array, int size, linkaddr_t CHaddress);
+void resetMSGCounter();
+void setChildCH(linkaddr_t child);
 uint8_t checkIfReadyForNextState(int currentState);
 void updateNeighboursCH(uint16_t addr, linkaddr_t CHaddress, uint8_t tier);
 void printTable();

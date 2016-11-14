@@ -63,14 +63,13 @@ PROCESS_THREAD(dewi_demo_process, ev, data) {
 		printf("Coordinator: initialization start\n");
 
 		initNeighbourTable();
-		setCoord(1);
+		setCoord(0);
 		initScheduler();
 
-		tsch_set_coordinator(1);
 		clock_wait(CLOCK_SECOND * 2);
 
 		radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER,
-				-24);
+				0);
 		button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
 		BUTTON_PRESS_EVENT_INTERVAL);
 
@@ -107,20 +106,13 @@ PROCESS_THREAD(dewi_demo_process, ev, data) {
 
 			} else if (ev == button_press_duration_exceeded) {
 				if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_PRESS_DURATION)
-						== 10) {
-					printf("[APP]: Restart APP\n");
-					struct APP_PACKET temp;
-					temp.base.dst = tsch_broadcast_address;
-					;
-					temp.base.src = linkaddr_node_addr;
-					temp.subType = APP_RESET;
-
-					packetbuf_copyfrom(&temp, sizeof(struct APP_PACKET));
-					packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
-					packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, 0);
-					netflood_send(&app_netflood, seq++);
-					tsch_dewi_callback_leaving_network();
-					tsch_dewi_callback_joining_network();
+						== 3) {
+					printf("[APP]: Start Node as Coordinator\n");
+					leds_off(LEDS_ALL);
+					leds_on(LEDS_ALL);
+					setCoord(1);
+					initScheduler();
+					tsch_set_coordinator(1);
 
 				}
 			}
