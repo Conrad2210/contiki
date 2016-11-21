@@ -95,6 +95,11 @@ PROCESS_THREAD(dewi_demo_process, ev, data) {
 						button_press_counter = button_press_counter + 1;
 						etimer_set(&button_press_reset, CLOCK_SECOND);
 
+						struct APP_PACKET temp;
+						temp.timeSend = current_asn;
+						temp.subType = APP_SENSORDATA;
+						sendRLLDataMessage(temp);
+
 					}
 
 					if (button_press_counter == 5) {
@@ -140,7 +145,7 @@ void uip_debug_lladdr_print() {
 
 void tsch_dewi_callback_joining_network(void) {
 printf("[APP]: joining network\n");
-setCoord(1);
+setCoord(0);
 initScheduler();
 initNeighbourTable();
 leds_on(LEDS_GREEN);
@@ -155,4 +160,16 @@ void tsch_dewi_callback_ka(void){
 	printf("[APP]: Keep Alive sent\n");
 	leds_off(LEDS_ALL);
 	leds_on(LEDS_YELLOW);
+}
+
+void applicationDataCallback(struct APP_PACKET data){
+	uint16_t tempLatency;
+	switch (data.subType) {
+
+		case APP_SENSORDATA:
+			tempLatency = ASN_DIFF(current_asn,data.timeSend);
+			tempLatency = tempLatency * 10;
+				printf("[APP]: Msg received, latency: %d, sendASN: asn-%x.%lx, receivedASN: asn-%x.%lx\n",tempLatency,data.timeSend.ms1b,data.timeSend.ls4b,current_asn.ms1b,current_asn.ls4b);
+			break;
+	}
 }

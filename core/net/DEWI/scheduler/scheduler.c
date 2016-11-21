@@ -40,15 +40,22 @@
 
 #define DEBUG DEBUG_PRINT
 uint8_t isCoord = 0;
-uint8_t activeSchedule = -1;
+int8_t activeSchedule = -1;
 
 int8_t tier = -1;
+
 void setActiveSchedule(uint8_t schedule)
 {
+	setActiveProtocol(schedule);
+	if(getCIDERState() != 5 && getCIDERState() != 7 )
+		schedule = 0;
+	printf("[SCHEDULER]: activeSchedule %d, schedule %d\n", activeSchedule, schedule);
 
-	if (activeSchedule != schedule)
+	if (activeSchedule < schedule)
 	{
+
 		printf("[SCHEDULER]: new schedule received, Schedule %u is active now\n", schedule);
+
 		activeSchedule = schedule;
 		switch (activeSchedule)
 		{
@@ -56,12 +63,17 @@ void setActiveSchedule(uint8_t schedule)
 
 				CIDER_notify();
 				break;
-			case 1: //todo: stuff for RLL
+			case 1:
+
+				break;
+			case 2: //todo: stuff for RLL
 				RLL_notify();
+
 				break;
 			default:
 				//just do nothing
-				break;		}
+				break;
+		}
 
 	}
 }
@@ -81,29 +93,276 @@ uint8_t getActiveSchedule()
 	return (uint8_t) activeSchedule;
 }
 
-uint16_t setSchedule(ScheduleInfo_t schedule)
+uint16_t setSchedule()
 {
+	struct tsch_slotframe *tempHandle = tsch_schedule_get_slotframe_by_handle(0x00);
 
-	tsch_schedule_remove_all_slotframes();
-	struct tsch_slotframe *tempHandle = tempHandle = tsch_schedule_add_slotframe(schedule.handle,
-			schedule.slotframeLength);
+	uint8_t i = 1;
+	for (i = 1; i < MAX_NUM_LINKS; i++)
+	{
 
-	uint8_t i = 0;
+		if (tsch_schedule_add_link(tempHandle,
+		LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
+				LINK_TYPE_NORMAL, &tsch_broadcast_address, i, 0) == NULL)
+		{
+			break;
+		}
+
+	}
+	//tsch_schedule_print();
+	return tempHandle->handle;
+
+}
+uint16_t setCoordSchedule()
+{
+	struct tsch_slotframe *tempHandle = tsch_schedule_add_slotframe(0x00, 51);
+
+	uint8_t i = 1;
 	for (i = 0; i < MAX_NUM_LINKS; i++)
 	{
-		if (schedule.links[i].isActive == 1)
+		if (i == 0)
 		{
-			linkInfo_t temp = schedule.links[i];
-
-			if (tsch_schedule_add_link(tempHandle, temp.link_options, temp.link_type, temp.addr,
-					temp.timeslot, temp.channel_offset) == NULL)
+			if (tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
+					LINK_TYPE_ADVERTISING, &tsch_broadcast_address, i, 0) == NULL)
 			{
 				break;
 			}
 		}
+
+		else
+		{
+			if (tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
+					LINK_TYPE_NORMAL, &tsch_broadcast_address, i, 0) == NULL)
+			{
+				break;
+			}
+		}
+
 	}
 	//tsch_schedule_print();
 	return tempHandle->handle;
+
+}
+
+void setRLLNode()
+{
+	uint8_t i = 1;
+	struct tsch_slotframe *tempHandle = tsch_schedule_get_slotframe_by_handle(0x00);
+	for (i = 1; i < tempHandle->size.val; i++)
+	{
+		if (i % 10 != 0 && i % 10 != 1)
+		{
+			tsch_schedule_remove_link_by_timeslot(tempHandle, i);
+		}
+		if (i % 10 == 1)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+		}
+		if (i % 10 == 0)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+		}
+	}
+
+}
+void setRLLCH()
+{
+	uint8_t i = 1;
+	struct tsch_slotframe *tempHandle = tsch_schedule_get_slotframe_by_handle(0x00);
+	int8_t colourParent = getColourParent(getParentStatus());
+	for (i = 1; i < tempHandle->size.val; i++)
+	{
+		if (i % 10 == 1)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+
+		}
+		else if (i % 10 == 2)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+		}
+		else if (i % 10 == 3)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+		}
+		else if (i % 10 == 4)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+		}
+		else if (i % 10 == 5)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+		}
+		else if (i % 10 == 6)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+		}
+		else if (i % 10 == 7)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+		}
+		else if (i % 10 == 8)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+		}
+		else if (i % 10 == 9)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+		}
+		else if (i % 10 == 0)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+
+		}
+	}
+
+}
+void setRLLTier0()
+{
+	uint8_t i = 1;
+	struct tsch_slotframe *tempHandle = tsch_schedule_get_slotframe_by_handle(0x00);
+	int8_t colourParent = getColourParent(getParentStatus());
+	for (i = 1; i < tempHandle->size.val; i++)
+	{
+		if (i % 10 == 1)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+
+		}
+		else if (i % 10 == 2 || i % 10 == 3)
+		{
+			tsch_schedule_remove_link_by_timeslot(tempHandle, i);
+		}
+		else if (i % 10 == 4)
+		{
+
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+
+		}
+		else if (i % 10 == 5)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+		}
+		else if (i % 10 == 6 || i % 10 == 7)
+		{
+			tsch_schedule_remove_link_by_timeslot(tempHandle, i);
+		}
+		else if (i % 10 == 8)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+		}
+		else if (i % 10 == 9)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+		}
+		else if (i % 10 == 0)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+
+		}
+	}
+
+}
+
+void setRLLSchedule()
+{
+
+	if (getCIDERState() == 7)
+	{
+		setRLLNode();
+	}
+	else if (getCIDERState() == 5 && getTier() == 0)
+	{
+		setRLLTier0();
+	}
+	else if (getCIDERState() == 5)
+	{
+		setRLLCH();
+	}
 
 }
 
@@ -119,7 +378,6 @@ void clearSchedule()
 	}
 }
 
-
 uint8_t initScheduler()
 {
 
@@ -131,12 +389,15 @@ uint8_t initScheduler()
 //if startup set CIDER active
 		setTier(-1);
 		setActiveSchedule(0);
+		setCoordSchedule();
 	}
 	else
 	{
 #if DEBUG
 		printf("[SCHEDULER]: Start Scheduler for node\n");
 #endif
+
+		setSchedule();
 		setTier(-1);
 	}
 

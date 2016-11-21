@@ -156,6 +156,11 @@ void getNeighbour(linkaddr_t *addr, struct neighbour *neigh)
 	else copyNeighbour(neigh, n);
 
 }
+int8_t getColourParent(linkaddr_t parent){
+struct neighbour n;
+getNeighbour(&parent,&n);
+return n.colour;
+}
 uint8_t getCHDegree()
 {
 	uint8_t numCH = 0;
@@ -186,7 +191,7 @@ uint8_t getColoredNodes()
 		/* We break out of the loop if the address of the neighbor matches
 		 the address of the neighbor from which we received this
 		 broadcast message. */
-		if (n->CIDERState == 5 && n->colour != 0)
+		if (n->CIDERState == 5 && n->colour != -1)
 		{
 			numCH = numCH + 1;
 		}
@@ -204,7 +209,7 @@ uint8_t getUncoloredNodes()
 		/* We break out of the loop if the address of the neighbor matches
 		 the address of the neighbor from which we received this
 		 broadcast message. */
-		if (n->CIDERState == 5 && n->colour == 0)
+		if (n->CIDERState == 5 && n->colour == -1)
 		{
 
 			numCH = numCH + 1;
@@ -245,7 +250,7 @@ void calcSDIs()
 		if (n->CIDERState == 5)
 		{
 			n->SDI = (getDVStatus() + 1) * n->sDegree + n->UCDegree + n->randNumber;
-			if (n->SDI > hSDI && n->colour == 0) hSDI = n->SDI;
+			if (n->SDI > hSDI && n->colour == -1) hSDI = n->SDI;
 		}
 	}
 	setHSDIStatus(hSDI);
@@ -254,7 +259,7 @@ void calcSDIs()
 uint8_t calcColour()
 {
 
-	uint8_t colour = 0;
+	int8_t colour = -1;
 	uint8_t counter = 0;
 	uint8_t uni = 1;
 	uint8_t isUniqe = 0;
@@ -273,7 +278,7 @@ uint8_t calcColour()
 
 			if (n->CIDERState == 5)
 			{
-				if (n->colour == colour && n->colour != 0)
+				if (n->colour == colour && n->colour != -1)
 				{
 					isUniqe = 1;
 				}
@@ -293,14 +298,14 @@ uint8_t validColour()
 	uint8_t colourUniqe = 1;
 	uint8_t numNeigh = 0;
 
-	if (getColour() == 0) return 0;
+	if (getColour() == -1) return 0;
 	struct neighbour *n;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
 		if (n->CIDERState == 5)
 		{
 			numNeigh++;
-			if (n->colour == getColour() || n->colour == 0)
+			if (n->colour == getColour() || n->colour == -1)
 			{
 				colourUniqe = 0;
 			}
@@ -324,7 +329,7 @@ uint8_t getSDegree()
 		/* We break out of the loop if the address of the neighbor matches
 		 the address of the neighbor from which we received this
 		 broadcast message. */
-		if (n->CIDERState == 5 && n->colour != 0)
+		if (n->CIDERState == 5 && n->colour != -1)
 		{
 			uint8_t counter2 = 0;
 			for (counter2 = 0; counter2 < colourCounter; counter2++)
@@ -507,7 +512,7 @@ void initNeighbourTable()
 	/* The neighbors_list is a Contiki list that holds the neighbors we
 	 have seen thus far. */
 
-	memcpy(colours, TSCH_CONF_DEFAULT_HOPPING_SEQUENCE, sizeof(TSCH_CONF_DEFAULT_HOPPING_SEQUENCE));
+	memcpy(colours, CIDER_CONF_OFFSETS, sizeof(CIDER_CONF_OFFSETS));
 	process_start(&dewi_neighbourtable_process, NULL);
 }
 
@@ -529,10 +534,10 @@ void initNeighbour(struct neighbour *n)
 	n->txPW = 0;
 	n->utility = 0.0;
 	n->isLPD = 0;
-	n->tier = -1;
+	n->tier = 0;
 	n->msgCounter = 0;
 
-	n->colour = 0;
+	n->colour = -1;
 	n->randNumber = 0;
 	n->SDI = 0;
 	n->CHDegree = 0;
@@ -557,6 +562,31 @@ int getNumNeighbours()
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
 		number++;
+	}
+
+	return number;
+}
+
+
+int8_t getNumChildCH(){
+	struct neighbour *n;
+	int number = 0;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+		if(n->myChildCH == 1)
+			number++;
+	}
+
+	return number;
+}
+
+int8_t getNumCS(){
+	struct neighbour *n;
+	int number = 0;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+		if(n->myCS == 1)
+			number++;
 	}
 
 	return number;
@@ -744,7 +774,7 @@ PROCESS_THREAD(dewi_neighbourtable_process, ev, data)
 		;
 		etimer_set(&NEIGH_Print, NEIGH_PRINT);
 		ownStatus.activeProtocol = 0;
-		ownStatus.colour = 0;
+		ownStatus.colour = -1;
 		ownStatus.tier = 0;
 		ownStatus.activeProtocol = 0; //0=CIDER;1=Colouring;2=RLL;
 		ownStatus.CIDERState = 0;

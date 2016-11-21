@@ -56,7 +56,8 @@
 #include "net/DEWI/colouring/colouring.h"
 
 
-uint16_t setSchedule(ScheduleInfo_t schedule);
+uint16_t setSchedule();
+void setRLLSchedule();
 void clearSchedule();
 void setActiveSchedule(uint8_t schedule);
 uint8_t getActiveSchedule();

@@ -315,6 +315,7 @@ eb_input(struct input_packet *current_input)
         tsch_disassociate();
       }
 #if WITH_DEWI
+      printf("[TSCH]: received schedule: %d\n",eb_ies.dewi_schedule);
       setActiveSchedule(eb_ies.dewi_schedule);
 #endif
 

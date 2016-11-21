@@ -103,7 +103,7 @@ struct neighbour
 		 *
 		 **********************************************/
 
-		uint8_t colour;
+		int8_t colour;
 		uint16_t randNumber;
 		uint16_t SDI;
 		uint8_t CHDegree;
@@ -121,10 +121,10 @@ struct nodes_status{
 		uint8_t COLOURINGState;
 		uint8_t RLLState;
 		linkaddr_t parent;
-		uint8_t tier;
+		int8_t tier;
 		uint8_t isLPD;
 
-		uint8_t colour;
+		int8_t colour;
 		uint16_t randNumber;
 		uint16_t SDI;
 		uint8_t CHDegree;
@@ -149,6 +149,8 @@ void getNeighbour(linkaddr_t *addr, struct neighbour *neigh);
 int checkIfNeighbourExist(linkaddr_t *addr);
 int updateNeighbour(struct neighbour *neigh);
 void initNeighbour(struct neighbour *n);
+int8_t getNumChildCH();
+int8_t getNumCS();
 int getNumNeighbours();
 int getNumLPDevices();
 int getNumCluster();
@@ -176,6 +178,7 @@ uint8_t getSDegree();
 uint8_t getDV();
 uint8_t calcColour();
 uint8_t validColour();
+int8_t getColourParent(linkaddr_t);
 
 
 

@@ -96,6 +96,7 @@ struct APP_PACKET
 {
 		struct BasePacket base;
 		enum APPsubpackettype subType;
+		struct asn_t timeSend;
 		uint16_t values[23];
 };
 struct CIDER_PACKET
@@ -109,7 +110,6 @@ struct RLL_PACKET
 {
 		struct BasePacket base;
 		enum RLLsubpackettype subType;
-		struct asn_t timeSend;
 		struct APP_PACKET appData;
 
 };

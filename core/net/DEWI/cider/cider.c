@@ -363,7 +363,7 @@ switch (currentState)
 		break;
 
 }
-if (CIDER_getIsActive() == 1) setCIDERState(currentState);
+setCIDERState(currentState);
 
 }
 
@@ -475,7 +475,7 @@ switch (currentState)
 sendCounter = sendCounter + 1;
 packetbuf_copyfrom(&CIDERPacket, sizeof(struct CIDER_PACKET));
 
-if (currentState == CIDER_CH)
+if (currentState == CIDER_CH || getActiveProtocol() == 2)
 {
 	packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
 	packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, 0);
@@ -763,20 +763,15 @@ switch (temp->subType)
 
 int CIDER_notify()
 {
+	printf("[CIDER]: CIDER_notify\n");
 //todo: Implement check if RLL;
-if (CIDER_getIsActive() == 1)
-{
-	setActiveProtocol(0);
+//if (CIDER_getIsActive() == 1)
+//{
+	//setActiveProtocol(0);
 	PRINTF("[CIDER]: Start Cider \n");
 	process_start(&dewi_cider_process, NULL);
 
-}
-else
-{
-	process_exit(&dewi_cider_process);
-}
-
-CIDER_createSchedule();
+//}
 
 return 1;
 }
@@ -811,34 +806,7 @@ void CIDER_createSchedule()
 {
 if (CIDER_getIsActive() == 1)
 {
-	ScheduleInfo_t temp;
-	temp.handle = 0x00;
-	temp.slotframeLength = 51;
-	int i;
-	PRINTF("[CIDER]: Create CIDER schedule \n");
-	for (i = 0; i < temp.slotframeLength; i++)
-	{
-		temp.links[i].addr = &tsch_broadcast_address;
-		temp.links[i].channel_offset = 0;
-		temp.links[i].isActive = 1;
 
-		if (i == 0)
-		{
-			temp.links[i].link_type = LINK_TYPE_ADVERTISING;
-			temp.links[i].link_options = LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED
-					| LINK_OPTION_TIME_KEEPING;
-		}
-		else
-		{
-			temp.links[i].link_type = LINK_TYPE_NORMAL;
-			temp.links[i].link_options = LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED
-					| LINK_OPTION_TIME_KEEPING;
-		}
-
-		temp.links[i].timeslot = i;
-	}
-
-	setSchedule(temp);
 }
 else
 {
@@ -1086,6 +1054,7 @@ clearTable();
 printTable();
 process_exit(&dewi_cider_process);
 COLOURING_Reset();
+RLL_reset();
 }
 
 void callbackCompleteTimer()
@@ -1183,6 +1152,8 @@ PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
 	;
 	etimer_set(&cider_timer, ciderInterval);
 	PROCESS_CONTEXT_END(&dewi_cider_process);
-COLOURING_Reset();
+
+	COLOURING_Reset();
+	RLL_reset();
 }
 
