@@ -177,6 +177,10 @@ PROCESS_THREAD(zoul_demo_process, ev, data)
           broadcast_send(&bc);
         } else {
           printf("...and released!\n");
+          printf( "System clock: %lu Hz\n"
+                 "I/O clock: %lu Hz\n",
+                 sys_ctrl_get_sys_clock(),
+                 sys_ctrl_get_io_clock());
         }
       }
 

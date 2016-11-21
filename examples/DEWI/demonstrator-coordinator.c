@@ -98,6 +98,7 @@ PROCESS_THREAD(dewi_demo_process, ev, data) {
 						struct APP_PACKET temp;
 						temp.timeSend = current_asn;
 						temp.subType = APP_SENSORDATA;
+						printf("[APP]: Create RLL Message at:  asn-%x.%lx\n",current_asn.ms1b,current_asn.ls4b);
 						sendRLLDataMessage(temp);
 
 					}

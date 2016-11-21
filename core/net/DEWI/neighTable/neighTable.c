@@ -156,10 +156,11 @@ void getNeighbour(linkaddr_t *addr, struct neighbour *neigh)
 	else copyNeighbour(neigh, n);
 
 }
-int8_t getColourParent(linkaddr_t parent){
-struct neighbour n;
-getNeighbour(&parent,&n);
-return n.colour;
+int8_t getColourParent(linkaddr_t parent)
+{
+	struct neighbour n;
+	getNeighbour(&parent, &n);
+	return n.colour;
 }
 uint8_t getCHDegree()
 {
@@ -567,26 +568,42 @@ int getNumNeighbours()
 	return number;
 }
 
+int8_t getReceiveDirection(linkaddr_t src)
+{
+	struct neighbour *n;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+		if (linkaddr_cmp(&src, &n->addr) != 0)
+		{
+			if (n->myChildCH == 1)
+				return -1;
+			else if (n->myCH == 1)
+				return 1;
+			else if (n->myCS == 1) return 0;
+		}
+	}
+	return 0;
+}
 
-int8_t getNumChildCH(){
+int8_t getNumChildCH()
+{
 	struct neighbour *n;
 	int number = 0;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-		if(n->myChildCH == 1)
-			number++;
+		if (n->myChildCH == 1) number++;
 	}
 
 	return number;
 }
 
-int8_t getNumCS(){
+int8_t getNumCS()
+{
 	struct neighbour *n;
 	int number = 0;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-		if(n->myCS == 1)
-			number++;
+		if (n->myCS == 1) number++;
 	}
 
 	return number;
@@ -744,7 +761,7 @@ linkaddr_t getChildCHAddress(uint8_t CIDERState)
 
 		}
 	}
-	if (msgCount >=5)
+	if (msgCount >= 5)
 	{
 
 		return tempAddr;

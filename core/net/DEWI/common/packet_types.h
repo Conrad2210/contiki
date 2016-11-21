@@ -111,6 +111,7 @@ struct RLL_PACKET
 		struct BasePacket base;
 		enum RLLsubpackettype subType;
 		struct APP_PACKET appData;
+		uint16_t seqNo;
 
 };
 

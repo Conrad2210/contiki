@@ -149,6 +149,7 @@ void getNeighbour(linkaddr_t *addr, struct neighbour *neigh);
 int checkIfNeighbourExist(linkaddr_t *addr);
 int updateNeighbour(struct neighbour *neigh);
 void initNeighbour(struct neighbour *n);
+int8_t getReceiveDirection(linkaddr_t);
 int8_t getNumChildCH();
 int8_t getNumCS();
 int getNumNeighbours();
