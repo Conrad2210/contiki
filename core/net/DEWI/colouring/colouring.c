@@ -169,7 +169,14 @@ case COLOUR_RELEASE:
 case COLOUR_COMPLETE:
 	PRINTF("[COLOURING]: MSG received COLOUR_COMPLETE from 0x%4x\n",from->u16);
 	if (COLOURING_currentState == COLOUR_WAIT_COMPLETE && checkColour() == 1)
+	{
 		COLOURING_currentState = COLOUR_COMPLETE;
+		if(getCIDERState() == 7)
+		{
+			ctimer_set(&completeWaitCBTimer, CLOCK_SECOND * 10, COLOURING_callbackCompleteWaitTimer,
+					NULL);
+		}
+	}
 	else if (checkColour() == 0) COLOURING_currentState = COLOUR_UNCOMPLETE;
 	break;
 case COLOUR_UNCOMPLETE:

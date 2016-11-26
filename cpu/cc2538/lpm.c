@@ -226,7 +226,6 @@ lpm_exit()
   /* Adjust the system clock, since it was not counting while we were sleeping
    * We need to convert sleep duration from rtimer ticks to clock ticks */
   clock_adjust();
-
   /* Restore system clock to the 32 MHz XOSC */
   select_32_mhz_xosc();
 
@@ -252,8 +251,8 @@ lpm_enter()
    */
   if((REG(RFCORE_XREG_FSMSTAT0) & RFCORE_XREG_FSMSTAT0_FSM_FFCTRL_STATE) != 0
      || !periph_permit_pm1() || max_pm == 0) {
-    enter_pm0();
 
+    enter_pm0();
     /* We reach here when the interrupt context that woke us up has returned */
     return;
   }

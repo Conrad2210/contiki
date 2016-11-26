@@ -83,8 +83,8 @@ uint8_t clusteringUnComplete = 0;
 linkaddr_t parent = { { 0, 0 } };
 uint8_t csPingCounter = 0;
 clock_time_t ciderInterval = (CLOCK_SECOND * 0.5);
-clock_time_t ciderKAInterval = (CLOCK_SECOND * 30);
-
+clock_time_t ciderKAInterval = (CLOCK_SECOND * 60);
+uint32_t ebPeriod;
 /***************************************/
 /***************************************/
 /*			    Timers		 		   */
@@ -134,7 +134,8 @@ static struct broadcast_conn cider_bc;
 PROCESS(dewi_cider_process, "DEWI cider PROCESS");
 PROCESS_THREAD(dewi_cider_process, ev, data)
 {
-	PROCESS_EXITHANDLER(broadcast_close(&cider_bc))
+	PROCESS_EXITHANDLER(broadcast_close(&cider_bc));
+
 	broadcast_open(&cider_bc, BROADCAST_CHANNEL_CIDER, &cider_bc_rx);
 	PROCESS_BEGIN()
 		;
@@ -287,7 +288,7 @@ switch (currentState)
 		break;
 
 	case CIDER_CH:
-		PRINTF("[CIDER]: Current State: CH \n");
+		PRINTA("[CIDER]: Current State: CH \n");
 		updateStatusLED();
 		if (clusteringComplete == 0)
 		{
@@ -309,7 +310,15 @@ switch (currentState)
 			}
 		}
 
-		if (sendCounter > 2) ciderInterval = CLOCK_SECOND * 5;
+		if (sendCounter > 2)
+		{
+			if (getTier() != 0) ciderInterval = CLOCK_SECOND * (random_rand() % (10 + 1 - 2) + 2);
+					else
+						ciderInterval = CLOCK_SECOND * 5;
+
+
+			PRINTA("[CIDER]: CIDER intervall = %d\n", ciderInterval/CLOCK_SECOND);
+		}
 		startSendTimer();
 		break;
 
@@ -342,7 +351,7 @@ switch (currentState)
 		{
 			PRINTF("[CIDER]: Change State to: CH \n");
 			currentState = CIDER_CH;
-			sendCounter = 0;
+			sendCounter = -2;
 			resetMSGCounter();
 			printNodeStatus();
 		}
@@ -409,7 +418,7 @@ switch (currentState)
 		CIDERPacket.args[0] = (uint16_t) (getUtility() * 1000);
 		break;
 	case CIDER_CH:
-		PRINTF("[CIDER]:Create CH MESSAGE \n");
+		PRINTA("[CIDER]:Create CH MESSAGE \n");
 		CIDERPacket.subType = CIDER_CH;
 		CIDERPacket.parent = parent;
 		CIDERPacket.args[0] = getTier();
@@ -595,8 +604,7 @@ switch (temp->subType)
 			}
 			updateNeighboursCH(temp->args[i], temp->base.src, temp->args[0]);
 		}
-		if (currentState == CIDER_CS_PING
-				&& isCH == 1 && n.myCH == 0)
+		if (currentState == CIDER_CS_PING && isCH == 1 && n.myCH == 0)
 		{
 			ctimer_stop(&cider_competition_timer);
 			n.myCH = 1;
@@ -609,6 +617,8 @@ switch (temp->subType)
 		}
 		if (linkaddr_cmp(&parent, &temp->base.src) == 1)
 		{
+
+			PRINTA("[CIDER]: CH message received from 0x%4x, my Parent \n", from->u16);
 			if (currentState == CIDER_CS) setColour(temp->args[1]);
 			ctimer_stop(&ka_timer);
 			ctimer_set(&ka_timer, ciderKAInterval, callbackKATimer, NULL);
@@ -640,7 +650,8 @@ switch (temp->subType)
 
 	case CIDER_CH_PROMOTE:
 		PRINTF("[CIDER]: CH_PROMOTE received from 0x%4x \n", from->u16);
-		if ((linkaddr_cmp(&temp->base.dst,&linkaddr_node_addr)) && (currentState == CIDER_CS || currentState == CIDER_CS_PING))
+		if ((linkaddr_cmp(&temp->base.dst, &linkaddr_node_addr))
+				&& (currentState == CIDER_CS || currentState == CIDER_CS_PING))
 		{
 			currentState = CIDER_CH_PROMOTE_ACK;
 
@@ -763,13 +774,13 @@ switch (temp->subType)
 
 int CIDER_notify()
 {
-	printf("[CIDER]: CIDER_notify\n");
+printf("[CIDER]: CIDER_notify\n");
 //todo: Implement check if RLL;
 //if (CIDER_getIsActive() == 1)
 //{
-	//setActiveProtocol(0);
-	PRINTF("[CIDER]: Start Cider \n");
-	process_start(&dewi_cider_process, NULL);
+//setActiveProtocol(0);
+PRINTF("[CIDER]: Start Cider \n");
+process_start(&dewi_cider_process, NULL);
 
 //}
 
@@ -781,7 +792,8 @@ void CIDER_start()
 CIDER_started = 1;
 PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
 	;
-
+	ebPeriod = CLOCK_SECOND * (random_rand() % (15 + 1 - 5) + 5);
+	printf("[CIDER]: EB Period: %d\n", ebPeriod);
 	printf("[CIDER]: cider start\n");
 	etimer_set(&cider_timer, ciderInterval);
 	PROCESS_CONTEXT_END(&dewi_cider_process);
@@ -1118,12 +1130,13 @@ currentState = CIDER_CH;
 sendCounter = 0;
 printNodeStatus();
 if (getTier() == -1) setTier(0);
-if (getCoord() == 0) tsch_set_eb_period(TSCH_CONF_EB_PERIOD);
+//if (getCoord() == 0) tsch_set_eb_period(ebPeriod);
 
 }
 
 void callbackKATimer()
 {
+PRINTF("[CIDER]: callbackKATimer expired \n");
 
 sendCounter = -3;
 currentState = CIDER_PING;
@@ -1153,7 +1166,7 @@ PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
 	etimer_set(&cider_timer, ciderInterval);
 	PROCESS_CONTEXT_END(&dewi_cider_process);
 
-	COLOURING_Reset();
-	RLL_reset();
+COLOURING_Reset();
+RLL_reset();
 }
 

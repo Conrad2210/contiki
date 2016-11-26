@@ -213,7 +213,7 @@ tsch_reset(void)
 #if TSCH_AUTOSELECT_TIME_SOURCE
   best_neighbor_eb_count = 0;
   nbr_table_register(eb_stats, NULL);
-  //tsch_set_eb_period(TSCH_EB_PERIOD);
+  tsch_set_eb_period(TSCH_EB_PERIOD);
 #endif
 }
 
@@ -315,7 +315,6 @@ eb_input(struct input_packet *current_input)
         tsch_disassociate();
       }
 #if WITH_DEWI
-      printf("[TSCH]: received schedule: %d\n",eb_ies.dewi_schedule);
       setActiveSchedule(eb_ies.dewi_schedule);
 #endif
 

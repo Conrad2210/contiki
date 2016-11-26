@@ -1048,9 +1048,9 @@ ownStatus.utility = ut;
 }
 void printNodeStatus()
 {
-PRINTF("\n\n******************************************************\n"
+	PRINTA("\n\n******************************************************\n"
 		"\t\tNode Status"
-		"\n******************************************************\n");PRINTF("Active Protocol: %d, CIDERState: %d, COLOURINGState: %d, RLLState: %d,Tier: %d, Colour: %d, isLPD: %d\n"
+		"\n******************************************************\n");PRINTA("Active Protocol: %d, CIDERState: %d, COLOURINGState: %d, RLLState: %d,Tier: %d, Colour: %d, isLPD: %d\n"
 		"randNum: %d, SDI: %d, CHDegree: %d, UCDegree: %d, CDegree: %d, dV: %d, sDegree: %d, hSDI: %d\n"
 		"NeighDegree: %d, clusterDegree: %d, lpDegree: %d, avgRSSI: %d. utility: %d\n\n\n",
 		ownStatus.activeProtocol,ownStatus.CIDERState,ownStatus.COLOURINGState,ownStatus.RLLState, ownStatus.tier, ownStatus.colour,

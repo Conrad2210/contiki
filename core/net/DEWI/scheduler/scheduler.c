@@ -49,12 +49,10 @@ void setActiveSchedule(uint8_t schedule)
 	setActiveProtocol(schedule);
 	if(getCIDERState() != 5 && getCIDERState() != 7 )
 		schedule = 0;
-	printf("[SCHEDULER]: activeSchedule %d, schedule %d\n", activeSchedule, schedule);
 
 	if (activeSchedule < schedule)
 	{
 
-		printf("[SCHEDULER]: new schedule received, Schedule %u is active now\n", schedule);
 
 		activeSchedule = schedule;
 		switch (activeSchedule)
