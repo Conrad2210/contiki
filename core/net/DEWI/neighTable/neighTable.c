@@ -313,7 +313,7 @@ uint8_t validColour()
 		}
 	}
 
-	if (numNeigh > 3)
+	if (numNeigh > 4)
 		return 1;
 	else return colourUniqe;
 }
@@ -451,7 +451,7 @@ int checkIfCHinNetwork(int currentState)
 void printTable()
 {
 	struct neighbour *n;
-	printNodeStatus();
+	printNodeStatus("printTable");
 	PRINTF("\n");PRINTF("**** Print Neighbour Table for Node: 0x%x \n", linkaddr_node_addr.u16);
 	int i = 1;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
@@ -1046,11 +1046,11 @@ void setUtility(float ut)
 {
 ownStatus.utility = ut;
 }
-void printNodeStatus()
+void printNodeStatus(char fromFunction[])
 {
-	PRINTA("\n\n******************************************************\n"
-		"\t\tNode Status"
-		"\n******************************************************\n");PRINTA("Active Protocol: %d, CIDERState: %d, COLOURINGState: %d, RLLState: %d,Tier: %d, Colour: %d, isLPD: %d\n"
+	PRINTF("\n\n******************************************************\n"
+		"\t\tNode Status from %s"
+		"\n******************************************************\n",fromFunction);PRINTF("Active Protocol: %d, CIDERState: %d, COLOURINGState: %d, RLLState: %d,Tier: %d, Colour: %d, isLPD: %d\n"
 		"randNum: %d, SDI: %d, CHDegree: %d, UCDegree: %d, CDegree: %d, dV: %d, sDegree: %d, hSDI: %d\n"
 		"NeighDegree: %d, clusterDegree: %d, lpDegree: %d, avgRSSI: %d. utility: %d\n\n\n",
 		ownStatus.activeProtocol,ownStatus.CIDERState,ownStatus.COLOURINGState,ownStatus.RLLState, ownStatus.tier, ownStatus.colour,

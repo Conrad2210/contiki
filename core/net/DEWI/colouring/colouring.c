@@ -34,6 +34,7 @@ uint8_t COLOURING_delayTimeslot = 0;
 uint8_t COLOURING_sendCounter = 0;
 uint8_t COLOURING_currentState = COLOUR_UPDATE;
 clock_time_t COLOURING_interval = CLOCK_SECOND;
+uint8_t COLOURING_wait = 0;
 /***************************************/
 /***************************************/
 /*			    Timers		 		   */
@@ -91,7 +92,7 @@ PROCESS_THREAD(dewi_coluring_process, ev, data)
 
 PROCESS_BEGIN()
 	;
-
+	if (COLOURING_started == 0) process_exit(&dewi_coluring_process);
 	setActiveProtocol(1);
 	setRandNumberStatus((uint16_t) random_rand());
 	etimer_set(&colouringETimer, COLOURING_interval);
@@ -112,6 +113,7 @@ PROCESS_BEGIN()
 
 			}
 		}
+		else if (ev == PROCESS_EVENT_EXIT) etimer_stop(&colouringETimer);
 
 	}
 
@@ -137,7 +139,6 @@ COLOURING_started = 1;
 static void colouring_packet_received(struct broadcast_conn *c, const linkaddr_t *from)
 {
 struct COLOURING_PACKET *temp = packetbuf_dataptr();
-if (COLOURING_started == 0 && getCIDERState() == 5) COLOURING_start();
 
 struct neighbour n;
 
@@ -147,6 +148,7 @@ getNeighbour(from, &n);
 switch (temp->subType)
 {
 case COLOUR_UPDATE:
+	ctimer_stop(&completeWaitCBTimer);
 	PRINTF("[COLOURING]: MSG received COLOUR_UPDATE from 0x%4x\n",from->u16);
 	n.CHDegree = temp->args[0];
 	n.UCDegree = temp->args[1];
@@ -156,6 +158,7 @@ case COLOUR_UPDATE:
 	n.COLOURINGState = COLOUR_UPDATE;
 	break;
 case COLOUR_RELEASE:
+	ctimer_stop(&completeWaitCBTimer);
 	PRINTF("[COLOURING]: MSG received COLOUR_RELEASE from 0x%4x with colour: %d\n",from->u16,temp->args[0]);
 	n.colour = temp->args[0];
 	n.COLOURINGState = COLOUR_RELEASE;
@@ -163,18 +166,17 @@ case COLOUR_RELEASE:
 	if (linkaddr_cmp(&temp->base.src, &parent) == 1 && getCIDERState() == 7)
 		setColour(temp->args[0]);
 
-	if(getColour() != -1)
-		COLOURING_currentState = COLOUR_WAIT_COMPLETE;
+	if (getColour() != -1) COLOURING_currentState = COLOUR_WAIT_COMPLETE;
 	break;
 case COLOUR_COMPLETE:
 	PRINTF("[COLOURING]: MSG received COLOUR_COMPLETE from 0x%4x\n",from->u16);
-	if (COLOURING_currentState == COLOUR_WAIT_COMPLETE && checkColour() == 1)
+	if (COLOURING_currentState == COLOUR_WAIT_COMPLETE)
 	{
 		COLOURING_currentState = COLOUR_COMPLETE;
-		if(getCIDERState() == 7)
+		if (getCIDERState() == 7)
 		{
 			ctimer_set(&completeWaitCBTimer, CLOCK_SECOND * 10, COLOURING_callbackCompleteWaitTimer,
-					NULL);
+			NULL);
 		}
 	}
 	else if (checkColour() == 0) COLOURING_currentState = COLOUR_UNCOMPLETE;
@@ -189,6 +191,7 @@ case COLOUR_UNCOMPLETE:
 
 addNeighbour(&n);
 
+if (COLOURING_started == 0 && getCIDERState() == 5 && checkColour() == 0) COLOURING_start();
 }
 
 uint8_t checkColour()
@@ -199,7 +202,6 @@ uint8_t getCo = validColour();
 return getCo;
 }
 
-
 void COLOURING_updateState()
 {
 if (getCIDERState() == CIDER_CH)
@@ -208,8 +210,7 @@ switch (COLOURING_currentState)
 {
 	case COLOUR_UPDATE:
 		PRINTF("[COLOURING]: Current State: COLOUR_UPDATE \n");
-		if (COLOURING_sendCounter >= 2 && checkIfReadyForNextState(COLOURING_currentState) == 1
-				&& getColour() == -1)
+		if (COLOURING_sendCounter >= 2 && checkIfReadyForNextState(COLOURING_currentState) == 1 && getColour() == -1)
 		{
 			PRINTF("[COLOURING]: Change State to: COLOUR_RELEASE \n");
 			COLOURING_currentState = COLOUR_RELEASE;
@@ -225,8 +226,7 @@ switch (COLOURING_currentState)
 		setDVStatus(getDV());
 		calcSDIs();
 		setSDIStatus(
-				(getDVStatus() + 1) * getSDegreeStatus() + getUCDegreeStatus()
-						+ getRandNumberStatus());
+				(getDVStatus() + 1) * getSDegreeStatus() + getUCDegreeStatus() + getRandNumberStatus());
 
 		PRINTF("[COLOURING]: getHSDIStatus() < getSDIStatus(): %d < %d \n",getHSDIStatus() , getSDIStatus());
 		if (getHSDIStatus() < getSDIStatus())
@@ -255,26 +255,40 @@ switch (COLOURING_currentState)
 
 		COLOURING_interval = CLOCK_SECOND * 5;
 		uint8_t getCo = checkColour();
-		if (getCo == 1 && getTier() == 0)
+		COLOURING_wait++;
+		if (getCo == 1 && COLOURING_wait > 3)
 		{
 			COLOURING_currentState = COLOUR_COMPLETE;
+			COLOURING_sendCounter = 0;
+			COLOURING_wait = 0;
 		}
 		break;
 	case COLOUR_COMPLETE:
 		PRINTF("[COLOURING]: Current State: COLOUR_COMPLETE \n");
-		COLOURING_startSendTimer();
+		if (COLOURING_sendCounter < 2 || checkColour() == 0)
+			COLOURING_startSendTimer();
+		else
+		{
+			if (ctimer_expired(&completeWaitCBTimer) == 1)
+				ctimer_set(&releaseWaitCBTimer, CLOCK_SECOND * 5,
+						COLOURING_callbackReleaseWaitTimer,
+						NULL);
+		}
+
 		break;
 	case COLOUR_UNCOMPLETE:
 		PRINTF("[COLOURING]: Current State: COLOUR_UNCOMPLETE \n");
 		COLOURING_startSendTimer();
-		if (COLOURING_sendCounter >= 2)
+		if (COLOURING_sendCounter > 1)
 		{
 			COLOURING_currentState = COLOUR_UPDATE;
+			COLOURING_sendCounter = 0;
 			setColour(-1);
 		}
 		break;
 	case COLOUR_FINISHED:
 		PRINTF("[COLOURING]: Current State: COLOUR_FINISHED \n");
+		COLOURING_callbackCompleteWaitTimer();
 		break;
 }
 }
@@ -405,10 +419,15 @@ COLOURING_sendCounter = 0;
 }
 void COLOURING_callbackCompleteWaitTimer()
 {
-COLOURING_currentState = COLOUR_FINISHED;
+PROCESS_CONTEXT_BEGIN(&dewi_coluring_process)
+;
+etimer_stop(&colouringETimer);
+
 process_exit(&dewi_coluring_process);
-printNodeStatus();
-printTable();
+PROCESS_CONTEXT_END(&dewi_coluring_process);
+COLOURING_currentState = COLOUR_FINISHED;
+//printNodeStatus("COLOURING_callbackCompleteWaitTimer");
+//printTable();
 COLOURING_started = 0;
 PRINTF("[COLOURING]: Start Next protocol\n");
 RLL_start();

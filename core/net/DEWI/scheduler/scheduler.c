@@ -362,6 +362,8 @@ void setRLLSchedule()
 		setRLLCH();
 	}
 
+	tsch_queue_reset();
+
 }
 
 void clearSchedule()

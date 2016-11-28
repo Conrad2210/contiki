@@ -185,7 +185,7 @@ int8_t getColourParent(linkaddr_t);
 
 
 
-void printNodeStatus();
+void printNodeStatus(char* fromFunction);
 int8_t getTier();
 void setTier(int8_t);
 int8_t getColour();

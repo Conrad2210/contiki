@@ -94,6 +94,7 @@ PROCESS_THREAD(dewi_demo_process, ev, data)
 					{
 						button_press_counter = button_press_counter + 1;
 						etimer_set(&button_press_reset, CLOCK_SECOND * 0.2);
+						tsch_queue_reset();
 						struct APP_PACKET temp;
 						temp.timeSend = current_asn;
 						temp.subType = APP_SENSORDATA;
@@ -177,18 +178,20 @@ leds_off(LEDS_ALL);
 leds_on(LEDS_YELLOW);
 }
 
-void applicationDataCallback(struct APP_PACKET data)
+void applicationDataCallback(struct APP_PACKET *data)
 {
 uint16_t tempLatency;
-switch (data.subType)
-{
+struct asn_t tempASN = current_asn;
+printf("[APP]: Msg received with data subtype: %d\n",data->subType);
+//switch (data->subType)
+//{
 
-	case APP_SENSORDATA:
-		tempLatency = ASN_DIFF(current_asn, data.timeSend);
+//	case APP_SENSORDATA:
+		tempLatency = ASN_DIFF(tempASN, data->timeSend);
 		tempLatency = tempLatency * 10;
 		printf("[APP]: Msg received, latency: %d, sendASN: asn-%x.%lx, receivedASN: asn-%x.%lx\n",
-				tempLatency, data.timeSend.ms1b, data.timeSend.ls4b, current_asn.ms1b,
-				current_asn.ls4b);
-		break;
-}
+				tempLatency, data->timeSend.ms1b, data->timeSend.ls4b, tempASN.ms1b,
+				tempASN.ls4b);
+//		break;
+//}
 }
