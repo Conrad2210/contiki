@@ -37,7 +37,7 @@
  */
 #ifndef PROJECT_CONF_H_
 #define PROJECT_CONF_H_
-#define RLL_channel     129
+#define BROADCAST_CHANNEL_RLL     129
 #define NETSTACK_CONF_RDC     nullrdc_driver
 #define APPDATACALLBACK applicationDataCallback
 

@@ -51,7 +51,6 @@
 
 #define NUM_ADDR_ENTRIES 100		//number of child nodes that a master node can have
 
-
 uint8_t lastBRIGHTNESS = 0b00000001;
 linkaddr_t master_addr1; //parent or master address
 char waitForTopologyUpdate;  //is 1 if topology information is ongoing, else 0
@@ -60,6 +59,12 @@ char isGateway; // is 1 if this node is a gateway, else 0
 // instead of having different timers, use counters to trigger actions at multiples of process event timer
 char masterAdvertisementCountdown; // for recurrent master advertisements
 char sendSensorDataCountdown; // for recurrent transmission of sensor data (temperature and battery level)
+
+struct performanceStat { //structure for performance statistics
+	uint16_t cumulativeLatency; // just add up the latencies (no need to calculate average values at the node)
+	uint16_t packetCounter;     // counting all incoming packets
+	uint16_t lastSeq;           // last received sequence number, to be used as a timestamp for the stats
+} stat;
 
 struct slavesAddr_entry { //structure for each child node that the master or parent node has
 	struct slavesAddr_entry *next;
@@ -82,13 +87,22 @@ AUTOSTART_PROCESSES(&dewiDemo);
 
 // set the LED color
 void setColor(uint16_t R, uint16_t G, uint16_t B){
+	uint8_t returnvalue;
 	i2c_single_send(0x39, LED_RED | R);
 	clock_delay_usec(50);
 	i2c_single_send(0x39, LED_GREEN | G);
 	clock_delay_usec(50);
-	i2c_single_send(0x39, LED_BLUE | B);
+	returnvalue = i2c_single_send(0x39, LED_BLUE | B);
+	//printf("i2c return code is %d\r\n", returnvalue);
 	clock_delay_usec(50);
 
+}
+
+// update performance statistics with a new sequence number and a new latency
+void updatePerformanceStats(uint16_t seq, uint16_t latency){
+	stat.cumulativeLatency += latency;
+	stat.lastSeq = seq;
+	stat.packetCounter++;
 }
 
 // convert battery voltage level to battery percentage status, and send over serial port
@@ -132,13 +146,14 @@ void handleSensorsEvent(process_data_t data){
 			// this packet is broadcasted via RLL
 			printf("[APP]: Create App packet\n");
 			struct APP_PACKET temp;
-			temp.subType = COLOR;
+			temp.subType = APP_COLOR;
 			temp.values[0] = (uint16_t) 0;
 			temp.values[1] = (uint16_t) 0;
 			temp.values[2] = (uint16_t) 0;
 			sendRLLMessage(temp);
 			// resetting the color on our own LED
 			setColor(0, 0, 0);
+			updatePerformanceStats(0, 0);
 		}
 	}
 
@@ -158,11 +173,21 @@ void handleSerialInput(process_data_t data){
 		list_init(topologyInfo_list);
 		// poll topology data from network
 		struct APP_PACKET temp;
-		temp.subType = TOPOLOGYREQUEST;
+		temp.subType = APP_TOPOLOGYREQUEST;
 		sendRLLMessage(temp);
 
 		// set a flag to wait for topology updates
 		waitForTopologyUpdate = 1;
+
+	} else if (strcmp(ch_data, "resetstatistics") == 0) { // received statistics reset message
+		// broadcast statistics reset to network
+		struct APP_PACKET temp;
+		temp.subType = APP_STATSRESET;
+		sendRLLMessage(temp);
+		// reset own statistics
+		stat.cumulativeLatency = 0;
+		stat.packetCounter = 0;
+		stat.lastSeq = 0;
 
 	} else if (strstr(ch_data, "BRIGHTNESS") != NULL) { // received brightness value
 		lastBRIGHTNESS = 0b00000001
@@ -174,9 +199,10 @@ void handleSerialInput(process_data_t data){
 
 		// broadcast brightness information to other nodes
 		struct APP_PACKET temp;
-		temp.subType = BRIGHTNESS;
+		temp.subType = APP_BRIGHTNESS;
 		temp.values[0] = (uint16_t) lastBRIGHTNESS;
 		sendRLLMessage(temp);
+		updatePerformanceStats(0, 0);
 
 	} else { // assuming received color value
 		i_data = strtol(ch_data, &ptr, 16);	//Convert char data to hex
@@ -189,11 +215,12 @@ void handleSerialInput(process_data_t data){
 
 		// put color in application packet and send it
 		struct APP_PACKET temp;
-		temp.subType = COLOR;
+		temp.subType = APP_COLOR;
 		temp.values[0] = R;
 		temp.values[1] = G;
 		temp.values[2] = B;
 		sendRLLMessage(temp);
+		updatePerformanceStats(0, 0);
 
 	}
 }
@@ -222,16 +249,21 @@ void handleProcessEvent(data){
 				CC2538_SENSORS_VALUE_TYPE_CONVERTED);
 
 		struct APP_PACKET temp;
-		temp.subType = SENSORDATA;
+		temp.subType = APP_SENSORDATA;
 		temp.values[0] = linkaddr_node_addr.u8[0];
 		temp.values[1] = linkaddr_node_addr.u8[1];
 		temp.values[2] = (uint16_t) temperature;
 		temp.values[3] = (uint16_t) battery;
+		// add performance stats to packet
+		temp.values[4] = stat.cumulativeLatency*1000/stat.packetCounter; // average latency, multiplied by 1000 to avoid floating point
+		temp.values[5] = stat.packetCounter;
+		temp.values[6] = stat.lastSeq;
 		sendRLLMessage(temp);
 		if (isGateway){
 			// if this is the gateway, send data on serial port as well
 			printf("node(%d:%d) Temperature = '%dC' \r\n",linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1], temperature);
 			sendBatteryStatusByserialP(battery, linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
+			printf("node(%d:%d) Statistics: Packets = '%d', PLR = '%d', Latency = '%d'\r\n", linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1], stat.packetCounter, 0, (stat.cumulativeLatency*1000/stat.packetCounter));
 		}
 		sendSensorDataCountdown = 10; // do this every 10th loop
 	} else {
@@ -243,7 +275,7 @@ void handleProcessEvent(data){
 		// advertise master node status
 		// this is for building a dummy topology and isn't needed when topology is created by CIDER
 		struct APP_PACKET temp;
-		temp.subType = MASTERMSG;
+		temp.subType = APP_MASTERMSG;
 		temp.values[0] = linkaddr_node_addr.u8[0];
 		temp.values[1] = linkaddr_node_addr.u8[1];
 		sendRLLMessage(temp);
@@ -269,7 +301,7 @@ void handleMasterMessage(struct APP_PACKET data){
 
 		// create child response to join master
 		struct APP_PACKET temp;
-		temp.subType = CHILDMSG;
+		temp.subType = APP_CHILDMSG;
 		temp.values[0] = linkaddr_node_addr.u8[0];
 		temp.values[1] = linkaddr_node_addr.u8[1];
 		temp.values[2] = master_addr1.u8[0];
@@ -287,6 +319,7 @@ void handleChildMessage(struct APP_PACKET data){
 	linkaddr_t childaddress;
 	childaddress.u8[0] = data.values[0];
 	childaddress.u8[1] = data.values[1];
+	printf("got child message from %d:%d\r\n", data.values[0], data.values[1]);
 	struct slavesAddr_entry *e = NULL;
 	for(e = list_head(slavesAddr_list); e != NULL; e = e->next) { //check if the child node is or not already connect to this master node
 		if(linkaddr_cmp(&e->addr, &childaddress)) {
@@ -312,11 +345,12 @@ void handleChildMessage(struct APP_PACKET data){
 void handleTopologyRequest(){
 #if MASTERNODE
 		int numChildren = list_length(slavesAddr_list); // get current number of children
+		printf("got topology request, have %d children\r\n", numChildren);
 		int i,j;
 		struct slavesAddr_entry * entry = list_head(slavesAddr_list);
 		for (i = 0; i <= numChildren/10; i++){ // put information about max. 10 children in packet, send multiple packets if needed
 			struct APP_PACKET temp;
-			temp.subType = TOPOLOGYREPLY;
+			temp.subType = APP_TOPOLOGYREPLY;
 			temp.values[0] = (uint16_t) ((i==numChildren/10)?numChildren%10:10);
 			temp.values[1] = (uint16_t) linkaddr_node_addr.u8[0];
 			temp.values[2] = (uint16_t) linkaddr_node_addr.u8[1];
@@ -406,14 +440,31 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 		//initially set isGateway to 0. Will be set to one when messages are received on serial port
 		isGateway = 0;
 
+		//initialize performance stats
+		stat.cumulativeLatency = 0;
+		stat.packetCounter = 0;
+		stat.lastSeq = 0;
+
 		// main loop
 		while (1) {
 			PROCESS_YIELD()
 			;
 			if (ev == sensors_event) { // receiving sensor or button event
+				printf("received sensors event\n");
 				handleSensorsEvent(data);
 			} else if (ev == serial_line_event_message){ // receiving data on serial port
-				isGateway = 1;
+				printf("received serial event\n");
+				if (isGateway == 0){
+					// node realizes that it must be a gateway
+					// set isGateway to 1 and reset statistics collection in the network
+					isGateway = 1;
+					struct APP_PACKET temp;
+					temp.subType = APP_STATSRESET;
+					sendRLLMessage(temp);
+					stat.cumulativeLatency = 0;
+					stat.packetCounter = 0;
+					stat.lastSeq = 0;
+				}
 				handleSerialInput(data);
 			} else if (ev == PROCESS_EVENT_TIMER){ // receiving a process event
 				handleProcessEvent(data);
@@ -428,32 +479,42 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 void applicationDataCallback(struct APP_PACKET data, uint8_t seq) {
 	printf("[APP]: Data received: Type: %d, SeqNo: %d\n", data.subType, seq);
 
-	if (data.subType == COLOR){ // received color packet, set LED color
+	uint16_t latency = 20; // TODO: replace this with latency calculated from RLL packet ASN information
+
+	if (data.subType == APP_COLOR){ // received color packet, set LED color and update performance stats
 		uint16_t R, G, B;
 		R = data.values[0];
 		G = data.values[1];
 		B = data.values[2];
 		setColor(R, G, B);
+		updatePerformanceStats(seq, latency);
 
-	} else if (data.subType == BRIGHTNESS){ // received brightness packet, set LED brightness
+	} else if (data.subType == APP_BRIGHTNESS){ // received brightness packet, set LED brightness and update performance stats
 		uint16_t brightness = data.values[0];
 		i2c_single_send(0x39, LED_BRIGHTNESS | brightness);
+		updatePerformanceStats(seq, latency);
 
-	} else if ((data.subType == SENSORDATA) && isGateway){ // received sensor data, forward them to serial port if this is the gateway
+	} else if ((data.subType == APP_SENSORDATA) && isGateway){ // received sensor data, forward them to serial port if this is the gateway
 		printf("node(%d:%d) Temperature = '%dC' \r\n",data.values[0], data.values[1], data.values[2]);
 		sendBatteryStatusByserialP(data.values[3], data.values[0], data.values[1]);
+		printf("node(%d:%d) Statistics: Packets = '%d', PLR = '%d', Latency = '%d'\r\n", data.values[0], data.values[1], data.values[5], (1000-(data.values[5]*1000/stat.packetCounter)), data.values[4]);
 
-	} else if (data.subType == TOPOLOGYREQUEST){ // topology information has been requested, reply with data if master
+	} else if (data.subType == APP_TOPOLOGYREQUEST){ // topology information has been requested, reply with data if master
 		handleTopologyRequest();
 
-	} else if (data.subType == TOPOLOGYREPLY && waitForTopologyUpdate) { // topology information received, store information
+	} else if (data.subType == APP_TOPOLOGYREPLY && waitForTopologyUpdate) { // topology information received, store information
 		handleTopologyReply(data);
 
-	} else if (data.subType == MASTERMSG){ // received master advertisement, respond to master node
+	} else if (data.subType == APP_STATSRESET){ // reset statistics
+		stat.cumulativeLatency = 0;
+		stat.packetCounter = 0;
+		stat.lastSeq = 0;
+
+	} else if (data.subType == APP_MASTERMSG){ // received master advertisement, respond to master node
 		// this is for building a dummy topology and isn't needed when topology is created by CIDER
 		handleMasterMessage(data);
 
-	} else if (data.subType == CHILDMSG){ // received child response
+	} else if (data.subType == APP_CHILDMSG){ // received child response
 		// this is for building a dummy topology and isn't needed when topology is created by CIDER
 		handleChildMessage(data);
 

@@ -36,51 +36,82 @@
  * \author Conrad Dandelski <conrad.dandelski@mycit.ie>
  */
 
-enum packettype{SCHEDULE_UPDATE,CIDER,RLL,APP};
-enum CIDERsubpackettype{UNDEFINED = 0,
-	KEEP_ALIVE = 1,
-	PING = 3,
-	NEIGHBOUR_UPDATE = 4,
-	UTILITY_UPDATE = 5,
-	CH_COMPETITION = 6,
-	CH_ADVERT = 7,
-	LP_PING = 8,
-	COVERAGE_UPDATE = 9,
-	CH = 10,
-	CS_PING = 11,
-	CS = 12,
-	CH_CHILD = 13,
+#ifndef DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_COMMON_PACKET_TYPES_H_
+#define DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_COMMON_PACKET_TYPES_H_
+#include "mac/tsch/tsch-asn.h"
+enum packettype
+{
+	SCHEDULE_UPDATE, CIDER, RLL, COLOURING, APP
 };
-enum RLLsubpackettype{RLL_PING,RLL_DATA};
-enum APPsubpackettype{RESET,COLOR,BRIGHTNESS,SENSORDATA,TOPOLOGYREQUEST,TOPOLOGYREPLY,MASTERMSG,CHILDMSG};
+enum CIDERsubpackettype
+{
+	CIDER_PING = 1,
+	CIDER_NEIGHBOUR_UPDATE = 2,
+	CIDER_UTILITY_UPDATE = 3,
+	CIDER_CH_COMPETITION = 4,
+	CIDER_CH = 5,
+	CIDER_CS_PING = 6,
+	CIDER_CS = 7,
+	CIDER_CH_PROMOTE = 10,
+	CIDER_CH_PROMOTE_ACK = 11,
+	CIDER_LP_PING = 12,
+	CIDER_COMPLETE = 100,
+	CIDER_UNCOMPLETE = 101,
+	CIDER_UNDEFINED = 200
+};
+enum COLOURINGsubpackttype
+{
+	COLOUR_UPDATE = 1,
+	COLOUR_RELEASE = 2,
+	COLOUR_WAIT_COMPLETE = 100,
+	COLOUR_COMPLETE = 101,
+	COLOUR_UNCOMPLETE = 102,
+	COLOUR_FINISHED = 103
+};
 
+enum RLLsubpackettype
+{
+	RLL_PING, RLL_DATA
+};
+enum APPsubpackettype
+{
+	APP_RESET, APP_COLOR, APP_BRIGHTNESS, APP_SENSORDATA, APP_TOPOLOGYREQUEST, APP_TOPOLOGYREPLY, APP_STATSRESET, APP_MASTERMSG, APP_CHILDMSG
+};
 
-struct BasePacket{
-	linkaddr_t src;
-	linkaddr_t dst;
-	enum packettype type;
+struct BasePacket
+{
+		linkaddr_t src;
+		linkaddr_t dst;
+		enum packettype type;
 };
-struct APP_PACKET{
-	enum APPsubpackettype subType;
-	uint16_t values[23];
+
+struct COLOURING_PACKET
+{
+		struct BasePacket base;
+		enum COLOURINGsubpackttype subType;
+		uint16_t args[5];
 };
-struct CIDER_PACKET{
+
+struct APP_PACKET
+{
+		struct BasePacket base;
+		enum APPsubpackettype subType;
+		uint16_t values[23];
+};
+struct CIDER_PACKET
+{
 		struct BasePacket base;
 		enum CIDERsubpackettype subType;
 		uint16_t args[45];
+		linkaddr_t parent;
 };
-struct RLL_PACKET{
+struct RLL_PACKET
+{
 		struct BasePacket base;
 		enum RLLsubpackettype subType;
-		uint8_t stage;
+		struct asn_t timeSend;
 		struct APP_PACKET appData;
 
 };
 
-struct scheduleUpdate_Packet{
-		struct BasePacket base;
-		uint8_t schedule; // 0 = CIDER, 1 = RLL
-
-};
-
-
+#endif
