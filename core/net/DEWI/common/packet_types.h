@@ -94,10 +94,15 @@ struct COLOURING_PACKET
 
 struct APP_PACKET
 {
-		struct BasePacket base;
 		enum APPsubpackettype subType;
+		struct asn_t timeSend;
+		uint8_t timeslot[23];
 		uint16_t values[23];
+		uint8_t remainingData;
+		uint8_t battery;
+		uint8_t temperature;
 };
+
 struct CIDER_PACKET
 {
 		struct BasePacket base;
@@ -109,8 +114,8 @@ struct RLL_PACKET
 {
 		struct BasePacket base;
 		enum RLLsubpackettype subType;
-		struct asn_t timeSend;
 		struct APP_PACKET appData;
+		uint16_t seqNo;
 
 };
 

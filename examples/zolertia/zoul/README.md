@@ -23,7 +23,7 @@ An example on how to compile is shown next:
 `make TARGET=zoul BOARD=remote-revb`
 
 Or alternatively if you just type `make`, it will default to use the `BOARD=remote-revb`.
-
+export 
 For backward compatibility with the previous `remote` target corresponding to the
 RE-Mote revision A, using `BOARD=remote` will default to `BOARD=remote-reva`.
 
@@ -46,7 +46,7 @@ As above to specify a given port use the `PORT=/dev/ttyUSB0` argument.
 
 Alternatively you can save the above `PORT`, `TARGET` or `BOARD` as follows:
 
-`export BOARD=/dev/ttyUSB0`
+`export TARGET=zoul BOARD=remote-revb PORT=/dev/ttyUSB0`
 
 This will save you to type these when running a command on the terminal
 

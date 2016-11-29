@@ -39,10 +39,10 @@
 #include "sys/energest.h"
 #include "sys/process.h"
 #include "dev/sys-ctrl.h"
-#include "dev/scb.h"
 #include "dev/rfcore-xreg.h"
 #include "rtimer-arch.h"
 #include "lpm.h"
+#include "cc2538_cm3.h"
 #include "reg.h"
 
 #include <stdbool.h>
@@ -226,7 +226,6 @@ lpm_exit()
   /* Adjust the system clock, since it was not counting while we were sleeping
    * We need to convert sleep duration from rtimer ticks to clock ticks */
   clock_adjust();
-
   /* Restore system clock to the 32 MHz XOSC */
   select_32_mhz_xosc();
 
@@ -252,8 +251,8 @@ lpm_enter()
    */
   if((REG(RFCORE_XREG_FSMSTAT0) & RFCORE_XREG_FSMSTAT0_FSM_FFCTRL_STATE) != 0
      || !periph_permit_pm1() || max_pm == 0) {
-    enter_pm0();
 
+    enter_pm0();
     /* We reach here when the interrupt context that woke us up has returned */
     return;
   }
@@ -379,7 +378,7 @@ lpm_init()
    * By default, we will enter PM0 unless lpm_enter() decides otherwise
    */
   REG(SYS_CTRL_PMCTL) = SYS_CTRL_PMCTL_PM0;
-  REG(SCB_SYSCTRL) |= SCB_SYSCTRL_SLEEPDEEP;
+  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 
   max_pm = LPM_CONF_MAX_PM;
 

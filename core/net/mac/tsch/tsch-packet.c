@@ -281,7 +281,9 @@ tsch_packet_create_eb(uint8_t *buf, int buf_size,
   /* DEWI SCHEDULE INFORMATION */
 #if WITH_DEWI
   {
+	  printf("[TSCH]: use schedule: %d\n",getActiveSchedule());
 	  ies.dewi_schedule = getActiveSchedule();
+
   }
 #endif /* WITH_DEWI */
 

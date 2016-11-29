@@ -53,26 +53,20 @@
 #include "net/DEWI/common/packet_types.h"
 #include "net/DEWI/cider/cider.h"
 #include "net/DEWI/rll/rll.h"
-
-#include <stdio.h>
-#include <stdint.h>
+#include "net/DEWI/colouring/colouring.h"
 
 
-
-uint16_t setSchedule(ScheduleInfo_t schedule);
+uint16_t setSchedule();
+void setRLLSchedule();
 void clearSchedule();
 void setActiveSchedule(uint8_t schedule);
 uint8_t getActiveSchedule();
 
-void setCoord(int isCoordinator);
-int getCoord();
+void setCoord(uint8_t isCoordinator);
+uint8_t getCoord();
 
-int initScheduler();
-
-void scheduleMessage(int timeslots, void* callback);
+uint8_t initScheduler();
 
 void scheduler_reset();
 
-int8_t getTier();
-void setTier(int8_t);
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_SCHEDULER_SCHEDULER_H_ */

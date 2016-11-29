@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Texas Instruments Incorporated - http:/www.ti.com/
+ * Copyright (c) 2014, Texas Instruments Incorporated - http://www.ti.com/
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,7 +10,6 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- *
  * 3. Neither the name of the copyright holder nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
@@ -28,26 +27,35 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+/*---------------------------------------------------------------------------*/
 /**
+ * \addtogroup remote
+ * @{
+ *
  * \file
- * Header for with definitions related to the cc2538 SysTick
+ *  Board-initialisation for the Zolertia's RE-Mote platform
+ *
  */
 /*---------------------------------------------------------------------------*/
-#ifndef SYSTICK_H_
-#define SYSTICK_H_
+#include "contiki-conf.h"
+#include "antenna-sw.h"
+#include <stdint.h>
+#include <string.h>
 /*---------------------------------------------------------------------------*/
-/* SysTick Register Definitions */
-#define SYSTICK_STCTRL            0xE000E010    /* Control and Status */
-#define SYSTICK_STRELOAD          0xE000E014    /* Reload Value */
-#define SYSTICK_STCURRENT         0xE000E018    /* Current Value */
-#define SYSTICK_STCAL             0xE000E01C    /* SysTick Calibration */
+static void
+configure_unused_pins(void)
+{
+  /* FIXME */
+}
 /*---------------------------------------------------------------------------*/
-/* Bit Definitions for the STCTRL Register */
-#define SYSTICK_STCTRL_COUNT      0x00010000    /* Count Flag */
-#define SYSTICK_STCTRL_CLK_SRC    0x00000004    /* Clock Source */
-#define SYSTICK_STCTRL_INTEN      0x00000002    /* Interrupt Enable */
-#define SYSTICK_STCTRL_ENABLE     0x00000001    /* Enable */
+void
+board_init()
+{
+  antenna_sw_config();
+  configure_unused_pins();
+}
+/*---------------------------------------------------------------------------*/
+/**
+ * @}
+ */
 
-#endif /* SYSTICK_H_ */
-
-/** @} */

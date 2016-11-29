@@ -177,6 +177,7 @@ PROCESS_THREAD(zoul_demo_process, ev, data)
           broadcast_send(&bc);
         } else {
           printf("...and released!\n");
+
         }
       }
 

@@ -102,7 +102,6 @@ sys_ctrl_init()
   while((REG(SYS_CTRL_CLOCK_STA) 
         & (SYS_CTRL_CLOCK_STA_OSC32K | SYS_CTRL_CLOCK_STA_OSC)) 
         != SYS_CTRL_OSCS);
-
 #if SYS_CTRL_OSC32K_USE_XTAL
   /* Wait for the 32-kHz crystal oscillator to stabilize */
   while(REG(SYS_CTRL_CLOCK_STA) & SYS_CTRL_CLOCK_STA_SYNC_32K);

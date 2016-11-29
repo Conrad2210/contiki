@@ -39,166 +39,377 @@
 #include "scheduler.h"
 
 #define DEBUG DEBUG_PRINT
-#define SCHEDULE_INTERVAL       (CLOCK_SECOND * 5)
-static struct etimer scheduleUpdate;
-int isCoord = 0;
-int activeSchedule = -1;
-
-PROCESS(dewi_scheduler_coord_process, "DEWI scheduler PROCESS for coordinator");
-PROCESS(dewi_scheduler_node_process, "DEWI scheduler PROCESS for node");
+uint8_t isCoord = 0;
+int8_t activeSchedule = -1;
 
 int8_t tier = -1;
-void setActiveSchedule(uint8_t schedule) {
 
-	if (activeSchedule != schedule) {
-		printf(
-				"[SCHEDULER]: new schedule received, Schedule %u is active now\n",
-				schedule);
+void setActiveSchedule(uint8_t schedule)
+{
+	setActiveProtocol(schedule);
+	if(getCIDERState() != 5 && getCIDERState() != 7 )
+		schedule = 0;
+
+	if (activeSchedule < schedule)
+	{
+
+
 		activeSchedule = schedule;
-		switch (activeSchedule) {
-		case 0: //do stuff for CIDER;
-			CIDER_notify();
-			break;
-		case 1: //todo: stuff for RLL
-			break;
-		default:
-			//just do nothing
-			break;
+		switch (activeSchedule)
+		{
+			case 0: //do stuff for CIDER;
+
+				CIDER_notify();
+				break;
+			case 1:
+
+				break;
+			case 2: //todo: stuff for RLL
+				RLL_notify();
+
+				break;
+			default:
+				//just do nothing
+				break;
 		}
+
 	}
 }
 
-void setCoord(int isCoordinator) {
+void setCoord(uint8_t isCoordinator)
+{
 	isCoord = isCoordinator;
 }
 
-int getCoord() {
+uint8_t getCoord()
+{
 	return isCoord;
 }
 
-uint8_t getActiveSchedule() {
+uint8_t getActiveSchedule()
+{
 	return (uint8_t) activeSchedule;
 }
 
-uint16_t setSchedule(ScheduleInfo_t schedule) {
+uint16_t setSchedule()
+{
+	struct tsch_slotframe *tempHandle = tsch_schedule_get_slotframe_by_handle(0x00);
 
-	tsch_schedule_remove_all_slotframes();
-	struct tsch_slotframe *tempHandle = tempHandle =
-			tsch_schedule_add_slotframe(schedule.handle,
-					schedule.slotframeLength);
+	uint8_t i = 1;
+	for (i = 1; i < MAX_NUM_LINKS; i++)
+	{
 
-	int i = 0;
-	for (i = 0; i < MAX_NUM_LINKS; i++) {
-		if (schedule.links[i].isActive == 1) {
-			linkInfo_t temp = schedule.links[i];
+		if (tsch_schedule_add_link(tempHandle,
+		LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
+				LINK_TYPE_NORMAL, &tsch_broadcast_address, i, 0) == NULL)
+		{
+			break;
+		}
 
-			if (tsch_schedule_add_link(tempHandle, temp.link_options,
-					temp.link_type, temp.addr, temp.timeslot,
-					temp.channel_offset) == NULL) {
+	}
+	//tsch_schedule_print();
+	return tempHandle->handle;
+
+}
+uint16_t setCoordSchedule()
+{
+	struct tsch_slotframe *tempHandle = tsch_schedule_add_slotframe(0x00, 51);
+
+	uint8_t i = 1;
+	for (i = 0; i < MAX_NUM_LINKS; i++)
+	{
+		if (i == 0)
+		{
+			if (tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
+					LINK_TYPE_ADVERTISING, &tsch_broadcast_address, i, 0) == NULL)
+			{
 				break;
 			}
 		}
+
+		else
+		{
+			if (tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_RX | LINK_OPTION_TX | LINK_OPTION_SHARED | LINK_OPTION_TIME_KEEPING,
+					LINK_TYPE_NORMAL, &tsch_broadcast_address, i, 0) == NULL)
+			{
+				break;
+			}
+		}
+
 	}
 	//tsch_schedule_print();
 	return tempHandle->handle;
 
 }
 
-void clearSchedule() {
+void setRLLNode()
+{
+	uint8_t i = 1;
+	struct tsch_slotframe *tempHandle = tsch_schedule_get_slotframe_by_handle(0x00);
+	for (i = 1; i < tempHandle->size.val; i++)
+	{
+		if (i % 10 != 0 && i % 10 != 1)
+		{
+			tsch_schedule_remove_link_by_timeslot(tempHandle, i);
+		}
+		if (i % 10 == 1)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+		}
+		if (i % 10 == 0)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+		}
+	}
 
-	int i;
+}
+void setRLLCH()
+{
+	uint8_t i = 1;
+	struct tsch_slotframe *tempHandle = tsch_schedule_get_slotframe_by_handle(0x00);
+	int8_t colourParent = getColourParent(getParentStatus());
+	for (i = 1; i < tempHandle->size.val; i++)
+	{
+		if (i % 10 == 1)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+
+		}
+		else if (i % 10 == 2)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+		}
+		else if (i % 10 == 3)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+		}
+		else if (i % 10 == 4)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+		}
+		else if (i % 10 == 5)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+		}
+		else if (i % 10 == 6)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+		}
+		else if (i % 10 == 7)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+		}
+		else if (i % 10 == 8)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+		}
+		else if (i % 10 == 9)
+		{
+			if (getTier() % 2 == 0)
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+			}
+			else
+			{
+				tsch_schedule_add_link(tempHandle,
+				LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, colourParent);
+			}
+		}
+		else if (i % 10 == 0)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+
+		}
+	}
+
+}
+void setRLLTier0()
+{
+	uint8_t i = 1;
+	struct tsch_slotframe *tempHandle = tsch_schedule_get_slotframe_by_handle(0x00);
+	int8_t colourParent = getColourParent(getParentStatus());
+	for (i = 1; i < tempHandle->size.val; i++)
+	{
+		if (i % 10 == 1)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+
+		}
+		else if (i % 10 == 2 || i % 10 == 3)
+		{
+			tsch_schedule_remove_link_by_timeslot(tempHandle, i);
+		}
+		else if (i % 10 == 4)
+		{
+
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+
+		}
+		else if (i % 10 == 5)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+		}
+		else if (i % 10 == 6 || i % 10 == 7)
+		{
+			tsch_schedule_remove_link_by_timeslot(tempHandle, i);
+		}
+		else if (i % 10 == 8)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+		}
+		else if (i % 10 == 9)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+		}
+		else if (i % 10 == 0)
+		{
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
+
+		}
+	}
+
+}
+
+void setRLLSchedule()
+{
+
+	if (getCIDERState() == 7)
+	{
+		setRLLNode();
+	}
+	else if (getCIDERState() == 5 && getTier() == 0)
+	{
+		setRLLTier0();
+	}
+	else if (getCIDERState() == 5)
+	{
+		setRLLCH();
+	}
+
+	tsch_queue_reset();
+
+}
+
+void clearSchedule()
+{
+
+	uint8_t i;
 	//remove everyhing except ADV slot
-	for (i = 1; i < MAX_NUM_LINKS; i++) {
+	for (i = 1; i < MAX_NUM_LINKS; i++)
+	{
 		tsch_schedule_remove_link(tsch_schedule_get_slotframe_by_handle(0),
 				tsch_schedule_get_link_by_handle(i));
 	}
 }
 
-struct scheduleUpdate_Packet createScheduleUpdate() {
-	struct scheduleUpdate_Packet temp;
-	temp.base.dst = tsch_broadcast_address;
-	temp.base.src = linkaddr_node_addr;
+uint8_t initScheduler()
+{
 
-	temp.schedule = 0;
-	return temp;
-}
-
-int8_t getTier(){
-	return tier;
-}
-void setTier(int8_t tempTier){
-	tier = tempTier;
-}
-
-PROCESS_THREAD(dewi_scheduler_coord_process, ev, data) {
-	PROCESS_EXITHANDLER()
-	PROCESS_BEGIN()
-		;
-
-		/* Configure the user button */
-
-		while (1) {
-			PROCESS_YIELD()
-			;
-			if (ev == PROCESS_EVENT_TIMER) {
-
-			}
-		}
-
-	PROCESS_END();
-}
-
-PROCESS_THREAD(dewi_scheduler_node_process, ev, data) {
-struct scheduleUpdate_Packet scheduleUpdatePacket;
-PROCESS_EXITHANDLER()
-PROCESS_BEGIN()
-	;
-
-//etimer_set(&scheduleUpdate, SCHEDULE_INTERVAL);
-
-	while (1) {
-		PROCESS_YIELD()
-		;
-		if (ev == PROCESS_EVENT_TIMER) {
-
-		}
-	}
-
-PROCESS_END();
-}
-
-int initScheduler() {
-if (isCoord) {
+	if (isCoord)
+	{
 #if DEBUG
-printf("[SCHEDULER]: Start Scheduler for coordinator\n");
+		printf("[SCHEDULER]: Start Scheduler for coordinator\n");
 #endif
 //if startup set CIDER active
-setTier(-1);
-setActiveSchedule(0);
-process_start(&dewi_scheduler_coord_process, NULL);
-
-} else {
+		setTier(-1);
+		setActiveSchedule(0);
+		setCoordSchedule();
+	}
+	else
+	{
 #if DEBUG
-printf("[SCHEDULER]: Start Scheduler for node\n");
+		printf("[SCHEDULER]: Start Scheduler for node\n");
 #endif
-setTier(-1);
-process_start(&dewi_scheduler_node_process, NULL);
-}
-return 1;
-}
 
-void scheduleMessage(int timeslots, void* callback) {
+		setSchedule();
+		setTier(-1);
+	}
 
-printf("[SCHEDULER]: Schedule msg in: %d timeslots, callback: %u", timeslots,
-	callback);
-
+	COLOURING_init();
+	RLL_init();
+	return 1;
 }
 
-void scheduler_reset() {
-etimer_stop(&scheduleUpdate);
-isCoord = 0;
-activeSchedule = -1;
-clearSchedule();
-process_exit(&dewi_scheduler_node_process);
-process_exit(&dewi_scheduler_coord_process);
+void scheduler_reset()
+{
+	isCoord = 0;
+	activeSchedule = -1;
+	clearSchedule();
 }
+

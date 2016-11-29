@@ -50,18 +50,14 @@
 #include "net/netstack.h"
 #include "net/rime/broadcast.h"
 #include "net/mac/tsch/tsch-schedule.h"
-
+#include "net/DEWI/colouring/colouring.h"
 #include "net/DEWI/scheduler/scheduler.h"
 
-
-#include <stdio.h>
-#include <stdint.h>
 
 
 
 void CIDER_setLPD(uint8_t is);
 uint8_t CIDER_getLPD();
-
 int CIDER_getIsActive();
 int CIDER_notify();
 void CIDER_reset();

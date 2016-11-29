@@ -385,7 +385,7 @@ typedef uint32_t rtimer_clock_t;
  * 0 for PM0, 1 for PM1 and 2 for PM2
  */
 #ifndef LPM_CONF_MAX_PM
-#define LPM_CONF_MAX_PM       2
+#define LPM_CONF_MAX_PM       0
 #endif
 
 #ifndef LPM_CONF_STATS
@@ -435,6 +435,10 @@ typedef uint32_t rtimer_clock_t;
 /* RF Config */
 #ifndef IEEE802154_CONF_PANID
 #define IEEE802154_CONF_PANID           0xABCD
+#endif
+
+#ifdef RF_CHANNEL
+#define CC2538_RF_CONF_CHANNEL      RF_CHANNEL
 #endif
 
 #ifndef CC2538_RF_CONF_CHANNEL
