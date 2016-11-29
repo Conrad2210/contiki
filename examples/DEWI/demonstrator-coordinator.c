@@ -178,7 +178,7 @@ leds_off(LEDS_ALL);
 leds_on(LEDS_YELLOW);
 }
 
-void applicationDataCallback(struct APP_PACKET *data)
+void applicationDataCallback(struct APP_PACKET *data, linkaddr_t *src)
 {
 uint16_t tempLatency;
 struct asn_t tempASN = current_asn;

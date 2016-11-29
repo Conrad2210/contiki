@@ -49,7 +49,13 @@ struct RLL_PACKET RLLPacket;
 struct RLL_PACKET RLLParentPacket;
 struct RLL_PACKET RLLChildPacket;
 struct RLL_PACKET RLLCSPacket;
-struct APP_PACKET RLLDataPacket;
+struct APP_DataStructure {
+
+		struct APP_PACKET *RLLDataPacket;
+		linkaddr_t *src;
+};
+
+struct APP_DataStructure APPDataStructure;
 /***************************************/
 /***************************************/
 /*			    Timers		 		   */
@@ -65,7 +71,7 @@ void sendRLLPingMessage();
 static void thread_parent(struct RLL_PACKET *data);
 static void thread_cs(struct RLL_PACKET *data);
 static void thread_child(struct RLL_PACKET *data);
-static void thread_app(struct RLL_PACKET *data);
+static void thread_app(struct APP_DataStructure *data);
 static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from);
 /***************************************/
 /***************************************/
@@ -104,7 +110,7 @@ PROCESS_BEGIN()
 	mt_start(&parent_thread, thread_parent, &RLLParentPacket);
 	mt_start(&child_thread, thread_child, &RLLChildPacket);
 	mt_start(&cs_thread, thread_cs, &RLLCSPacket);
-	mt_start(&app_thread, thread_app, &RLLDataPacket);
+	mt_start(&app_thread, thread_app, &APPDataStructure);
 	etimer_set(&RLL_timer, CLOCK_SECOND * 5);
 	while (1)
 	{
@@ -418,13 +424,13 @@ mt_yield();
 mt_exit();
 }
 
-static void thread_app(struct RLL_PACKET *data)
+static void thread_app(struct APP_DataStructure *data)
 {
 
 while (1)
 {
-struct APP_PACKET *temp = data;
-APPDATACALLBACK(temp);
+struct APP_DataStructure *temp = data;
+APPDATACALLBACK(temp->RLLDataPacket,temp->src);
 mt_yield();
 }
 mt_exit();
@@ -495,7 +501,8 @@ case RLL_DATA:
 
 		}
 		//PRINTF("[RLL]: Data packet type: %d\n",tempPacket->appData.subType);
-		RLLDataPacket = tempPacket->appData;
+		APPDataStructure.RLLDataPacket = &tempPacket->appData;
+		APPDataStructure.src = &tempPacket->base.src;
 		mt_exec(&app_thread);
 		//APPDATACALLBACK(&RLLDataPacket);
 	}
