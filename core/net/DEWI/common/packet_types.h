@@ -95,6 +95,9 @@ struct COLOURING_PACKET
 struct APP_PACKET
 {
 		enum APPsubpackettype subType;
+		linkaddr_t src;
+		linkaddr_t dst;
+		uint16_t seqNo;
 		struct asn_t timeSend;
 		uint8_t timeslot[23];
 		uint16_t values[23];

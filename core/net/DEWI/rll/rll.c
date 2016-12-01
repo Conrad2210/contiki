@@ -49,13 +49,7 @@ struct RLL_PACKET RLLPacket;
 struct RLL_PACKET RLLParentPacket;
 struct RLL_PACKET RLLChildPacket;
 struct RLL_PACKET RLLCSPacket;
-struct APP_DataStructure {
-
-		struct APP_PACKET *RLLDataPacket;
-		linkaddr_t *src;
-};
-
-struct APP_DataStructure APPDataStructure;
+struct APP_PACKET RLLAppPacket;
 /***************************************/
 /***************************************/
 /*			    Timers		 		   */
@@ -71,7 +65,7 @@ void sendRLLPingMessage();
 static void thread_parent(struct RLL_PACKET *data);
 static void thread_cs(struct RLL_PACKET *data);
 static void thread_child(struct RLL_PACKET *data);
-static void thread_app(struct APP_DataStructure *data);
+static void thread_app(struct APP_PACKET *data);
 static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from);
 /***************************************/
 /***************************************/
@@ -110,7 +104,7 @@ PROCESS_BEGIN()
 	mt_start(&parent_thread, thread_parent, &RLLParentPacket);
 	mt_start(&child_thread, thread_child, &RLLChildPacket);
 	mt_start(&cs_thread, thread_cs, &RLLCSPacket);
-	mt_start(&app_thread, thread_app, &APPDataStructure);
+	mt_start(&app_thread, thread_app, &RLLAppPacket);
 	etimer_set(&RLL_timer, CLOCK_SECOND * 5);
 	while (1)
 	{
@@ -424,13 +418,15 @@ mt_yield();
 mt_exit();
 }
 
-static void thread_app(struct APP_DataStructure *data)
+static void thread_app(struct APP_PACKET *data)
 {
 
 while (1)
 {
-struct APP_DataStructure *temp = data;
-APPDATACALLBACK(temp->RLLDataPacket,temp->src);
+struct APP_PACKET *temp = data;
+APPDATACALLBACK(temp);
+
+PRINTF("[RLL]: Packet sent upwards: Seq No.: %d, from: 0x%4x\n",temp->seqNo,temp->src.u16);
 mt_yield();
 }
 mt_exit();
@@ -447,7 +443,6 @@ switch (tempPacket->subType)
 case RLL_DATA:
 	if (tempPacket->seqNo != lastRxSeqNo)
 	{
-		tsch_queue_reset();
 		if (RLL_CIDERState == 5)
 		{
 			struct tsch_link *temp;
@@ -501,8 +496,7 @@ case RLL_DATA:
 
 		}
 		//PRINTF("[RLL]: Data packet type: %d\n",tempPacket->appData.subType);
-		APPDataStructure.RLLDataPacket = &tempPacket->appData;
-		APPDataStructure.src = &tempPacket->base.src;
+		RLLAppPacket = tempPacket->appData;
 		mt_exec(&app_thread);
 		//APPDATACALLBACK(&RLLDataPacket);
 	}
@@ -525,6 +519,7 @@ case RLL_PING:
 
 void sendRLLDataMessage(struct APP_PACKET dataPacket)
 {
+	tsch_queue_reset();
 PRINTF("[RLL]: sendRLLDataMessage, RLL_Started: %d, msg received from APP at: asn-%x.%lx\n",RLL_started,current_asn.ms1b,current_asn.ls4b);
 if (RLL_started == 1)
 {

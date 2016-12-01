@@ -29,18 +29,181 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 /**
- * \addtogroup remote-examples
+ * \addtogroup example-dewi
  * @{
  *
  * \file
- * Project specific configuration defines for the basic RE-Mote examples
+ * Project specific configuration defines for the basic example-dewi
  */
 #ifndef PROJECT_CONF_H_
 #define PROJECT_CONF_H_
-#define BROADCAST_CHANNEL_RLL     129
-#define NETSTACK_CONF_RDC     nullrdc_driver
+//
+//Tx Power values
+// static const output_config_t output_power[] = {
+//  {  7, 0xFF },
+//  {  5, 0xED },
+//  {  3, 0xD5 },
+//  {  1, 0xC5 },
+//  {  0, 0xB6 },
+//  { -1, 0xB0 },
+//  { -3, 0xA1 },
+//  { -5, 0x91 },
+//  { -7, 0x88 },
+//  { -9, 0x72 },
+//  {-11, 0x62 },
+//  {-13, 0x58 },
+//  {-15, 0x42 },
+//  {-24, 0x00 },
+//};
+
+
+//CIDER CONFIG
+#define CONF_M1 0.5;
+#define CONF_M2 0.3;
+#define CONF_M3 0.15;
+#define CONF_M4 0.05;
+
+//CIDER FeatureScale config
+
+#define CONF_ND_min 1.0;
+#define CONF_ND_max 5.0;
+#define CONF_CD_min 1.0;
+#define CONF_CD_max 5.0;
+#define CONF_LP_min 1.0;
+#define CONF_LP_max 5.0;
+#define CONF_RSSI_min -94.0;
+#define CONF_RSSI_max -30.0;
+#define CLUSTER_RADIUS -50
+
+#define CIDER_LOG_LEVEL 0
+#define NEIGHBOURTABLE_LOG_LEVEL 0
+#define TSCH_LOG_LEVEL 0
+#define COLOURING_LOG_LEVEL 0
+#define SCHEDULER_LOG_LEVEL 0
+#define RLL_LOG_LEVEL 1
+
+
 #define APPDATACALLBACK applicationDataCallback
 
-#endif /* PROJECT_CONF_H_ */
+#ifndef LPDEVICE
+#define LPDEVICE 0
 
+
+#if LPDEVICE
+#define TXRADIOPOWER -24 //-24dBm
+#else
+#define TXRADIOPOWER 0 //0dBm
+#endif
+
+//LPM settings
+#undef LPM_CONF_ENABLE
+#define LPM_CONF_ENABLE       1 /**< Set to 0 to disable LPM entirely */
+
+
+#undef LPM_CONF_MAX_PM
+#define LPM_CONF_MAX_PM       0
+
+
+#undef LPM_CONF_MODE
+#define LPM_CONF_MODE 0
+
+
+
+#undef NETFLOOD_CHANNEL_APP
+#define NETFLOOD_CHANNEL_APP     129
+
+#undef BROADCAST_CHANNEL_CIDER
+#define BROADCAST_CHANNEL_CIDER     130
+
+#undef BROADCAST_CHANNEL_SCHEDULE
+#define BROADCAST_CHANNEL_SCHEDULE     131
+
+#undef BROADCAST_CHANNEL_RLL
+#define BROADCAST_CHANNEL_RLL    132
+
+#undef BROADCAST_CHANNEL_COLOURING
+#define BROADCAST_CHANNEL_COLOURING    133
+
+#undef CONF_MAX_NEIGHBOURS
+#define CONF_MAX_NEIGHBOURS 100/* Netstack layers */
+
+#undef NETSTACK_CONF_MAC
+#define NETSTACK_CONF_MAC     tschmac_driver
+#undef NETSTACK_CONF_RDC
+#define NETSTACK_CONF_RDC     nordc_driver
+#undef NETSTACK_CONF_FRAMER
+#define NETSTACK_CONF_FRAMER  framer_802154
+
+/* IEEE802.15.4 frame version */
+#undef FRAME802154_CONF_VERSION
+#define FRAME802154_CONF_VERSION FRAME802154_IEEE802154E_2012
+
+
+#undef TSCH_LOG_LEVEL
+#define TSCH_LOG_LEVEL 0
+
+#undef TSCH_PACKET_CONF_EB_WITH_SLOTFRAME_AND_LINK
+#define TSCH_PACKET_CONF_EB_WITH_SLOTFRAME_AND_LINK 1
+
+#undef TSCH_INIT_SCHEDULE_FROM_EB
+#define TSCH_INIT_SCHEDULE_FROM_EB 1
+
+#undef TSCH_CONF_EB_PERIOD
+#define TSCH_CONF_EB_PERIOD (3*CLOCK_SECOND)
+
+
+#undef TSCH_CALLBACK_JOINING_NETWORK
+#define TSCH_CALLBACK_JOINING_NETWORK tsch_dewi_callback_joining_network
+
+#undef TSCH_CALLBACK_LEAVING_NETWORK
+#define TSCH_CALLBACK_LEAVING_NETWORK tsch_dewi_callback_leaving_network
+
+#undef SYS_CTRL_CONF_OSC32K_USE_XTAL
+#define SYS_CTRL_CONF_OSC32K_USE_XTAL 1
+
+#undef TSCH_CONF_AUTOSELECT_TIME_SOURCE
+#define TSCH_CONF_AUTOSELECT_TIME_SOURCE 0
+
+
+#undef TSCH_PACKET_CONF_EB_WITH_SLOTFRAME_AND_LINK
+#define TSCH_PACKET_CONF_EB_WITH_SLOTFRAME_AND_LINK 1
+
+#undef TSCH_CONF_WITH_LINK_SELECTOR
+#define TSCH_CONF_WITH_LINK_SELECTOR 1
+
+#undef TSCH_SCHEDULE_CONF_WITH_6TISCH_MINIMAL
+#define TSCH_SCHEDULE_CONF_WITH_6TISCH_MINIMAL 0
+
+#undef TSCH_CONF_DEFAULT_TIMESLOT_LENGTH
+#define TSCH_CONF_DEFAULT_TIMESLOT_LENGTH 10000
+
+#undef TSCH_CONF_ADAPTIVE_TIMESYNC
+#define TSCH_CONF_ADAPTIVE_TIMESYNC 0
+
+#undef TSCH_CONF_DEFAULT_HOPPING_SEQUENCE
+#define TSCH_CONF_DEFAULT_HOPPING_SEQUENCE (uint8_t[]){ 13,18,19,20,24}
+#undef CIDER_CONF_OFFSETS
+#define CIDER_CONF_OFFSETS (uint8_t[]){0,1,2,3,4}
+
+#undef TSCH_CONF_JOIN_HOPPING_SEQUENCE
+#define TSCH_CONF_JOIN_HOPPING_SEQUENCE TSCH_CONF_DEFAULT_HOPPING_SEQUENCE
+#undef TSCH_CONF_WITH_LINK_SELECTOR
+#define TSCH_CONF_WITH_LINK_SELECTOR 1
+
+#undef TSCH_SCHEDULE_CONF_MAX_LINKS
+#define TSCH_SCHEDULE_CONF_MAX_LINKS 51
+
+//#undef TSCH_CONF_DESYNC_THRESHOLD
+//#define TSCH_CONF_DESYNC_THRESHOLD (2 * TSCH_CONF_KEEPALIVE_TIMEOUT)
+
+#undef WITH_DEWI
+#define WITH_DEWI 1
+
+#undef AUTOSTART_CIDER
+#define AUTOSTART_CIDER 0
+
+
+
+#endif
+#endif
 /** @} */

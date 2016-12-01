@@ -36,7 +36,7 @@ uint8_t button_press_counter = 0;
 #define TIMER       (CLOCK_SECOND)
 
 uint8_t lastBRIGHTNESS = 0b00000001;
-uint8_t seq = 0;
+uint16_t seq = 0;
 void tsch_dewi_callback_joining_network(void);
 void tsch_dewi_callback_leaving_network(void);
 
