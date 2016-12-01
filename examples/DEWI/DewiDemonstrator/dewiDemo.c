@@ -185,7 +185,7 @@ void handleSensorsEvent(process_data_t data)
 		{
 
 			button_press_counter = button_press_counter + 1;
-			etimer_set(&button_press_reset, CLOCK_SECOND * 0.2);
+			etimer_set(&button_press_reset, CLOCK_SECOND * 0.5);
 
 		}
 		if (button_press_counter == 10)
