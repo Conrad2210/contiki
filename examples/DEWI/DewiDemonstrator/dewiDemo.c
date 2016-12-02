@@ -503,7 +503,11 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 		//initialize I2C
 		i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN,
 		I2C_SCL_FAST_BUS_SPEED);
+		i2c_single_send(0x39, 0b00000000);
 
+
+				//set led brightness to inital brightness
+				i2c_single_send(0x39, (LED_BRIGHTNESS | lastBRIGHTNESS));
 		//initialize serial line
 		serial_line_init();
 
