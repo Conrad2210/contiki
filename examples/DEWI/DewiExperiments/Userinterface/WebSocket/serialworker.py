@@ -4,7 +4,7 @@ import multiprocessing
 import dewi as DBConnection
 
 ## Change this to match your local settings
-SERIAL_PORT = '/dev/ttyUSB0'
+SERIAL_PORT = 'COM3'
 SERIAL_BAUDRATE = 115200
 
 class SerialProcess(multiprocessing.Process):
@@ -45,51 +45,66 @@ class SerialProcess(multiprocessing.Process):
 
         return reduce(lambda x,y:x+y, lst)
 
-    def collectAddrM_addrS(self):
-        self.addrM1 = self.addrMasterSlave[0:2]
-        self.addrM1 = self.toHex(self.addrM1);
-        self.addrM2 = self.addrMasterSlave[2:4]
-        self.delete_sign = self.addrM2;
-        self.addrM2 = self.toHex(self.addrM2)
-        self.addrM = self.addrM1+":"+self.addrM2;
-        self.addrS1 = self.addrMasterSlave[4:6]
-        self.addrS1 = self.toHex(self.addrS1)
-        self.addrS2 = self.addrMasterSlave[6:8]
-        self.addrS2 = self.toHex(self.addrS2)
-        self.addrM = self.addrM1+":"+self.addrM2;
-        self.addrS = self.addrS1+":"+self.addrS2;
 
-    def handle_tab(self):
-        self.order = 0
-        self.dewi.save_node_details(self.addrS,self.addrM,self.delete_sign,self.order);
-        self.dewi.drop_node_details(self.addrS,self.delete_sign);
-
-    def saveIntoDewiDB(self):
-        self.collectAddrM_addrS();
-        self.handle_tab();
+    
 
 
     def sendSerialData(self,data):
-        if self.collectAddrMasterSlave(data) == True:
-            self.saveIntoDewiDB();
-
-        if "Temperature" in data:
-            T_addr = data[data.index("(")+1:data.index(")")]
-            temperature = data[data.index("'")+1:data.index("C")+1]
-            self.dewi.add_temperature_data(T_addr, temperature)
-
-        if "Battery" in data:
-            B_addr = data[data.index("(")+1:data.index(")")]
-            temperature = data[data.index("'")+1:data.index("'",data.index("'")+1,len(data))]
-            self.dewi.add_battery_stat(B_addr, temperature)
-
-        if "Statistics" in data:
-            addr = data[data.index("(")+1:data.index(")")]
-            splitted = data.split("'");
-            packets = splitted[1];
-            plr = splitted[3];
-            latency = splitted[5];
-            self.dewi.add_statistics(addr, packets, plr, latency)
+        if "Experiments" in data:
+            rawData = data[data.index("(")+1:data.index(")")]
+            splitted = rawData.split(",")
+            print len(splitted)
+            id = splitted[0]
+            description = str(splitted[1])
+            date_time = splitted[2]
+            print ("rawData: {0}, id: {1}, description: {2}, date_time: {3}").format(rawData,id, description,date_time)
+            self.dewi.insertExperiment(id, description, date_time)
+    
+        if "Settings" in data:
+            rawData = data[data.index("(")+1:data.index(")")]
+            splitted = rawData.split(",")
+            print len(splitted)
+            id = splitted[0]
+            session_id = splitted[1]
+            txPower =  splitted[2]
+            numBursts =  splitted[3]
+            burstDuration =  splitted[4]
+            msg =  splitted[5]
+            self.dewi.insertSettings(id,session_id,txPower,numBursts,burstDuration,msg)
+    
+        if "Latency" in data:
+            rawData = data[data.index("(")+1:data.index(")")]
+            splitted = rawData.split(",")
+            print len(splitted)
+            id = splitted[0]
+            session_id = splitted[1]
+            nodeID =  splitted[2]
+            timeslot =  splitted[3]
+            count =  splitted[4]
+            self.dewi.insertLatency(id,session_id,nodeID,timeslot,count)
+    
+        if "RxPackets" in data:
+            rawData = data[data.index("(")+1:data.index(")")]
+            splitted = rawData.split(",")
+            print len(splitted)
+            id = splitted[0]
+            session_id = splitted[1]
+            nodeID =  splitted[2]
+            count =  splitted[3]
+            self.dewi.insertRxPackets(id,session_id,nodeID,count)
+    
+        if "TxPackets" in data:
+            rawData = data[data.index("(")+1:data.index(")")]
+            splitted = rawData.split(",")
+            print len(splitted)
+            id = splitted[0]
+            session_id = splitted[1]
+            nodeID =  splitted[2]
+            count =  splitted[3]
+            self.dewi.insertTxPackets(id,session_id,nodeID,count)
+    
+#
+ 
             
     def sendToSerial(self,data):
         if "resetstatistics" in data:
@@ -119,3 +134,4 @@ class SerialProcess(multiprocessing.Process):
                 print "reading from serial: " + data
                 # send it back to tornado
                 self.output_queue.put(data)
+    
