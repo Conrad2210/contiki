@@ -7,9 +7,14 @@ class  dewi():
     dbConnection = 0
     db = 'dewi_experiments';                 
     def __init__(self):
-        self.dbConnection = mysql.connect(host='localhost',user='root',db='dewi_experiments')
         try:
-            
+            self.dbConnection = mysql.connect(host='localhost',user='root',db='dewi_experiments')
+        except mysql.Error, e:
+            self.dbConnection = mysql.connect(host='localhost',user='root')
+            cursor = self.dbConnection.cursor()
+            cursor.execute("CREATE DATABASE dewi_experiments DEFAULT CHARACTER SET 'utf8'")     
+            self.dbConnection.database = 'dewi_experiments'
+        try:            
             cursor = self.dbConnection.cursor()
             cursor.execute("SELECT * FROM experiments")
             for id in cursor:
