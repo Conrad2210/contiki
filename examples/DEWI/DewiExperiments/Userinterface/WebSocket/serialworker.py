@@ -4,7 +4,7 @@ import multiprocessing
 import dewi as DBConnection
 
 ## Change this to match your local settings
-SERIAL_PORT = 'COM3'
+SERIAL_PORT = '/dev/ttyUSB0'
 SERIAL_BAUDRATE = 115200
 
 class SerialProcess(multiprocessing.Process):
