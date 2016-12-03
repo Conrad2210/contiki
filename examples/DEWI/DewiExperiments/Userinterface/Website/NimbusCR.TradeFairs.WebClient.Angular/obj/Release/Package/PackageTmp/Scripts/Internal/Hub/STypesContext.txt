@@ -1,0 +1,90 @@
+﻿message ListCMSPolyArea {
+	repeated S_CMSPolyArea items = 1;
+}
+
+message ListCMSEOLabel {
+	repeated S_CMSEOLabel items = 1;
+}
+
+message ListCMSEOImage {
+	repeated S_CMSEOImage items = 1;
+}
+
+message S_CMSTransformableObject {
+	optional S_TransformableObject transformableObject = 1;
+	repeated S_CMSPolyArea polyAreas = 2;
+}
+
+message S_CMSPolyArea {
+	optional S_EOPolyArea polyArea = 1;
+	repeated S_CMSEOLabel labels = 2;
+	repeated S_CMSEOImage images = 3;
+}
+
+enum S_CMSFontFamily {
+	S_CMSFontFamily_Arial = 0;
+	S_CMSFontFamily_Calibri = 1;
+	S_CMSFontFamily_Verdana = 2;
+}
+
+enum S_CMSFontStyle {
+	S_CMSFontStyle_normal = 0;
+	S_CMSFontStyle_bold = 1;
+	S_CMSFontStyle_italic = 2;
+}
+
+enum S_CMSTextAlign {
+	S_CMSTextAlign_left = 0;
+	S_CMSTextAlign_center = 1;
+	S_CMSTextAlign_right = 2;
+}
+
+message S_CMSEOLabel {
+	optional sint32 id = 1 [default = -1];
+	optional string object_name = 2;
+	optional string text = 3;
+	optional S_LayerTransformation transformation = 4;
+	optional S_CMSFontFamily fontFamily = 5 [default = S_CMSFontFamily_Arial];
+	optional S_CMSFontStyle fontStyle = 6 [default = S_CMSFontStyle_normal];
+	optional float fontSize = 7;
+	optional S_CMSTextAlign align = 8 [default = S_CMSTextAlign_left];
+	repeated bytes background_argb = 9;
+	repeated bytes foreground_argb = 10;
+	optional float opacity = 11;
+	optional string ref_type = 12;
+	repeated int32 ref_dbids = 13;
+}
+
+message S_CMSEOImage {
+	optional sint32 id = 1 [default = -1];
+	optional string image_url = 2;
+	optional string image_string = 3;
+	optional S_LayerTransformation transformation = 4;
+	optional float opacity = 5;
+	optional string ref_type = 6;
+	repeated int32 ref_dbids = 7;
+}
+
+message ListNavNodeLink {
+	repeated S_NavNodeLink items = 1;
+}
+
+message S_NavNodeLink {
+	optional sint32 nav_node_dbid = 1 [default = -1];
+	optional bool prime = 2 [default = false];
+	optional bool start = 3 [default = false];
+	optional sint32 nav_node_id = 4 [default = -1];
+}
+
+message ListCMSDestination {
+	repeated S_CMSDestination items = 1;
+}
+
+message S_CMSDestination {
+	optional sint32 id = 1 [default = -1];
+	optional sint32 entity_id = 2 [default = -1];
+	optional string entity_type = 3;
+	optional string text = 4;
+	optional S_Position position = 5;
+	repeated S_NavNodeLink navNode_dbid_Links = 6;
+}

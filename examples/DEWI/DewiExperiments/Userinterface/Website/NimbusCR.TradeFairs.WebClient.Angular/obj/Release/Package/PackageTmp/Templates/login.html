@@ -1,0 +1,43 @@
+﻿<div class="container-fluid no-margin-padding" id="loginPageContainer">
+    <div id="loginPageTableArea" class="container-fluid">
+        <div class="row no-margin-padding">
+            <div class="col-md-6 col-md-offset-3" id="loginTable">
+                <form id="loginTableBody" class="panel-body">
+                    <div class="form-group">
+                        <h3 class="col-md-12">Log in to CMS Manager</h3>
+                        <h4 ng-show="loginFail.failed" style="color:red; padding-left: 30px;">Login Failed</h4>
+                        <h5 ng-show="loginFail.failed" style="color:red; padding-left: 30px;">Please ensure correct details are entered</h5>
+                        <label>Username</label>
+                        <input type="text" class="form-control" ng-model="username" id="inputUsername3" placeholder="Username" required>
+                        <label>Password</label>
+                        <input type="password" class="form-control" ng-model="password" id="inputPassword3" placeholder="Password" required>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-12">
+                            <button class="btn btn-primary" ng-click="userLogin();">Log in</button>
+                            <label style="margin-left: 15px;">
+                                <input type="checkbox" value="remember-me"> Remember me
+                            </label>
+                            <a href="" class="forgot-password" style="margin-left: 15px;">Forgot Password?</a>
+                        </div>
+                    </div>
+                </form>
+                <div class="panel-footer" id="loginTableFooter"></div>
+            </div>
+        </div>
+        <div class="row no-margin-padding">
+            <div ng-show="!cookieBanner.status" style="text-align:center;">
+                <a href="#/cookie_policy" class="btn btn-default" style="margin:3px;">Cookie Policy</a>
+            </div>
+
+            <div ng-show="cookieBanner.status" class="col-md-8 col-md-offset-2" id="cookieArea">
+                <label style="">
+                    We use cookies to deliver superior functionality and to enhance your experience of our websites.
+                    Read about how we use cookies and how you can control them <strong><a href="#/cookie_policy" style="color:white;">here</a></strong>.
+                    Continued use of this site indicates that you accept this policy.
+                </label>
+                <button id="cookieBtn" class="btn btn-default" ng-click="dontShowCookieBanner();">Click if you don't want to see this message again</button>
+            </div>
+        </div>
+    </div>
+</div>

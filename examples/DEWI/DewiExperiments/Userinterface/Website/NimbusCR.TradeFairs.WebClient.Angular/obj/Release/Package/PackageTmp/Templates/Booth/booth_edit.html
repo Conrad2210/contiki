@@ -1,0 +1,27 @@
+﻿<!-- the modal that is used to edit a store in the directory -->
+<div class="container-fluid no-margin-padding" style="margin-bottom: 25px; margin-top: 15px;">
+    <h4 style="text-align:center;">Edit Booth Details</h4>
+    <div class="col-md-12">
+        <ul class="nav nav-tabs editTabs">
+            <li style="margin-left: 30px;" ng-class="{'active' : activeTab == 1}"><a ng-click="setActiveTab(1); setEditTab('tab1')">Information</a></li>
+        </ul>
+    </div>
+    <div ng-switch on="editTab">
+        <div class="col-md-12" ng-switch-when="tab1">
+            <label style="margin-top: 10px;">
+                Name:<span class="error" ng-show="isNewBooth && !isValid">
+                    Required!
+                </span>
+            </label>
+            <input ng-change="nameInput()" ng-model="tempBooth.booth" type="text" class="form-control" name="name" id="name" placeholder="enter name" required>
+            <label style="margin-top: 10px;">Hall: </label>
+            <input ng-model="tempBooth.hall" type="text" class="form-control" id="hall" placeholder="enter hall">            
+        </div>        
+        <div class="col-md-12" style="text-align:center; padding-top: 40px;">
+            <button class="btn btn-danger" ng-click="changeBoothDisplay('goBack'); " style="margin-right: 25px;">Cancel</button>
+            <button class="btn btn-success" ng-click="addUpdateBooth();changeBoothDisplay('goBack'); " style="margin-left: 25px;">Confirm</button>
+        </div>
+    </div>
+</div>
+
+

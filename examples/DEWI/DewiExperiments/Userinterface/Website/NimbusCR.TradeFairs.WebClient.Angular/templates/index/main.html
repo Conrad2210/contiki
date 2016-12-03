@@ -1,0 +1,91 @@
+﻿<div ng-controller="IndexController">
+
+    <!-- The top navigation bar -->
+    <div ng-include="'Templates/index/topnavbar.html'"></div>
+
+    <!-- This wraps the full content section of the application and also has navigation bars
+            and the controller to toggle display for sidebar + main content area -->
+    <div id="wrapper" ng-controller="MenuToggleCtrl">
+
+        <!-- The menu on the sidebar with user profile and some navigation -->
+        <div ng-include="'Templates/index/sidebarmenu.html'"></div>
+
+        <!-- The section to edit the current users profile data -->
+        <div ng-include="'Templates/index/sidebareditprofile.html'"></div>
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+
+            <!-- The navigation bar that holds the display toggle button and user help icon -->
+            <div ng-include="'Templates/index/menutogglenav.html'"></div>
+
+            <!-- This section continually changes content depending on route user chooses.
+                    It contains the controller that holds the data for the logged in user
+                    i.e. Zones, Booths, Beacons -->
+            <div class="container-fluid" >
+
+                <!-- Menu to switch between Login and main page
+                <code>selection={{selection}}</code>  -->
+                <div ng-switch on="selection">
+                    <div ng-switch-when="Default">
+                        <dash-card-display-directive></dash-card-display-directive>
+                    </div>
+                    <div ng-switch-when="DashboardCard">
+                        <dash-card-display-directive></dash-card-display-directive>
+                    </div>
+                    <div ng-switch-when="DashboardList">
+                        <dash-list-display-directive></dash-list-display-directive>
+                    </div>
+                    <div ng-switch-when="ZoneCard">
+                        <zone-card-directive></zone-card-directive>
+                    </div>
+                    <div ng-switch-when="ZoneList">
+                        <zone-list-directive></zone-list-directive>
+                    </div>
+                    <div ng-switch-when="BoothCard">
+                        <booth-card-directive></booth-card-directive>
+                    </div>
+                    <div ng-switch-when="BoothList">
+                        <booth-list-directive></booth-list-directive>
+                    </div>
+                    <div ng-switch-when="StoreCard">
+                        <store-card-directive></store-card-directive>
+                    </div>
+                    <div ng-switch-when="StoreList">
+                        <store-list-directive></store-list-directive>
+                    </div>
+                    <div ng-switch-when="BeaconCard">
+                        <beacon-card-directive></beacon-card-directive>
+                    </div>
+                    <div ng-switch-when="BeaconList">
+                        <beacon-list-directive></beacon-list-directive>
+                    </div>
+                    <div ng-switch-when="NewsFeedCard">
+                        <newsfeed-card-directive></newsfeed-card-directive>
+                    </div>
+                    <div ng-switch-when="NewsFeedList">
+                        <newsfeed-list-directive></newsfeed-list-directive>
+                    </div>
+                    <div ng-switch-when="CategoryCard">
+                        <category-card-directive></category-card-directive>
+                    </div>
+                    <div ng-switch-when="CategoryList">
+                        <category-list-directive></category-list-directive>
+                    </div>
+                    <div ng-switch-when="Directory">
+                        <directory-directive></directory-directive>
+                    </div>
+                    <div ng-switch-when="StoreEditor">
+                        <store-editor-directive></store-editor-directive>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End of page-content-wrapper -->
+
+    </div>
+    <!-- End of wrapper -->
+    <!-- Pop up menu for help screen with content and links -->
+    <div ng-include="'Templates/index/helpModal.html'"></div>
+
+</div>

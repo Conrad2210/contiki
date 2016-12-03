@@ -1,0 +1,77 @@
+<!-- Sidebar Profile -->
+<div id="sidebar-wrapper-profile" >
+	<nav class = "navbar navbar-inverse profilenav" role = "navigation">
+		<ul class = "nav navbar-nav navbar-right">
+			<li>
+				<a href="" ng-click="profileToggle()" id="menu-toggle2">
+					<i class="fa fa-times fa-1x" aria-hidden="true"></i>
+				</a>
+			</li>
+		</ul>
+	</nav>
+	
+	<!-- imput fields to change profile details -->
+	<div class="row" style="padding-top: 15px;">
+		<div class="col-md-4 col-md-offset-1">
+            <img ng-src={{profileImageBlank}} class="img-thumbnail" id="profilepic2" />
+		</div>
+		<div class="col-md-6">
+			<br>
+			<div class="row"><a href="">Change image</a></div>
+			<div class="row"><a href="">Use text as avatar</a></div>
+		</div>
+	</div>
+	<div class="row" >
+		<div class="col-md-10 col-md-offset-1">
+			<form id="editprofile">
+				<div class="form-group row">
+					<div class="col-md-6">
+						<label for="inputFirstName" class="form-control-label">First name:<br></label>
+						<input ng-model="user.firstname" type="text" class="form-control" id="inputFirstName" placeholder="first name">
+					</div>
+					<div class="col-md-6">
+						<label for="inputLastName" class="form-control-label">Last name:</label><br>
+						<input ng-model="user.lastname" type="text" class="form-control" id="inputLastName" placeholder="last name">
+					</div>
+				</div>
+				<div class="form-group row">
+					<div class="col-md-8">
+						<label for="inputPhoneNumber" class="form-control-label">Phone number:</label></br>
+						<input type="phoneNumber" class="form-control" id="inputPhoneNumber" placeholder="phone number">
+					</div>
+				</div>
+				<div class="form-group row">
+					<div class="col-md-10">
+						<label for="inputEmail" class="form-control-label">Email:</label></br>
+						<input ng-model="user.email" type="email" class="form-control" id="inputEmail" placeholder="email">
+					</div>
+				</div>
+				<hr class="divider">
+				<div class="form-group row">
+					<div class="col-md-10">
+						<label for="inputTimeZone" class="form-control-label">TIMEZONE:</label></br>
+						<input type="timeZone" class="form-control" id="inputTimeZone" placeholder="GMT">
+					</div>
+				</div>
+				<hr class="divider">
+				<div class="form-group row">
+					<div class="col-md-10">
+						<label for="inputAccountName" class="form-control-label">Account Name:</label></br>
+						<input ng-model="user.preferences.gui.default_project" type="text" class="form-control" id="inputAccountName" placeholder="account name">
+					</div>
+				</div>
+				<div class="form-group row">
+					<div class="col-md-6" align="center">
+						<button type="submit" ng-click="profileToggle()" class="btn btn-primary">Save</button>	
+					</div>
+					<div class="col-md-6">
+						<button  ng-click="profileToggle()" class="btn btn-danger">Cancel</button>	
+					</div>
+				</div>
+			</form>
+			<br><br>
+		</div>
+	
+	</div>
+	
+</div>

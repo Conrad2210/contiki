@@ -1,0 +1,417 @@
+﻿enum S_CMSImageSize {
+	S_CMSImageSize_tiny = 0;
+	S_CMSImageSize_small = 1;
+	S_CMSImageSize_full = 2;
+}
+
+message S_CMSImage {
+	optional string name = 1;
+	optional string image_str = 2;
+	optional S_CMSImageSize size = 3 [default = S_CMSImageSize_full];
+}
+
+message S_CMSDataUpdateBroadcast {
+	optional string project_id = 1;
+	optional string object_type = 2;
+	repeated int32 object_dbids = 3;
+}
+
+message S_CMSListItem {
+	optional string id = 1;
+	optional string original_type = 2;
+	optional string title = 3;
+	optional string line1 = 4;
+	optional string line2 = 5;
+	optional string line3 = 6;
+}
+
+enum S_CMSAdminType {
+	S_CMSAdminType_notuser = 0;
+	S_CMSAdminType_profileuser = 1;
+	S_CMSAdminType_basic = 2;
+	S_CMSAdminType_projectadmin = 3;
+	S_CMSAdminType_superuser = 4;
+}
+
+enum S_CMSProfileUserStatus {
+	S_CMSProfileUserStatus_valid = 0;
+	S_CMSProfileUserStatus_deleted = 1;
+	S_CMSProfileUserStatus_unknown = 2;
+	S_CMSProfileUserStatus_inactive = 3;
+}
+
+message ListCMSAccountProject {
+	repeated S_CMSAccountProject items = 1;
+}
+
+message S_CMSAccountProject {
+	optional string project_id = 1;
+	optional string user_project_key = 2;
+	optional sint32 expire = 3 [default = 0];
+	optional sint32 last_used = 4 [default = 0];
+	optional S_CMSProfileUserStatus status = 5 [default = S_CMSProfileUserStatus_valid];
+}
+
+message ListCMSAccount {
+	repeated S_CMSAccount items = 1;
+}
+
+message S_CMSAccount {
+	optional S_CMSListItem list_item = 1;
+	optional string username = 2;
+	optional string firstname = 3;
+	optional string lastname = 4;
+	optional S_CMSAdminType admintype = 5 [default = S_CMSAdminType_notuser];
+	optional string image_url = 6;
+	optional string image_string = 7;
+	repeated S_CMSAccountProject projects = 8;
+	optional S_CMSProfileUserStatus status = 9 [default = S_CMSProfileUserStatus_valid];
+	optional string last_login_project = 10;
+	optional sint32 account_id = 11 [default = -1];
+	optional sint32 profileuser_id = 12 [default = -1];
+	optional sint32 profile_id = 13 [default = -1];
+}
+
+message ListCMSStore {
+	repeated S_CMSStore items = 1;
+}
+
+message ListCMSBooth {
+	repeated S_CMSBooth items = 1;
+}
+
+message S_CMSStore {
+	optional S_CMSListItem list_item = 1;
+	optional sint32 id = 2 [default = -1];
+	optional string name1 = 3;
+	optional string name2 = 4;
+	optional string addressline1 = 5;
+	optional string addressline2 = 6;
+	optional string description = 7;
+	optional string image_url = 8;
+	optional string image_string = 9;
+	repeated S_CMSBooth booths = 10;
+	repeated int32 linked_profile_ids = 11;
+	optional string billboard_text = 12;
+    optional bool isActive = 13;
+	optional sint32 service_level = 14 [default = 0];
+	optional string bg_image_url = 15;
+	optional string bg_image_string = 16;
+	optional string addressline3 = 17;
+	optional string addressline4 = 18;
+	optional string zipcode = 19;
+	optional string country = 20;
+	optional string phone = 21;
+	optional string mobile = 22;
+	optional string email = 23;
+	optional string fax = 24;
+	optional string web = 25;
+	repeated S_CMSProfileCategory product_categories = 26;
+	repeated S_CMSProfileCategory sectors = 27;
+}
+
+message S_CMSBooth {
+	optional S_CMSListItem list_item = 1;
+	optional sint32 id = 2 [default = -1];
+	optional string booth = 3;
+	optional string hall = 4;
+	optional sint32 destination_dbid = 5 [default = -1];
+}
+
+message ListCMSProfileCategory {
+	repeated S_CMSProfileCategory items = 1;
+}
+
+enum S_CMSProfileCategoryType {
+	S_CMSProfileCategoryType_unknown = 0;
+	S_CMSProfileCategoryType_product = 1;
+	S_CMSProfileCategoryType_profile = 2;
+	S_CMSProfileCategoryType_sector = 3;
+}
+
+message S_CMSProfileCategory {
+	optional S_CMSListItem list_item = 1;
+	optional sint32 id = 2 [default = -1];
+	optional S_CMSProfileCategoryType type = 3 [default = S_CMSProfileCategoryType_unknown];
+	optional string category = 4;
+	repeated sint32 code = 5;
+}
+
+message ListCMSBeacon {
+	repeated S_CMSBeacon items = 1;
+}
+
+message S_CMSBeacon {
+	optional S_CMSListItem list_item = 1;
+	optional sint32 id = 2 [default = -1];
+	optional string name = 3;
+	optional sint32 store_id = 4 [default = -1];
+	optional sint32 booth_id = 5 [default = -1];
+	optional string project_id = 6;
+	optional sint32 minor = 7 [default = 0];
+	optional sint32 major = 8 [default = 0];
+	optional string subsystem_name = 9;
+	optional string subsystem_uuid = 10;
+	optional bool isActive = 11 [default = false];
+	optional string description = 12;
+    optional sint32 display_duration = 13 [default = 3];
+	optional sint32 display_period = 14 [default = 600];
+}
+
+message ListCMSNewsFeed {
+	repeated S_CMSNewsFeed items = 1;
+}
+
+enum S_CMSNewsFeedActionType {
+	S_CMSNewsFeedActionType_message = 0;
+	S_CMSNewsFeedActionType_url_link = 1;
+	S_CMSNewsFeedActionType_custom_1 = 2;
+}
+
+enum S_CMSRecurrencePeriod {
+	S_CMSRecurrencePeriod_none = 0;
+	S_CMSRecurrencePeriod_hourly = 1;
+	S_CMSRecurrencePeriod_daily = 2;
+	S_CMSRecurrencePeriod_weekly = 3;
+	S_CMSRecurrencePeriod_monthly = 4;
+	S_CMSRecurrencePeriod_yearly = 5;
+}
+
+message S_CMSNewsFeed {
+	optional S_CMSListItem list_item = 1;
+	optional sint32 id = 2 [default = -1];
+	optional string title = 3;
+	optional sint64 timestamp = 4 [default = 0];
+	optional sint32 valid_from = 5 [default = 0];
+	optional sint32 valid_to = 6 [default = 0];
+	optional sint32 store_id = 7 [default = -1];
+	optional sint32 booth_id = 8 [default = -1];
+	optional string project_id = 9;
+	optional S_CMSNewsFeedActionType action_type = 10 [default = S_CMSNewsFeedActionType_message];
+	optional string message = 11;
+	optional string url_link = 12;
+	optional string image_url = 13;
+	optional string image_string = 14;
+	optional string from_user = 15;
+	optional sint32 display_duration = 16 [default = 3];
+	optional sint32 display_period = 17 [default = 600];
+	optional S_CMSRecurrencePeriod recurrence_period = 18 [default = S_CMSRecurrencePeriod_none];
+	optional sint32 recurrence_from = 19 [default = 0];
+	optional sint32 recurrence_to = 20 [default = 0];
+}
+
+message S_CMSProjectSetting {
+	optional sint32 id = 1 [default = -1];
+	optional string title = 2;
+	optional string subtitle = 3;
+	optional string description = 4;
+	optional string image_url = 5;
+	optional string image_string = 6;
+	repeated bytes color1 = 7;
+	repeated bytes color2 = 8;
+	repeated bytes color3 = 9;
+	repeated bytes color4 = 10;
+}
+
+enum S_CMSMenuItemStatus {
+	S_CMSMenuItemStatus_active = 0;
+	S_CMSMenuItemStatus_inactive = 1;
+}
+
+enum S_CMSMenuItemType {
+	S_CMSMenuItemType_text = 0;
+	S_CMSMenuItemType_html = 1;
+	S_CMSMenuItemType_htmlfile = 2;
+	S_CMSMenuItemType_urllink = 3;
+	S_CMSMenuItemType_email = 4;
+	S_CMSMenuItemType_zippedhtmldirectory = 5;
+	S_CMSMenuItemType_image = 6;
+	S_CMSMenuItemType_folder = 7;
+}
+
+message ListCMSMenuItem {
+	repeated S_CMSMenuItem items = 1;
+}
+
+message S_CMSMenuItem {
+	optional S_CMSListItem list_item = 1;
+	optional sint32 id = 2 [default = -1];
+	optional string title = 3;
+	optional sint32 order = 4 [default = -1];
+	optional S_CMSMenuItemType type = 5 [default = S_CMSMenuItemType_text];
+	optional string content = 6;
+	optional string filename = 7;
+	optional string iconstring = 8;
+	optional string iconfilename = 9;
+	optional sint32 parent_dbid = 10 [default = -1];
+	optional sint32 destination_dbid = 11 [default = -1];
+	optional S_CMSMenuItemStatus status = 12 [default = S_CMSMenuItemStatus_active];
+}
+
+message ListCMSRace {
+	repeated S_CMSRace items = 1;
+}
+
+message ListCMSRaceCategory {
+	repeated S_CMSRaceCategory items = 1;
+}
+
+message ListCMSRaceResult {
+	repeated S_CMSRaceResult items = 1;
+}
+
+enum S_CMSRaceStatus {
+	S_CMSRaceStatus_active = 0;
+	S_CMSRaceStatus_inactive = 1;
+}
+
+message S_CMSRace {
+	optional S_CMSListItem list_item = 1;
+	optional sint32 id = 2 [default = -1];
+	optional string name = 3;
+	optional sint32 start = 4 [default = 0];
+	optional S_CMSRaceStatus status = 5 [default = S_CMSRaceStatus_active];
+	optional sint64 last_modified = 6 [default = 0];
+	repeated S_CMSRaceCategory categories = 7;
+}
+
+message S_CMSRaceCategory {
+	optional S_CMSListItem list_item = 1;
+	optional sint32 id = 2 [default = -1];
+	optional string name = 3;
+	optional sint32 class_id = 4 [default = -1];
+	optional string class_name = 5;
+}
+
+enum S_CMSRaceResultStatus {
+	S_CMSRaceResultStatus_active = 0;
+	S_CMSRaceResultStatus_inactive = 1;
+}
+
+enum S_CMSSex {
+	S_CMSSex_unknown = 0;
+	S_CMSSex_male = 1;
+	S_CMSSex_female = 2;
+}
+
+message S_CMSRaceResult {
+	optional S_CMSListItem list_item = 1;
+	optional sint32 id = 2 [default = -1];
+	optional S_CMSRaceResultStatus status = 3 [default = S_CMSRaceResultStatus_active];
+	optional sint32 rank = 4 [default = -1];
+	optional sint32 bib = 5 [default = -1];
+	optional string last_name = 6;
+	optional string first_name = 7;
+	optional S_CMSSex sex = 8 [default = S_CMSSex_unknown];
+	optional sint32 age = 9 [default = -1];
+	optional string address = 10;
+	optional string city = 11;
+	optional string state = 12;
+	optional string nation = 13;
+	optional string sponsor = 14;
+	optional string license = 15;
+	optional sint64 finish = 16 [default = -1];
+}
+
+enum S_CMSSeminarSpeakerLinkType {
+	S_CMSSeminarSpeakerLinkType_unknown = 0;
+	S_CMSSeminarSpeakerLinkType_speaker = 1;
+	S_CMSSeminarSpeakerLinkType_chair = 2;
+}
+
+message ListCMSSpeaker {
+	repeated S_CMSSpeaker items = 1;
+}
+
+message S_CMSSpeaker {
+	optional S_CMSListItem list_item = 1;
+	optional sint32 id = 2 [default = -1];
+	optional string title = 3;
+	optional string first_name = 4;
+	optional string last_name = 5;
+	optional string company_name = 6;
+	optional string logo_url = 7;
+	optional string logo_str = 8;
+	optional string profile = 9;
+	optional sint64 last_modified = 10 [default = 0];
+}
+
+message ListCMSEventLocation {
+	repeated S_CMSEventLocation items = 1;
+}
+
+message S_CMSEventLocation {
+	optional S_CMSListItem list_item = 1;
+	optional string location = 2;
+	optional sint32 destination_id = 3 [default = -1];
+}
+
+message ListCMSEventGroup {
+	repeated S_CMSEventGroup items = 1;
+}
+
+message S_CMSEventGroup {
+	optional S_CMSListItem list_item = 1;
+	optional sint32 id = 2 [default = -1];
+	optional string group = 3;
+	optional string subgroup = 4;
+	repeated bytes colour = 5;
+}
+
+enum S_CMSSeminarAdmissionType {
+	S_CMSSeminarAdmissionType_unknown = 0;
+	S_CMSSeminarAdmissionType_free = 1;
+	S_CMSSeminarAdmissionType_paid = 2;
+}
+
+enum S_CMSSeminarType {
+	S_CMSSeminarType_unknown = 0;
+	S_CMSSeminarType_session = 1;
+	S_CMSSeminarType_meeting = 2;
+	S_CMSSeminarType_seminar = 3;
+	S_CMSSeminarType_talk = 4;
+}
+
+enum S_CMSSeminarStatus {
+	S_CMSSeminarStatus_active = 0;
+	S_CMSSeminarStatus_inactive = 1;
+}
+
+message ListCMSSeminar {
+	repeated S_CMSSeminar items = 1;
+}
+
+message S_CMSSeminar {
+	optional S_CMSListItem list_item = 1;
+	optional sint32 id = 2 [default = -1];
+	optional string title = 3;
+	optional sint32 start = 4 [default = 0];
+	optional sint32 end = 5 [default = 0];
+	optional string description = 6;
+	optional S_CMSEventLocation eventlocation = 7;
+	optional S_CMSEventGroup eventgroup = 8;
+	optional S_CMSSeminarAdmissionType admission_type = 9 [default = S_CMSSeminarAdmissionType_unknown];
+	optional sint64 last_modified = 10 [default = 0];
+	optional S_CMSSeminarType type = 11 [default = S_CMSSeminarType_unknown];
+	optional S_CMSSeminarStatus status = 12 [default = S_CMSSeminarStatus_inactive];
+	optional sint32 seats = 13 [default = -1];
+	optional sint32 profile_dbid = 14 [default = -1];
+	optional string logo_url = 15;
+	optional string logo_str = 16;
+	optional S_CMSSpeaker chair = 17;
+	repeated S_CMSSpeaker speakers = 18;
+}
+
+message ListCMSGraph {
+	repeated S_CMSGraph items = 1;
+}
+
+message S_CMSGraph {
+	optional string title = 1;
+	optional string type = 2;
+	optional string x_label = 3;
+	optional string y_label = 4;
+	repeated string x_names = 5;
+	repeated string bar_names = 6;
+	optional ListListInt_nest values = 7;
+}

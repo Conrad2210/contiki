@@ -1,0 +1,53 @@
+﻿<!-- the modal that is used to edit a store in the directory -->
+<div class="container-fluid no-margin-padding" style="margin-bottom: 25px; margin-top: 15px;">
+
+    <div class="col-md-12">
+        <h4 style="text-align:center;">Store Details</h4>
+        <div class="row">
+            <div class="col-md-12">
+                <button ng-click="changedDispaySelection('Store');changeStoreDisplay('goBack')" type="reset" class="pull-left btn-danger btn-sm" data-dismiss="modal">Cancel</button>
+                <button class="btn btn-success pull-right" ng-if="isAdmin && !storeDetails.outOfDate" ng-click="setupAddCatToShopPage(storeDetails);addEditStoreSetup(storeDetails, 2);changeStoreDisplay('StoreEdit'); setActiveTab(1); setEditTab('tab1')" style="width:70px">Edit</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-10 col-md-offset-1">
+                <div class="col-md-4" style="margin: 10px;">
+                    <img class="img-thumbnail" id="detailsImage" ng-src='{{storeDetails.image_string}}' onError="this.src = './img/spinner.gif'" />
+                </div>
+                <div class="col-md-5">
+                    <h5><strong>Address: </strong></h5>
+                    <h5>{{storeDetails.addressline1}}</h5>
+                    <h5>{{storeDetails.addressline2}}</h5>
+                    <h5>{{storeDetails.addressline3}}</h5>
+                    <h5>{{storeDetails.addressline4}}</h5>
+                    <h5><strong>Phone:</strong> {{storeDetails.phone}}</h5>
+                    <h5><strong>Email:</strong> {{storeDetails.email}}</h5>
+                    <h5><strong>Website:</strong> {{storeDetails.web}}</h5>
+                    <h5><strong>Store Active:</strong> {{storeDetails.isActive}}</h5>
+                </div>
+                <div class="col-md-2" style="margin-top: 70px; text-align: center;">
+
+                </div>
+                <div class="col-md-12" style="margin-top: 20px;">
+                    <h5><strong>Store Description Preview:</strong> </h5>
+                    <div ng-bind-html="storeDetails.description" style="margin: 15px; padding: 5px; border: 2px solid black; border-radius: 5px 5px 5px 5px;"></div>
+                </div>
+
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-10 col-md-offset-1">
+                <div class="form-group">
+                    <label style="margin-top: 10px;">Google Map</label>
+                    <ng-map zoom="15" center="[51.8865092, -8.3963268]">
+                        <marker position="[51.8865092, -8.3963268]" />
+                        <shape name="circle" radius="50" center="[51.8865092,-8.3963268]" />
+                        <control name="overviewMap" opened="true" />
+                    </ng-map>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+

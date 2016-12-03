@@ -1,0 +1,20 @@
+﻿<div class="container-fluid no-margin-padding" ng-switch on="storeDisplay">
+    <div ng-switch-when="StoreList">
+        <store-list-directive></store-list-directive>
+    </div>
+    <div ng-switch-when="StoreCard">
+        <store-card-directive></store-card-directive>
+    </div>
+    <div ng-switch-when="StoreEdit">
+        <store-edit-directive></store-edit-directive>
+    </div>
+    <div ng-switch-when="StoreDetails">
+        <store-details-directive></store-details-directive>
+    </div>
+
+
+
+</div>
+
+
+

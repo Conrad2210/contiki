@@ -1,0 +1,156 @@
+﻿<filter-nav-display-directive></filter-nav-display-directive>
+<!-- Displays all booths to the user -->
+<div class="store-list">
+    <div class="row no-margin-padding" id="store-topnav">
+        <ul class="nav navbar-nav">
+            <li><a ng-click="changedDispaySelection('Dashboard'); changeDashboardDisplay('DashboardCard');">card view  <i class="fa fa-th fa-1x"></i></a></li>
+            <li><a ng-click="changedDispaySelection('Dashboard'); changeDashboardDisplay('DashboardList');">list view  <i class="fa fa-list fa-1x"> </i></a></li>
+        </ul>
+    </div>
+    <div class="row" id="cards-display" ng-show="projectsettings.dashboard.account">
+        <h4 style="margin-left: 30px;">Account Overview</h4>
+        <!-- Displays only 3 booths to the user -->
+        <div class="col-md-3 col-sd-offset-1" ng-repeat="item in (accountList.account|orderBy:username).slice(0,4)">
+            <div class="card" in-view="loadAccountImage(item, $inview)" in-view-options="{debounce: 1000}">
+                <div class="card-block" id="dashboardCard">
+                    <div class="cardheaders">
+                        {{item.username}}
+                    </div>
+                    <div class="cardbody">
+                        <img class="img-thumbnail" ng-src='{{item.image_string}}' onError="this.src = './img/spinner.gif'" />
+                    </div>
+                    <div class="card-footer cardfooters text-muted">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12" style="text-align:center;">
+                <a id="footerText" onmouseover="" style="cursor: pointer;" ng-click="changedDispaySelection('Account');changeStoreDisplay('AccountCard');">Show All Account Accounts</a>
+            </div>
+        </div>
+    </div>
+    <div class="row" id="cards-display" ng-show="projectsettings.dashboard.beacons">
+        <h4 style="margin-left: 30px;">Beacon Overview</h4>
+        <!-- Displays only 3 booths to the user -->
+        <div class="col-md-3 col-sd-offset-1" ng-repeat="item in (beaconList.beacons | orderBy: name).slice(0,4)">
+            <div class="card">
+                <div class="card-block" id="dashboardCard">
+                    <div class="cardheaders">
+                        {{item.name}}
+                    </div>
+                    <div class="cardbody">
+                    </div>
+                    <div class="card-footer cardfooters text-muted">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12" style="text-align:center;">
+                <a id="footerText" onmouseover="" style="cursor: pointer;" ng-click="changedDispaySelection('Beacon');changeBoothDisplay('BeaconList');">Show All Beacons</a>
+            </div>
+        </div>
+    </div>
+    <div class="row" id="cards-display" ng-show="projectsettings.dashboard.booths">
+        <h4 style="margin-left: 30px;">Booth Overview</h4>
+        <!-- Displays only 3 booths to the user -->
+        <div class="col-md-3 col-sd-offset-1" ng-repeat="item in (boothList.booths | orderBy: booth).slice(0,4)">
+            <div class="card">
+                <div class="card-block" id="dashboardCard">
+                    <div class="cardheaders">
+                        {{item.booth}}
+                    </div>
+                    <div class="cardbody">
+                    </div>
+                    <div class="card-footer cardfooters text-muted">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12" style="text-align:center;">
+                <a id="footerText" onmouseover="" style="cursor: pointer;" ng-click="changedDispaySelection('Booth');changeBoothDisplay('BoothList');">Show All Booths</a>
+            </div>
+        </div>
+    </div>
+    <div class="row" id="cards-display" ng-show="projectsettings.dashboard.category">
+        <h4 style="margin-left: 30px;">Category Overview</h4>
+        <!-- Displays only 3 booths to the user -->
+        <div class="col-md-3 col-sd-offset-1" ng-repeat="item in (categoryList.categories | orderBy: name).slice(0,4)">
+            <div class="card">
+                <div class="card-block" id="dashboardCard">
+                    <div class="cardheaders">
+                        {{item.category}}
+                    </div>
+                    <div class="cardbody">
+                    </div>
+                    <div class="card-footer cardfooters text-muted">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12" style="text-align:center;">
+                <a id="footerText" onmouseover="" style="cursor: pointer;" ng-click="changedDispaySelection('Category');changeCategoryDisplay('CategoryList');">Show All Categories</a>
+            </div>
+        </div>
+    </div>
+    <div class="row" id="cards-display" ng-show="projectsettings.dashboard.newsFeed">
+        <h4 style="margin-left: 30px;">News Feed Overview</h4>
+        <!-- Displays only 3 booths to the user -->
+        <div class="col-md-3 col-sd-offset-1" ng-repeat="item in (newsFeedList.newsFeeds | orderBy: title).slice(0,4)">
+            <div class="card" in-view="loadNewsFeedImage(item, $inview)" in-view-options="{debounce: 1000}">
+                <div class="card-block" id="dashboardCard">
+                    <div class="cardheaders">
+                        {{item.title}}
+                    </div>
+                    <div class="cardbody">
+                        <img class="img-thumbnail" id="cardImage" ng-src='{{item.image_string}}' onError="this.src = './img/spinner.gif'" />
+                    </div>
+                    <div class="card-footer cardfooters text-muted">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12" style="text-align:center;">
+                <a id="footerText" onmouseover="" style="cursor: pointer;" ng-click="changedDispaySelection('NewsFeed');changeCategoryDisplay('NewsFeedCard');">Show All News Feeds</a>
+            </div>
+        </div>
+    </div>
+    <div class="row" id="cards-display" ng-show="projectsettings.dashboard.stores">
+        <h4 style="margin-left: 30px;">Store Overview</h4>
+        <!-- Displays only 3 booths to the user -->
+        <div class="col-md-3 col-sd-offset-1" ng-repeat="item in storeList.stores.slice(0,4) | orderBy: item.name1">
+            <div class="card" in-view="loadStoreImage(item, $inview)" in-view-options="{debounce: 1000}">
+                <div class="card-block" id="dashboardCard">
+                    <div class="cardheaders">
+                        {{item.name1}}
+                    </div>
+                    <div class="cardbody">
+                        <img class="img-thumbnail" id="cardImage" ng-src='{{item.image_string}}' onError="this.src = './img/spinner.gif'" />
+                    </div>
+                    <div class="card-footer cardfooters text-muted">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12" style="text-align:center;">
+                <a id="footerText" onmouseover="" style="cursor: pointer;" ng-click="changedDispaySelection('Store');changeStoreDisplay('card');">Show All Stores</a>
+            </div>
+        </div>
+    </div>
+
+</div>

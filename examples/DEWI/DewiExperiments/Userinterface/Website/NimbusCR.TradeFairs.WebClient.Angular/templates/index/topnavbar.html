@@ -1,0 +1,25 @@
+<div id="top-page">
+	<nav class = "navbar navbar-inverse navbar-static-top" id="topnav" role = "navigation">
+		<ul class = "nav navbar-nav navbar-light pull-left" id="topnavleft">
+			<li><a ng-click="changeView('Default'); changeDisplayChoice('Dashboard');">Dashboard</a></li>
+			<li><a ng-click="changeView('ZoneCard'); changeDisplayChoice('Zone');">Zones</a></li>
+            <li><a ng-click="changeView('StoreCard'); changeDisplayChoice('Store');">Stores</a></li>
+			<li><a ng-click="changeView('BoothCard'); changeDisplayChoice('Booth');">Booths</a></li>
+            <li><a ng-click="changeView('BeaconCard'); changeDisplayChoice('Beacon');">Beacons</a></li>
+            <li><a ng-click="changeView('NewsFeedCard'); changeDisplayChoice('NewsFeed');">News Feed</a></li>
+            <li><a ng-click="changeView('CategoryCard'); changeDisplayChoice('Category');">Category</a></li>
+		</ul>
+		<ul class = "nav navbar-nav navbar-light pull-right" >
+			<li class = "dropdown" >
+				<a class = "dropdown-toggle" data-toggle = "dropdown">
+				   {{user.preferences.gui.default_project}}
+				   <b class = "caret"></b>
+				</a>
+				
+				<ul class = "dropdown-menu">
+				   <li><a ng-repeat="project in user.Projects" ng-click="changeCurrentProject(project)">{{project}}</a></li>
+				</ul>
+			</li>
+		</ul>
+	</nav>
+</div>

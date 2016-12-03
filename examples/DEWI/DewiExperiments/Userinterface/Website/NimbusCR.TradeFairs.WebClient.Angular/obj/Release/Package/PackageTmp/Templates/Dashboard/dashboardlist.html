@@ -1,0 +1,195 @@
+﻿<filter-nav-display-directive></filter-nav-display-directive>
+<!-- Displays all booths to the user -->
+<div class="list-section">
+    <div class="row no-margin-padding" id="list-topnav">
+        <ul class="nav navbar-nav">
+            <li><a ng-click="changedDispaySelection('Dashboard'); changeDashboardDisplay('DashboardCard');">card view  <i class="fa fa-th fa-1x"></i></a></li>
+            <li><a ng-click="changedDispaySelection('Dashboard'); changeDashboardDisplay('DashboardList');">list view  <i class="fa fa-list fa-1x"> </i></a></li>
+        </ul>
+    </div>
+    <div class="row" ng-show="projectsettings.dashboard.account" id="list-display">
+        <h4 style="margin-left: 30px;">Account Overview</h4>
+        <!-- Displays only 3 booths to the user -->
+        <table st-table="shopList" class="table table-striped">
+            <thead>
+                <tr style="background-color: #333333; color: white;">
+                    <th>
+                        Username
+
+                    </th>
+                    <th>
+                        Firstname
+                    </th>
+                    <th>
+                        Lastname
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="item in (accountList.account | orderBy: 'username').slice(0,5)">
+                    <td width="40%">
+                        {{item.username}}
+                    </td>
+                    <td>
+                        {{item.firstname}}
+                    </td>
+                    <td>
+                        {{item.lastname}}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4" style="text-align:center;">
+                <a id="footerText" onmouseover="" style="cursor: pointer;" ng-click="changedDispaySelection('Account');changeCategoryDisplay('AccountList');">Show All Accounts</a>
+            </div>
+        </div>
+    </div>
+    <div class="row" ng-show="projectsettings.dashboard.beacons" id="list-display">
+        <h4 style="margin-left: 30px;">Beacon Overview</h4>
+        <!-- Displays only 3 booths to the user -->
+        <table st-table="shopList" class="table table-striped">
+            <thead>
+                <tr style="background-color: #333333; color: white;">
+                    <th>
+                        Name
+
+                    </th>
+                    <th>
+                        Subsystem UUID
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="item in (beaconList.beacons | orderBy: 'name').slice(0,5)">
+                    <td>
+                        {{item.name}}
+                    </td>
+                    <td>
+                        {{item.subsystem_uuid}}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4" style="text-align:center;">
+                <a id="footerText" onmouseover="" style="cursor: pointer;" ng-click="changedDispaySelection('Beacon');changeCategoryDisplay('BeaconList');">Show All Beacon</a>
+            </div>
+        </div>
+    </div>
+    <div class="row" ng-show="projectsettings.dashboard.booths" id="list-display">
+        <h4 style="margin-left: 30px;">Booth Overview</h4>
+        <!-- Displays only 3 booths to the user -->
+        <table st-table="shopList" class="table table-striped">
+            <thead>
+                <tr style="background-color: #333333; color: white;">
+                    <th>
+                        Booth
+
+                    </th>
+                    <th>
+                        Hall
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="item in (boothList.booths | orderBy: 'booth').slice(0,5)">
+                    <td>
+                        {{item.booth}}
+                    </td>
+                    <td>
+                        {{item.hall}}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4" style="text-align:center;">
+                <a id="footerText" onmouseover="" style="cursor: pointer;" ng-click="changedDispaySelection('Booth');changeCategoryDisplay('BoothList');">Show All Booth</a>
+            </div>
+        </div>
+    </div>
+    <div class="row" ng-show="projectsettings.dashboard.category" id="list-display">
+        <h4 style="margin-left: 30px;">Category Overview</h4>
+        <!-- Displays only 3 booths to the user -->
+        <table st-table="shopList" class="table table-striped">
+            <thead>
+                <tr style="background-color: #333333; color: white;">
+                    <th>Category</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="item in (categoryList.categories | orderBy: 'item.category').slice(0,5)">
+                    <td>{{item.category}}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4" style="text-align:center;">
+                <a id="footerText" onmouseover="" style="cursor: pointer;" ng-click="changedDispaySelection('Category');changeCategoryDisplay('CategoryList');">Show All Categories</a>
+            </div>
+        </div>
+    </div>
+    <div class="row" ng-show="projectsettings.dashboard.newsFeed" id="list-display">
+        <h4 style="margin-left: 30px;">NewsFeed Overview</h4>
+        <!-- Displays only 3 booths to the user -->
+        <table st-table="shopList" class="table table-striped">
+            <thead>
+                <tr style="background-color: #333333; color: white;">
+                    <th>Title</th>
+                    <th>Valid from</th>
+                    <th>Valid to</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="item in ((newsFeedList.newsFeeds | orderBy: 'item.title').slice(0,5)">
+                    <td in-view="loadImage(item, $inview)" in-view-options="{debounce: 2000}">
+                        {{item.title}}
+                    </td>
+                    <td>
+                        {{item.valid_from*1000|date:'yyyy-MM-dd HH:mm:ss Z'}}
+                    </td>
+                    <td>
+                        {{item.valid_to*1000|date:'yyyy-MM-dd HH:mm:ss Z'}}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4" style="text-align:center;">
+                <a id="footerText" onmouseover="" style="cursor: pointer;" ng-click="changedDispaySelection('NewsFeed');changeNewsFeedDisplay('NewsFeedList');">Show All Categories</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" ng-show="projectsettings.dashboard.stores" id="list-display">        
+            <h4 style="margin-left: 30px;">Store Overview</h4>
+            <!-- Displays only 3 booths to the user -->
+
+            <table  class="table table-striped">
+                <thead>
+                    <tr style="background-color: #333333; color: white;">
+                        <th>Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr ng-repeat="item in (storeList.stores | orderBy: 'name1').slice(0,5)">
+                        <td in-view="loadImage(item, $inview)" in-view-options="{debounce: 2000}">{{item.name1}}</td>                        
+                    </tr>
+                </tbody>
+            </table>
+        
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4" style="text-align:center;">
+                <a id="footerText" onmouseover="" style="cursor: pointer;" ng-click="changedDispaySelection('Store');changeStoreDisplay('StoreList');">Show All Stores</a>
+            </div>
+        </div>
+    </div>
+   
+</div>

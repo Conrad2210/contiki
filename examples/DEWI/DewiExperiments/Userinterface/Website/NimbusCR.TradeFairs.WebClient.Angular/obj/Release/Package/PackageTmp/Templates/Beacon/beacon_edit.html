@@ -1,0 +1,89 @@
+﻿<!-- the modal that is used to edit a store in the directory -->
+<div class="container-fluid no-margin-padding" style="margin-bottom: 25px; margin-top: 15px;">
+    <h4 style="text-align:center;" ng-style="tempBeacon.outOfDate && {'color':'yellow'} ">Edit Beacon Details</h4>
+    <div class="col-md-12">
+        <ul class="nav nav-tabs editTabs">
+            <li style="margin-left: 30px;" ng-class="{'active' : activeTab == 1}"><a ng-click="setActiveTab(1); setEditTab('tab1')">Basic</a></li>
+            <li ng-class="{'active' : activeTab == 2}"><a ng-click="setActiveTab(2); setEditTab('tab2')">Advanced</a></li>
+        </ul>
+    </div>
+    <div ng-switch on="editTab" >
+        <div class="col-md-12" ng-switch-when="tab1">
+            <label style="margin-top: 10px;">
+                Name:<span class="error" ng-show="isNewBeacon && !isValid">
+                    Required!
+                </span>
+            </label>
+            <input ng-disabled="tempBeacon.outOfDate"  ng-change="nameInput()" ng-model="tempBeacon.name" type="text" class="form-control" name="name" id="name" placeholder="enter name" required>
+            <label style="margin-top: 10px;">Description:</label>
+            <textarea ng-disabled="tempBeacon.outOfDate" id="editor1" ckeditor="editorOptions" ng-model="tempBeacon.description"></textarea>
+            <script>CKEDITOR.replace('editor1');</script>
+        </div>
+        <div class="col-md-12" ng-switch-when="tab2">
+            <label style="margin-top: 10px;">
+                Subsystem Name:
+            </label>
+            <input ng-disabled="tempBeacon.outOfDate"  ng-model="tempBeacon.subsystem_name" type="text" class="form-control" name="name" id="name" placeholder="enter subsystem name">
+            <label style="margin-top: 10px;">
+                Subsystem UUID:
+            </label>
+            <input ng-disabled="tempBeacon.outOfDate" ng-model="tempBeacon.subsystem_uuid" type="text" class="form-control" name="name" id="name" placeholder="enter subsystem uuid">
+            <label style="margin-top: 10px;">Display duration:</label>
+            <input ng-disabled="tempBeacon.outOfDate" ng-model="tempBeacon.display_duration" string-to-number type="number" class="form-control" name="name" id="name">
+            <label style="margin-top: 10px;">Display period:</label>
+            <input ng-disabled="tempBeacon.outOfDate" ng-model="tempBeacon.display_period" string-to-number type="number" class="form-control" name="name" id="name">
+            </br>
+            <div class="col-md-1">
+                <label style="margin-top: 10px;">Minor:</label>
+            </div>
+            <div class="col-md-2">
+                <input ng-disabled="tempBeacon.outOfDate" ng-value="tempBeacon.minor" string-to-number type="number" class="form-control" name="name" id="name">
+            </div>
+            <div class="col-md-1">
+                <label style="margin-top: 10px;">Major:</label>
+            </div>
+            <div class="col-md-2">
+                <input ng-disabled="tempBeacon.outOfDate" ng-model="tempBeacon.major" string-to-number type="number" class="form-control" name="name" id="name">
+            </div>
+            </br>
+            </br>
+            <div class="col-md-1">
+                <label style="margin-top: 10px;">
+                    Store:
+                </label>
+            </div>
+            <div class="col-md-4">
+                <select ng-disabled="tempBeacon.outOfDate" class="btn btn-default dropdown-toggle dropdown" type="button" id="dropDownSort"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" ng-model="tempBeacon.store_id">
+
+                    <option ng-repeat="store in storeList.stores|orderBy:id" value="{{store.id}}">ID: {{store.id}} Name: {{store.name1}}</option>
+                </select>
+
+            </div>
+            </br>
+            </br>
+            <div class="col-md-1">
+                <label style="margin-top: 10px;">
+                    Booth:
+                </label>
+            </div>
+            <div class="col-md-4">
+                <select ng-disabled="tempBeacon.outOfDate"  class="btn btn-default dropdown-toggle dropdown" type="button" id="dropDownSort"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" ng-model="tempBeacon.booth_id">
+                    <option ng-repeat="booth in boothList.booths|orderBy:id" value="{{booth.id}}">ID: {{booth.id}} Booth: {{booth.booth}} Hall: {{booth.hall}}</option>
+                </select>
+
+            </div>
+
+        </div>
+        <div class="col-md-12" style="text-align:center; padding-top: 40px;">
+            <button class="btn btn-danger"  ng-click="changeBeaconDisplay('goBack'); " style="margin-right: 25px;">Cancel</button>
+           
+            <button class="btn btn-success" ng-if="!tempBeacon.outOfDate" ng-class="{'disabled': tempBeacon.outOfDate}" ng-click="addUpdateBeacon();changeBeaconDisplay('goBack'); " style="margin-left: 25px;">Confirm</button>
+            <button class="btn btn-warning" ng-if="tempBeacon.outOfDate" ng-class="{'disabled': tempBeacon.outOfDate}"  style="margin-left: 25px;">Data out of sync</button>
+
+        </div>
+    </div>
+</div>
+
+

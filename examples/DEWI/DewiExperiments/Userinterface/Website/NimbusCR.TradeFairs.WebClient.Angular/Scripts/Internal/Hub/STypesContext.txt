@@ -1,0 +1,514 @@
+﻿message ListCMSPolyArea {
+	repeated S_CMSPolyArea items = 1;
+}
+
+message ListCMSEOLabel {
+	repeated S_CMSEOLabel items = 1;
+}
+
+message ListCMSEOImage {
+	repeated S_CMSEOImage items = 1;
+}
+
+message S_CMSTransformableObject {
+	optional S_TransformableObject transformableObject = 1;
+	repeated S_CMSPolyArea polyAreas = 2;
+}
+
+message S_CMSPolyArea {
+	optional S_EOPolyArea polyArea = 1;
+	repeated S_CMSEOLabel labels = 2;
+	repeated S_CMSEOImage images = 3;
+}
+
+enum S_CMSFontFamily {
+	S_CMSFontFamily_Arial = 0;
+	S_CMSFontFamily_Calibri = 1;
+	S_CMSFontFamily_Verdana = 2;
+}
+
+enum S_CMSFontStyle {
+	S_CMSFontStyle_normal = 0;
+	S_CMSFontStyle_bold = 1;
+	S_CMSFontStyle_italic = 2;
+}
+
+enum S_CMSTextAlign {
+	S_CMSTextAlign_left = 0;
+	S_CMSTextAlign_center = 1;
+	S_CMSTextAlign_right = 2;
+}
+
+message S_CMSEOLabel {
+	optional sint32 id = 1 [default = -1];
+	optional string object_name = 2 [default = "destination"];
+	optional string text = 3 [default = ""];
+	optional S_LayerTransformation transformation = 4;
+	optional S_CMSFontFamily fontFamily = 5 [default = S_CMSFontFamily_Calibri];
+	optional S_CMSFontStyle fontStyle = 6 [default = S_CMSFontStyle_italic];
+	optional float fontSize = 7 [default = 1];
+	optional S_CMSTextAlign align = 8 [default = S_CMSTextAlign_left];
+	repeated bytes background_argb = 9;
+	repeated bytes foreground_argb = 10;
+	optional float opacity = 11 [default = 1];
+    optional string ref_type = 12 [default = "eoprofile"];
+	repeated int32 ref_dbids = 13;
+}
+
+message S_CMSEOImage {
+	optional sint32 id = 1 [default = -1];
+	optional string image_url = 2 [default = ""];
+	optional string image_string = 3 [default = ""];
+	optional S_LayerTransformation transformation = 4;
+	optional float opacity = 5 [default = 0.8];
+    optional string ref_type = 6 [default = "eoprofile"];
+	repeated int32 ref_dbids = 7;
+}
+
+message ListNavNodeLink {
+	repeated S_NavNodeLink items = 1;
+}
+
+message S_NavNodeLink {
+	optional sint32 nav_node_dbid = 1 [default = -1];
+	optional bool prime = 2 [default = false];
+	optional bool start = 3 [default = false];
+	optional sint32 nav_node_id = 4 [default = -1];
+}
+
+message ListCMSDestination {
+	repeated S_CMSDestination items = 1;
+}
+
+message S_CMSDestination {
+	optional sint32 id = 1 [default = -1];
+	optional sint32 entity_id = 2 [default = -1];
+	optional string entity_type = 3 [default = "EOContextArea"];
+	optional string text = 4 [default = ""];
+	optional S_Position position = 5;
+	repeated S_NavNodeLink navNode_dbid_Links = 6;
+}
+
+message S_SizeStatistics {
+	optional sint32 triangles = 1 [default = 0];
+	optional sint32 texturePixels = 2 [default = 0];
+	optional bool lowdetail = 3 [default = true];
+	optional bool normaldetail = 4 [default = true];
+	optional bool highdetail = 5 [default = true];
+}
+
+
+
+message KeyValuePair_DictStringDynamicObjViz {
+	optional string Key = 1;
+	optional S_DynamicObjViz Value = 2;
+}
+
+message DictStringDynamicObjViz {
+	repeated KeyValuePair_DictStringDynamicObjViz items = 1;
+}
+
+message KeyValuePair_DictStringLayerAtts {
+	optional string Key = 1;
+	optional S_LayerAttributes Value = 2;
+}
+
+message DictStringLayerAtts {
+	repeated KeyValuePair_DictStringLayerAtts items = 1;
+}
+
+message S_LayerTransformation3D {
+	optional sint32 layer_scene_index = 1 [default = -1];
+	repeated S_LayerTransformation3D childernLayers = 2;
+	optional S_LayerTransformation layerTransformation = 3;
+}
+
+message S_Event3D {
+	optional S_EventType type = 1 [default = S_EventType_action2D];
+	optional sint32 scene_index = 2 [default = -1];
+}
+
+message S_EventScene {
+	optional S_EventType type = 1 [default = S_EventType_action2D];
+	optional sint32 index = 2 [default = -1];
+	optional string name = 3 [default = ""];
+	optional S_Scene3D scene = 4;
+	repeated sint32 billboardModifierIndexes = 5;
+}
+
+enum S_BillboardContentType {
+	S_BillboardContentType_text = 0;
+	S_BillboardContentType_image = 1;
+	S_BillboardContentType_xml = 2;
+}
+
+message S_Scene3D {
+	repeated sint32 fullviz = 1;
+	repeated sint32 halfviz = 2;
+	optional float zNear = 3 [default = 4];
+	optional float zFar = 4 [default = 10000];
+	optional S_Orientation3D orientation = 5;
+	optional sint32 scene_index = 6 [default = -1];
+	optional S_CameraSettingApplication camerasettingapplication = 7 [default = S_CameraSettingApplication_distancelooktilt];
+	optional float distance_min = 8 [default = 10];
+	optional float distance_max = 9 [default = 500];
+	optional float tilt_min = 10;
+	optional float tilt_max = 11;
+	optional float x_min = 12;
+	optional float x_max = 13;
+	optional float y_min = 14;
+	optional float y_max = 15;
+	optional float move_sensitivity_offset = 16;
+	optional float move_sensitivity_factor = 17;
+	optional float rotation_sensitivity = 18;
+	optional float motion_mode_treshold = 19 [default = 100000];
+	optional sint32 destination_db_id = 20 [default = -1];
+	optional sint32 back_scene_index = 21 [default = 0];
+	optional string title = 22 [default = ""];
+	optional bool rotation_enabled = 23 [default = true];
+	optional float compass_origin = 24 [default = 0];
+	optional float camera_distance_from_position = 25;
+	optional bool gps_enabled = 26 [default = true];
+	optional float position_disk_elevation = 27 [default = 1];
+	optional float position_disk_radious = 28 [default = 20];
+	optional float zoom_sensitivity_offset = 29;
+	optional float zoom_sensitivity_factor = 30;
+	optional S_ShowFlags show_flag = 31 [default = S_ShowFlags_default];
+	repeated bytes start_colour = 32;
+	repeated bytes end_colour = 33;
+	optional float highlight_distance_from = 34;
+	optional float highlight_distance_to = 35;
+	optional float suppress_distance_from = 36;
+	optional float suppress_distance_to = 37;
+	optional S_ViewControlMode view_control_mode = 38  [default = S_ViewControlMode_default];
+	optional float camera_distance_for_navigation = 39;
+	optional sint32 scene_transition_off_for = 40 [default = -1];
+	optional S_SceneType type = 41 [default = S_SceneType_destination];
+	optional float compass_step = 42;
+	optional sint32 startup_delay = 43 [default = 0];
+	optional S_Orientation3D startup_orientation = 44;
+	optional float center_view_offset = 45 [default = -0.35];
+	repeated bytes background = 46;
+}
+
+enum S_EventType {
+	S_EventType_action2D = 0;
+	S_EventType_scenechange = 1;
+	S_EventType_novisualeffect = 2;
+}
+
+message S_DynamicObjViz {
+	optional sint32 object_o_viz_indicator = 1;
+	repeated sint32 full_viz_enabler = 2;
+	repeated sint32 half_viz_enabler = 3;
+	optional string object_o_viz_string = 4;
+	optional S_NavNodeViz S_NavNodeViz = 210;
+	optional S_NavEdgeViz S_NavEdgeViz = 211;
+	optional S_DestAreaViz S_DestAreaViz = 212;
+}
+
+message S_NavNodeViz {
+	optional sint32 node_db_id = 1;
+}
+
+message S_NavEdgeViz {
+	optional sint32 node_db_id = 1 [default = -1];
+	optional sint32 neighbour_db_id = 2 [default = -1];
+}
+
+message S_DestAreaViz {
+	repeated int32 node_db_ids = 1;
+	optional sint32 dest_db_id = 2;
+}
+
+message S_LayerAttributes {
+	optional string layer_fullname = 1;
+	optional string layer_showflag = 2;
+	optional bool gps_enabled = 3;
+}
+
+message IntArray {
+	repeated sint32 array = 1;
+}
+
+enum S_ShowFlags {
+	S_ShowFlags_default = 0;
+	S_ShowFlags_alwaysshow = 1;
+	S_ShowFlags_nevershow = 2;
+	S_ShowFlags_projecttile = 3;
+	S_ShowFlags_showwithparent = 4;
+	S_ShowFlags_showwithproject = 5;
+	S_ShowFlags_skipparent = 6;
+	S_ShowFlags_detail = 7;
+}
+
+message S_Orientation3D {
+	optional float lookX = 1 [default = 0];
+	optional float lookY = 2 [default = 0];
+	optional float elevation = 3  [default = 0];
+	optional float tiltAngle = 4  [default = 0];
+	optional float rotationAngle = 5 [default = 0];
+	optional float distance = 6 [default = 1000];
+}
+
+enum S_CameraSettingApplication {
+	S_CameraSettingApplication_full = 0;
+	S_CameraSettingApplication_none = 1;
+	S_CameraSettingApplication_distancelooktilt = 2;
+	S_CameraSettingApplication_distancelook = 3;
+}
+
+enum S_ViewControlMode {
+	S_ViewControlMode_default = 0;
+	S_ViewControlMode_fixtilttodistance = 1;
+}
+
+enum S_SceneType {
+	S_SceneType_project = 0;
+	S_SceneType_building = 1;
+	S_SceneType_floor = 2;
+	S_SceneType_projecttile = 3;
+	S_SceneType_destination = 4;
+}
+
+message KeyValuePair_DictStringCMSModel3D {
+	optional string Key = 1;
+	optional S_CMSModel3D Value = 2;
+}
+
+message DictStringCMSModel3D {
+	repeated KeyValuePair_DictStringCMSModel3D items = 1;
+}
+
+message ListCMSLayerData3D {
+	repeated S_CMSLayerData3D items = 1;
+}
+
+message ListCMSData3D {
+	repeated S_CMSData3D items = 1;
+}
+
+message ListCMSEntity3D {
+	repeated S_CMSEntity3D items = 1;
+}
+
+message ListCMSSurface3D {
+	repeated S_CMSSurface3D items = 1;
+}
+
+message S_CMSLayerData3D {
+	repeated sint32 viz = 1;
+	repeated string data3D = 2;
+	optional S_SizeStatistics sizeStatistics = 3;
+	optional string type = 4 [default = "EntityGroup3D"];
+}
+
+message S_CMSData3D {
+    optional string type = 1 [default = "EntityGroup3D"];
+	optional S_CMSLayer3DSetting S_CMSLayer3DSetting = 50;
+	optional S_CMSLayerNavigation3DSetting S_CMSLayerNavigation3DSetting = 51;
+	optional S_CMSScenes3D S_CMSScenes3D = 52;
+	optional S_CMSEntityGroup3D S_CMSEntityGroup3D = 53;
+	optional S_CMSEventScenes3D S_CMSEventScenes3D = 54;
+	optional S_CMSTransformation3D S_CMSTransformation3D = 55;
+	optional S_CMSTextureRepository3D S_CMSTextureRepository3D = 56;
+	optional S_CMSModelRepository3D S_CMSModelRepository3D = 57;
+}
+
+message S_CMSLayer3DSetting {
+	optional S_EOPoint init_camera_point = 1;
+	optional float init_camera_distance = 2 [default = 1000];
+	optional float init_camera_azimuth = 3 [default = 0];
+	optional float init_camera_tilt = 4 [default = 0];
+	optional float max_camera_distance = 5 [default = 10000];
+	optional float min_camera_distance = 6 [default = 1];
+	optional float min_x = 7 [default = -1000];
+	optional float min_y = 8 [default = -1000];
+	optional float max_x = 9 [default = 1000];
+	optional float max_y = 10 [default = 1000];
+	optional float z_near = 11 [default = 4];
+	optional float z_far = 12 [default = 10000];
+	optional float min_tilt = 13 [default = 0];
+	optional float max_tilt = 14 [default = 0];
+}
+
+message S_CMSScenes3D {
+	repeated S_Scene3D scenes = 1;
+}
+
+message S_CMSEventScenes3D {
+	repeated S_EventScene eventscenes = 1;
+}
+
+message S_CMSLayerNavigation3DSetting {
+	repeated bytes colour = 1;
+	optional float diameter = 2 [default = 20];
+	optional string name = 3 [default = ""];
+	optional float distance_from = 4 [default = 1];
+	optional float distance_to = 5 [default = 10000];
+	optional float distance_fadeout = 6 [default = 10000];
+	repeated S_CMSNavNodeViz nodeVizs = 7;
+	repeated S_CMSNavEdgeViz edgeVizs = 8;
+	repeated KeyValuePair_DictStringDynamicObjViz navObjectVizs = 9;
+	repeated KeyValuePair_DictStringLayerAtts layer_attributes = 10;
+	optional DictIntListDynamicObjViz_nest destination_modifierindex = 11;
+	repeated S_CMSDestAreaViz destAreaVizs = 12;
+}
+
+message S_CMSTransformation3D {
+	optional S_LayerTransformation3D projectTransformation = 1;
+}
+
+message S_CMSTextureRepository3D {
+	repeated KeyValuePair_DictionaryStringString textures = 1;
+}
+
+message S_CMSModelRepository3D {
+	repeated KeyValuePair_DictStringCMSModel3D models = 1;
+}
+
+message S_CMSEntityGroup3D {
+	optional sint32 modifier_index = 1 [default = -1];
+	optional sint32 visualisation_order = 2 [default = 0];
+	repeated S_CMSEntity3D entitites = 3;
+	repeated sint32 viz = 4;
+	optional sint32 groupindex = 5 [default = -1];
+	optional S_SizeStatistics sizeStatistics = 6;
+}
+
+message S_CMSEntity3D {
+    optional sint32 modifier_index = 1 [default = -1];
+	optional sint32 visualisation_order = 2 [default = 0];
+	optional S_CMSBillboard S_CMSBillboard = 100;
+	optional S_CMSNavigationVertex3D S_CMSNavigationVertex3D = 101;
+	optional S_CMSNavigationEdge3D S_CMSNavigationEdge3D = 102;
+	optional S_CMSModel3D S_CMSModel3D = 103;
+}
+
+message S_CMSBillboard {
+	optional float distance_from = 3 [default = 1];
+	optional float distance_to = 4 [default = 10000];
+	optional float distance_fadeout = 5 [default = 10000];
+	optional S_Event3D event3D = 6;
+	optional S_EOPoint point = 7;
+	optional string content = 8 [default = ""];
+	optional S_BillboardContentType content_type = 9 [default = S_BillboardContentType_text];
+	optional float top = 10 [default = 3];
+	optional float bottom = 11 [default = 3];
+	repeated bytes foreground = 12;
+	repeated bytes background = 13;
+	repeated bytes border = 14;
+	optional sint32 border_width = 15 [default = 2];
+	optional sint32 minWidth = 16 [default = 100];
+	optional sint32 minHeight = 17 [default = 30];
+	optional sint32 horizontalMargin = 18 [default = 7];
+	optional sint32 verticalMargin = 19 [default = 7];
+	optional string fontName = 20 [default = ""];
+	optional string fontStyle = 2 [default = ""];
+	optional float fontSize = 22 [default = 24];
+	optional bool triggerMotion = 23 [default = true];
+	optional float alternative_elevation = 24 [default = 0];
+	optional sint32 triangle_size = 25 [default = 10];
+	optional string pinShapeName = 26 [default = ""];
+}
+
+message S_CMSNavigationVertex3D {
+	optional sint32 index = 1 [default = -1];
+	optional S_EOPoint point = 2;
+}
+
+message S_CMSNavigationEdge3D {
+	optional sint32 index_1 = 3 [default = -1];
+	optional sint32 index_2 = 4 [default = -1];
+}
+
+message S_CMSModel3D {
+	repeated S_CMSSurface3D surfaces = 1;
+}
+
+message S_CMSSurface3D {
+	optional sint32 modifier_index = 1 [default = -1];
+	optional sint32 visualisation_order = 2 [default = 0];
+	optional float distance_from = 3 [default = 1];
+	optional float distance_to = 4 [default = 10000];
+	optional float distance_fadeout = 5 [default = 10000];
+	optional S_Event3D event3D = 6;
+	repeated S_CMSSurface3DPoint points = 7;
+	repeated IntArray triangles = 8;
+	optional string texture = 9 [default = ""];
+	optional string texture_name = 10 [default = ""];
+}
+
+message ListCMSSurface3DPoint {
+	repeated S_CMSSurface3DPoint items = 1;
+}
+
+message S_CMSSurface3DPoint {
+	optional S_EOPoint point = 1;
+	repeated bytes colour = 2;
+	optional float u = 3 [default = -1];
+	optional float v = 4 [default = -1];
+	optional S_EOPoint normal = 5;
+	optional float luminance_factor = 6 [default = 0];
+}
+
+message ListDynamicObjViz_nest {
+	repeated S_DynamicObjViz items = 1;
+}
+
+message ListListDynamicObjViz_nest {
+	repeated ListDynamicObjViz_nest items = 1;
+}
+
+message DictIntListDynamicObjViz_nest {
+	repeated int32 keys = 1;
+	optional ListListDynamicObjViz_nest values = 2;
+}
+
+message ListCMSNavEdgeViz {
+	repeated S_CMSNavEdgeViz items = 1;
+}
+
+message S_CMSNavEdgeViz {
+	optional sint32 object_o_viz_indicator = 1 [default = -1];
+	repeated sint32 full_viz_enabler = 2;
+	repeated sint32 half_viz_enabler = 3;
+	optional string object_o_viz_string = 4 [default = ""];
+	optional sint32 node_db_id = 5 [default = -1];
+	optional sint32 neighbour_db_id = 6 [default = -1];
+}
+
+message KeyValuePair_DictIntCMSNavNodeViz {
+	optional sint32 Key = 1;
+	optional S_CMSNavNodeViz Value = 2;
+}
+
+message DictIntCMSNavNodeViz {
+	repeated KeyValuePair_DictIntCMSNavNodeViz items = 1;
+}
+
+message ListCMSNavNodeViz {
+	repeated S_CMSNavNodeViz items = 1;
+}
+
+message S_CMSNavNodeViz {
+	optional sint32 object_o_viz_indicator = 1 [default = -1];
+	repeated sint32 full_viz_enabler = 2;
+	repeated sint32 half_viz_enabler = 3;
+	optional string object_o_viz_string = 4 [default = ""];
+	optional sint32 node_db_id = 5 [default = -1];
+}
+
+message ListCMSDestAreaViz {
+	repeated S_CMSDestAreaViz items = 1;
+}
+
+message S_CMSDestAreaViz {
+	optional sint32 object_o_viz_indicator = 1 [default = -1];
+	repeated sint32 full_viz_enabler = 2;
+	repeated sint32 half_viz_enabler = 3;
+	optional string object_o_viz_string = 4 [default = ""];
+	repeated int32 node_db_ids = 5;
+	optional sint32 dest_db_id = 6 [default = -1];
+}
+

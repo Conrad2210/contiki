@@ -1,0 +1,112 @@
+﻿<div class="container-fluid" id="side-bar">
+    <div class="row no-margin-padding" id="sidebar-profile">
+        <div class="col-md-5 no-margin-padding" id="picSection">
+            <img ng-show="!emptyProfileImage.status" class="img-thumbnail" id="profilepic1" src="data:image/png;base64,{{userProfile.profile.image_string}}" onError="this.src = './img/spinner.gif'" />
+        </div>
+        <div class="col-md-6" id="nameSection">
+            <h4>{{userProfile.profile.firstname}} {{userProfile.profile.lastname}}</h4>
+            <h4>
+                <a class="btn btn-xs buttonLinks" ng-click="profileModal(userProfile.profile);">Edit Profile</a>
+                |
+                <a class="btn btn-xs buttonLinks" ng-click="logout();">Logout</a>
+            </h4>
+        </div>
+    </div>
+    <div class="row no-margin-padding" id="sidebar-menu-options">
+        <h4>Kiosk CMS</h4>
+        <hr />
+        <a class="btn btn-block btn-default" ng-if="projectsettings.sideBar.dashboard" ng-click="changedDispaySelection('Dashboard');changeDashboardDisplay('DashboardCard');">Dashboard</a>
+        <a class="btn btn-block btn-default" ng-if="projectsettings.sideBar.account" ng-click="changedDispaySelection('Account'); changeAccountDisplay('AccountCard');">Account</a>
+        <a class="btn btn-block btn-default" ng-if="projectsettings.sideBar.beacon" ng-click="changedDispaySelection('Beacon');changeBeaconDisplay('BeaconList');">Beacons</a>
+        <a class="btn btn-block btn-default" ng-if="projectsettings.sideBar.booth" ng-click="changedDispaySelection('Booth');changeBoothDisplay('BoothList');">Booths</a>
+        <a class="btn btn-block btn-default" ng-if="projectsettings.sideBar.categoryList" ng-click="changedDispaySelection('Category');changeCategoryDisplay('CategoryList');">Categories</a>
+        <a class="btn btn-block btn-default" ng-if="projectsettings.sideBar.kiosk" ng-click="changedDispaySelection('Kiosk'); ">Kiosk</a>
+        <a class="btn btn-block btn-default" ng-if="projectsettings.sideBar.newsFeed" ng-click="changedDispaySelection('NewsFeed');changeNewsFeedDisplay('NewsFeedCard');">News Feeds</a>
+        <a class="btn btn-block btn-default" ng-if="projectsettings.sideBar.store" ng-click="changedDispaySelection('Store'); changeStoreDisplay('StoreCard');">Stores</a>
+        <hr />
+    </div>
+</div>
+
+<!-- Modal pop up to edit the user profile -->
+<div class="modal fade customModal" id="profileModal" tabindex="-1" role="form">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-header modalHeader">
+            <div class="row">
+                <div class="col-md-12">
+                    <button type="reset" class="pull-left btn-danger btn-sm" data-dismiss="modal">Cancel</button>
+                    <button ng-click="updateProfile(tempProfile);" type="submit" class="pull-right btn-success btn-sm" data-dismiss="modal">Save</button>
+                    <h4>Edit Profile Details</h4>
+                </div>
+            </div>
+        </div>
+        <div class="modal-content modalContent">
+            <div class="row">
+                <div class="col-md-12">
+                    <ul class="nav nav-tabs editTabs">
+                        <li style="margin-left: 30px;" ng-class="{'active' : activeTab == 1}"><a ng-click="setActiveTab(1); setEditTab('tab1')">Profile Details</a></li>
+                        <li ng-class="{'active' : activeTab == 2}"><a ng-click="setActiveTab(2); setEditTab('tab2')">Profile Image</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row modalRow">
+                <div class="col-md-8 col-md-offset-2 ">
+                    <div ng-switch on="editTab">
+                        <div ng-switch-when="tab1">
+                            <div class="form-group">
+                                <div class="row no-margin-padding">
+                                    <div class="col-md-6">
+                                        <label style="margin-top: 10px;">First Name: </label>
+                                        <input ng-model="tempProfile.firstname" type="text" class="form-control" id="name" placeholder="enter first name">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label style="margin-top: 10px;">Last Name: </label>
+                                        <input ng-model="tempProfile.lastname" type="text" class="form-control" id="name" placeholder="enter last name">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label style="margin-top: 10px;">Email Address: </label>
+                                        <input disabled ng-model="tempProfile.username" type="text" class="form-control" id="name" placeholder="enter email address">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div ng-switch-when="tab2">
+                            <div class="form-group">
+                                <label style="margin-top: 10px;">Profile Image: </label>
+                                <p>Upload a new image: ( Please ensure only .png files are selected )</p>
+                                <input type="file" ng-model="profileImg" name="name" base-sixty-four-input required onload="onLoad" maxsize="500" accept="image/*">
+                                <br />
+                                <table class="table" style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align: center;">Current Image</th>
+                                            <th style="text-align: center;">Preview New Image</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <th ng-show="!emptyProfileImage.status" style="text-align: center;">
+                                                <img class="img-thumbnail" style="width:150px;" src='data:image/png;base64,{{tempProfile.image_string}}' />
+                                                <br />
+                                                <button class="btn btn-primary" ng-click="deleteProfileImage()" style="margin-top:10px;">Delete Image</button>
+                                            </th>
+                                            <th ng-show="emptyProfileImage.status" style="text-align: center;">
+                                                <p>No image available</p>
+                                                <img class="img-thumbnail" style="width:150px;" src='./img/blank_profile.jpg' />
+                                            </th>
+                                            <th ng-show="previewProfileImg" style="text-align: center;">
+                                                <img class="img-thumbnail" style="width:150px;" ng-src='data:image/png;base64,{{profileImg.base64}}' />
+                                                <br />
+                                                <button class="btn btn-danger" ng-click="discardUploadedImage()">Cancel</button>
+                                                <button class="btn btn-success" ng-click="changeProfileImage()">Confirm</button>
+                                            </th>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
