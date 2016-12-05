@@ -62,11 +62,10 @@ uint8_t button_press_counter = 0;
 uint8_t lastBRIGHTNESS = 0b00000001;
 uint16_t seqNo = 0;
 linkaddr_t master_addr1; //parent or master address
-char waitForTopologyUpdate;  //is 1 if topology information is ongoing, else 0
+char waitForTopologyUpdate;  //is >0 if topology information collection is ongoing, else 0
 char isGateway; // is 1 if this node is a gateway, else 0
 
 // instead of having different timers, use counters to trigger actions at multiples of process event timer
-char masterAdvertisementCountdown; // for recurrent master advertisements
 char sendSensorDataCountdown; // for recurrent transmission of sensor data (temperature and battery level)
 
 struct performanceStat
@@ -76,20 +75,11 @@ struct performanceStat
 	uint16_t lastSeq;      // last received sequence number, to be used as a timestamp for the stats
 } stat;
 
-struct slavesAddr_entry
-{ //structure for each child node that the master or parent node has
-	struct slavesAddr_entry *next;
-	linkaddr_t addr; //child address
-};
-
 struct topologyInfo_entry
 { //structure for each topology info that is collected by gateway node
 	struct topologyInfo_entry *next;
 	linkaddr_t master, child;
 };
-
-LIST(slavesAddr_list); //list of child nodes
-MEMB(slavesAddr_mem, struct slavesAddr_entry, NUM_ADDR_ENTRIES);
 
 LIST(topologyInfo_list); //list of topology information
 MEMB(topologyInfo_mem, struct topologyInfo_entry, NUM_ADDR_ENTRIES);
@@ -100,13 +90,11 @@ AUTOSTART_PROCESSES(&dewiDemo);
 // set the LED color
 void setColor(uint16_t R, uint16_t G, uint16_t B)
 {
-	uint8_t returnvalue;
 	i2c_single_send(0x39, LED_RED | R);
 	clock_delay_usec(50);
 	i2c_single_send(0x39, LED_GREEN | G);
 	clock_delay_usec(50);
-	returnvalue = i2c_single_send(0x39, LED_BLUE | B);
-	//printf("i2c return code is %d\r\n", returnvalue);
+	i2c_single_send(0x39, LED_BLUE | B);
 	clock_delay_usec(50);
 
 }
@@ -186,16 +174,6 @@ void handleSensorsEvent(process_data_t data)
 
 			button_press_counter = button_press_counter + 1;
 			etimer_set(&button_press_reset, CLOCK_SECOND * 0.5);
-			uint16_t temp = random_rand() & 0b00011111;
-			printf("I'm a MASTERNODE %d\n",random_rand());
-			printf("Red: 0b%b\n",temp);
-			i2c_single_send(0x39, (LED_RED | temp));
-			temp = random_rand() & 0b00011111;
-			printf("Red: 0b%b\n",( temp));
-			i2c_single_send(0x39, (LED_BLUE | temp));
-			temp = random_rand() & 0b00011111;
-			printf("Red: 0b%b\n",( temp));
-			i2c_single_send(0x39, (LED_GREEN | temp));
 
 		}
 		if (button_press_counter == 10)
@@ -224,10 +202,51 @@ void handleSerialInput(process_data_t data)
 		// poll topology data from network
 		struct APP_PACKET temp;
 		temp.subType = APP_TOPOLOGYREQUEST;
+		temp.timeSend = current_asn;
+		temp.dst = tsch_broadcast_address;
+		temp.src = linkaddr_node_addr;
+		temp.seqNo = seqNo++;
 		sendRLLDataMessage(temp);
 
 		// set a flag to wait for topology updates
-		waitForTopologyUpdate = 1;
+		waitForTopologyUpdate = 2;
+
+		// if I am a CH myself, put my own children in topologylist
+		if (getCIDERState()==5){
+			uint8_t numChildren = 0; // number of children
+			linkaddr_t children[CONF_MAX_NEIGHBOURS];
+			numChildren = getChildAddresses(children);
+			printf("got topology request, have %d children\r\n", numChildren);
+
+			int i;
+			// go through the list of children
+			for (i = 0; i < numChildren; i++)
+			{
+				struct topologyInfo_entry entry;
+				entry.master = linkaddr_node_addr;
+				entry.child = children[i];
+				struct topologyInfo_entry *e = NULL;
+				for (e = list_head(topologyInfo_list); e != NULL; e = e->next)
+				{ //check if the entry with this child is already present
+					if (linkaddr_cmp(&e->child, &entry.child))
+					{
+						return;
+					}
+				}
+
+				if (e == NULL)
+				{ // if not present yet, add entry to the list
+					e = memb_alloc(&topologyInfo_mem);
+					if (e == NULL)
+					{
+						e = list_chop(topologyInfo_list); // Remove oldest at full history
+					}
+					linkaddr_copy(&e->child, &entry.child);
+					linkaddr_copy(&e->master, &entry.master);
+					list_push(topologyInfo_list, e);
+				}
+			}
+		}
 
 	}
 	else if (strcmp(ch_data, "resetstatistics") == 0)
@@ -253,6 +272,10 @@ void handleSerialInput(process_data_t data)
 		struct APP_PACKET temp;
 		temp.subType = APP_BRIGHTNESS;
 		temp.values[0] = (uint16_t) lastBRIGHTNESS;
+		temp.timeSend = current_asn;
+		temp.dst = tsch_broadcast_address;
+		temp.src = linkaddr_node_addr;
+		temp.seqNo = seqNo++;
 		sendRLLDataMessage(temp);
 		updatePerformanceStats(0, 0);
 
@@ -287,23 +310,26 @@ void handleSerialInput(process_data_t data)
 // input: the data object associated with the event
 void handleProcessEvent( data)
 {
-	if (waitForTopologyUpdate)
+	if (waitForTopologyUpdate == 1)
 	{ // receiving a process event while waiting for topology updates
 		// send collected topology information over the serial port
 		struct topologyInfo_entry *e = NULL;
 		for (e = list_head(topologyInfo_list); e != NULL; e = e->next)
 		{ //check if the entry with this child is already present
 			printf("MasterSlave_addr data: '%08x' \r\n",
-					(e->master.u8[0] << 8) | (e->master.u8[1]));
+					(e->master.u16));
 			printf("MasterSlave_addr data: '%08x' \r\n",
-					(e->master.u8[0] << 24) | (e->master.u8[1] << 16) | (e->child.u8[0] << 8) | (e->child.u8[1]));
+					(e->master.u16 << 16) | (e->child.u16));
 		}
-
+		if (list_length(topologyInfo_list)==0)
+			printf("No topology info available!\r\n");
 		// not waiting for topology updates any more
 		waitForTopologyUpdate = 0;
+	} else if (waitForTopologyUpdate > 0){
+		waitForTopologyUpdate--;
 	}
 
-	if (sendSensorDataCountdown == 0)
+/*	if (sendSensorDataCountdown == 0)
 	{ // sensor data counter expired
 		// obtain temperature and battery values and send them
 		int temperature, battery;
@@ -340,112 +366,39 @@ void handleProcessEvent( data)
 		sendSensorDataCountdown--;
 	}
 
-#if MASTERNODE
-	if (masterAdvertisementCountdown == 0)
-	{ // master advertisement counter expired
-		// advertise master node status
-		// this is for building a dummy topology and isn't needed when topology is created by CIDER
-		struct APP_PACKET temp;
-		temp.subType = APP_MASTERMSG;
-		temp.values[0] = linkaddr_node_addr.u8[0];
-		temp.values[1] = linkaddr_node_addr.u8[1];
-		sendRLLDataMessage(temp);
-		masterAdvertisementCountdown = 5;// advertise in every 5th loop
-	}
-	else
-	{
-		masterAdvertisementCountdown--;
-	}
-
-#endif
-
-}
-
-// handle an incoming master advertisement if this is not a master
-// this is for building a dummy topology and isn't needed when topology is created by CIDER
-// input: the incoming packet
-void handleMasterMessage(struct APP_PACKET *data)
-{
-#if !MASTERNODE
-	// store master address
-	if (!master_addr1.u8[1] && !master_addr1.u8[0])
-	{
-		master_addr1.u8[1] = (uint8_t) data->values[1];
-		master_addr1.u8[0] = (uint8_t) data->values[0];
-	}
-
-	// create child response to join master
-	struct APP_PACKET temp;
-	temp.subType = APP_CHILDMSG;
-	temp.values[0] = linkaddr_node_addr.u8[0];
-	temp.values[1] = linkaddr_node_addr.u8[1];
-	temp.values[2] = master_addr1.u8[0];
-	temp.values[3] = master_addr1.u8[1];
-	sendRLLDataMessage(temp);
-#endif
-
-}
-
-// handle an incoming child message if this is the master
-// this is for building a dummy topology and isn't needed when topology is created by CIDER
-// input: the incoming packet
-void handleChildMessage(struct APP_PACKET *data)
-{
-#if MASTERNODE
-	linkaddr_t childaddress;
-	childaddress.u8[0] = data->values[0];
-	childaddress.u8[1] = data->values[1];
-	printf("got child message from %d:%d\r\n", data->values[0], data->values[1]);
-	struct slavesAddr_entry *e = NULL;
-	for(e = list_head(slavesAddr_list); e != NULL; e = e->next)
-	{ //check if the child node is or not already connect to this master node
-		if(linkaddr_cmp(&e->addr, &childaddress))
-		{
-			return;
-		}
-	}
-
-	if(e == NULL)
-	{ // if not connected yet, add child to the list of child nodes
-		e = memb_alloc(&slavesAddr_mem);
-		if(e == NULL)
-		{
-			e = list_chop(slavesAddr_list); // Remove oldest at full history
-		}
-		linkaddr_copy(&e->addr, &childaddress);
-		list_push(slavesAddr_list, e);
-	}
-
-#endif
-
+*/
 }
 
 // handle an incoming topology information request
-// only master nodes need to respond
+// only cluster heads need to respond
 void handleTopologyRequest()
 {
-#if MASTERNODE
-	int numChildren = list_length(slavesAddr_list); // get current number of children
-	printf("got topology request, have %d children\r\n", numChildren);
-	int i,j;
-	struct slavesAddr_entry * entry = list_head(slavesAddr_list);
-	for (i = 0; i <= numChildren/10; i++)
-	{ // put information about max. 10 children in packet, send multiple packets if needed
-		struct APP_PACKET temp;
-		temp.subType = APP_TOPOLOGYREPLY;
-		temp.values[0] = (uint16_t) ((i==numChildren/10)?numChildren%10:10);
-		temp.values[1] = (uint16_t) linkaddr_node_addr.u8[0];
-		temp.values[2] = (uint16_t) linkaddr_node_addr.u8[1];
-		for (j = 0; j < ((i==numChildren/10)?numChildren%10:10); j++)
-		{
-			temp.values[2*j+3] = (uint16_t) entry->addr.u8[0];
-			temp.values[2*j+4] = (uint16_t) entry->addr.u8[1];
-			entry = entry->next;
-		}
-		sendRLLDataMessage(temp);
+	if (getCIDERState()==5){
+		uint8_t numChildren = 0; // number of children
+		linkaddr_t children[CONF_MAX_NEIGHBOURS];
+		numChildren = getChildAddresses(children);
+		uint8_t remainingChildren = numChildren;
+		printf("got topology request, have %d children\r\n", numChildren);
 
+		int i,j;
+		struct APP_PACKET temp;
+		for (i = 0; i <= numChildren/21; i++)
+		{ // put information about max. 21 children in packet, send multiple packets if needed
+			struct APP_PACKET temp;
+			temp.subType = APP_TOPOLOGYREPLY;
+			temp.values[0] = (uint16_t) ((i==numChildren/21)?numChildren%21:21);
+			temp.values[1] = (uint16_t) linkaddr_node_addr.u16;
+			for (j = 0; j < ((i==numChildren/21)?numChildren%21:21); j++)
+			{
+				temp.values[j+2] = (uint16_t) children[i*10+j].u16;
+			}
+			temp.timeSend = current_asn;
+			temp.dst = tsch_broadcast_address;
+			temp.src = linkaddr_node_addr;
+			temp.seqNo = seqNo++;
+			sendRLLDataMessage(temp);
+		}
 	}
-#endif
 
 }
 
@@ -459,10 +412,8 @@ void handleTopologyReply(struct APP_PACKET *data)
 	for (i = 0; i < numEntries; i++)
 	{
 		struct topologyInfo_entry entry;
-		entry.master.u8[0] = data->values[1];
-		entry.master.u8[1] = data->values[2];
-		entry.child.u8[0] = data->values[2 * i + 3];
-		entry.child.u8[1] = data->values[2 * i + 4];
+		entry.master.u16 = data->values[1];
+		entry.child.u16 = data->values[i + 2];
 		struct topologyInfo_entry *e = NULL;
 		for (e = list_head(topologyInfo_list); e != NULL; e = e->next)
 		{ //check if the entry with this child is already present
@@ -495,7 +446,7 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 		setCoord(0);
 		initScheduler();
 
-		radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, -15);
+		radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, 0);
 		//configure buttons
 		button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
 		BUTTON_PRESS_EVENT_INTERVAL);
@@ -522,14 +473,11 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 		master_addr1.u8[0] = 0;
 		master_addr1.u8[1] = 0;
 
-		//initialize lists for child addresses and topology information
-		list_init(slavesAddr_list);
-		memb_init(&slavesAddr_mem);
+		//initialize list for topology information
 		list_init(topologyInfo_list);
 		memb_init(&topologyInfo_mem);
 
-		//initialize countdowns for master advertisements and sensor data transmission
-		masterAdvertisementCountdown = 0;
+		//initialize countdown for sensor data transmission
 		sendSensorDataCountdown = 0;
 
 		//initially set isGateway to 0. Will be set to one when messages are received on serial port
@@ -572,7 +520,7 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 				if (data == &et)
 				{
 					handleProcessEvent(data);
-					//etimer_set(&et, 3 * CLOCK_SECOND);
+					etimer_set(&et, 3 * CLOCK_SECOND);
 				}
 				else if (data == &button_press_reset)
 				{
@@ -650,18 +598,6 @@ if (linkaddr_cmp(&data->dst, &linkaddr_node_addr) == 1 || linkaddr_cmp(&data->ds
 		stat.cumulativeLatency = 0;
 		stat.packetCounter = 0;
 		stat.lastSeq = 0;
-
-	}
-	else if (data->subType == APP_MASTERMSG)
-	{ // received master advertisement, respond to master node
-		// this is for building a dummy topology and isn't needed when topology is created by CIDER
-		handleMasterMessage(data);
-
-	}
-	else if (data->subType == APP_CHILDMSG)
-	{ // received child response
-		// this is for building a dummy topology and isn't needed when topology is created by CIDER
-		handleChildMessage(data);
 
 	}
 }

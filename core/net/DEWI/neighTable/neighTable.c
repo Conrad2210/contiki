@@ -1060,3 +1060,17 @@ void printNodeStatus(char fromFunction[])
 		(uint16_t)(ownStatus.lpDegree * 1000),(uint16_t)(ownStatus.avgRSSI * 1000)
 		,(uint16_t)(ownStatus.utility * 1000));
 }
+
+uint8_t getChildAddresses(linkaddr_t array[]){
+	uint8_t i = 0;
+	struct neighbour *n;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+		if ((n->myCS == 1)||(n->myChildCH == 1)){
+			array[i]=n->addr;
+			i++;
+		}
+	}
+	return i;
+}
+

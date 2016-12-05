@@ -23,34 +23,11 @@ class  dewi():
 			except IndexError:
 				print "MySQL Error: %s" % str(e)
 				
-	def handle_tab(self,addrS,delete_sign):
+	def handle_tab(self,addrS):
 		self.dbConnection.query("use "+self.db+';');
-		self.save_node_details(addrS,delete_sign);
-		self.drop_node_details(addrS,delete_sign);
+		self.save_node_details(addrS);
 	
-	def  drop_node_details(self,addrS,delete_sign):
-		connection = self.dbConnection
-		tab1 = self.tab1
-		try:
-			connection.query("DELETE FROM " + str(tab1) + " WHERE EXISTS (SELECT addr  FROM (SELECT "+str(addrS)+") AS tmp WHERE addr = "+str(addrS)+") AND "+str(delete_sign)+"='FF'")#;  DELETE FROM "+str(tab1)+" WHERE EXISTS (SELECT addr  FROM (SELECT "+str(addrS)+") AS tmp WHERE a_target = "+str(addrS)+") AND "+str(delete_sign)+"='FF';" )
-			result = connection.use_result()
-			print "MySQL version: %s" % result
-		except mysql.Error, e:
-			try:
-				print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-			except IndexError:
-				print "MySQL Error: %s" % str(e)
-		try:
-			connection.query("DELETE FROM "+str(tab1)+" WHERE EXISTS (SELECT addr  FROM (SELECT "+str(addrS)+") AS tmp WHERE a_target = "+str(addrS)+") AND "+str(delete_sign)+"='FF';" )
-			result = connection.use_result()
-			print "MySQL version: %s" % result
-		except mysql.Error, e:
-			try:
-				print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
-			except IndexError:
-				print "MySQL Error: %s" % str(e)
-	
-	def  save_node_details(self,addrS,addrM,delete_sign,order):
+	def  save_node_details(self,addrS,addrM,order):
 		connection = self.dbConnection
 		tab1 = self.tab1
 		try:

@@ -237,4 +237,7 @@ void setUtility(float);
 
 void calcSDIs();
 
+uint8_t getChildAddresses(linkaddr_t array[]);
+
+
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_RLL_RLL_H_ */
