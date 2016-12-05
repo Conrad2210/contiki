@@ -511,6 +511,16 @@ PROCESS_BEGIN()
 				}
 				data_runicast.is_tx = 0;
 			}
+			uint16_t temp = random_rand() & 0b00011111;
+			printf("I'm a MASTERNODE %d\n",random_rand());
+			printf("Red: 0b%b\n",temp);
+			i2c_single_send(0x39, (LED_RED | temp));
+			temp = random_rand() & 0b00011111;
+			printf("Red: 0b%b\n",( temp));
+			i2c_single_send(0x39, (LED_BLUE | temp));
+			temp = random_rand() & 0b00011111;
+			printf("Red: 0b%b\n",( temp));
+			i2c_single_send(0x39, (LED_GREEN | temp));
 			etimer_set(&et, 3 * CLOCK_SECOND);
 		}
 	}

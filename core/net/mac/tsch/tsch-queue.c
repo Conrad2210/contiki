@@ -224,9 +224,22 @@ struct tsch_packet *
 tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
 {
   struct tsch_neighbor *n = NULL;
+  uint8_t waitCounter = 0;
+  uint8_t ready = 0;
   int16_t put_index = -1;
   struct tsch_packet *p = NULL;
-  if(!tsch_is_locked()) {
+  ready = tsch_is_locked();
+ while(ready == 1)
+ {
+	 clock_delay_usec(500);
+	 if(waitCounter < 2)
+		 ready = tsch_is_locked();
+	 else
+		 ready = 0;
+	 waitCounter++;
+ }
+if(!tsch_is_locked())
+{
     n = tsch_queue_add_nbr(addr);
     if(n != NULL) {
       put_index = ringbufindex_peek_put(&n->tx_ringbuf);
@@ -253,7 +266,7 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
         }
       }
     }
-  }
+}
   PRINTF("TSCH-queue:! add packet failed: %u %p %d %p %p\n", tsch_is_locked(), n, put_index, p, p ? p->qb : NULL);
   return 0;
 }

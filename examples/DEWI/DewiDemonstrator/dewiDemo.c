@@ -185,7 +185,17 @@ void handleSensorsEvent(process_data_t data)
 		{
 
 			button_press_counter = button_press_counter + 1;
-			etimer_set(&button_press_reset, CLOCK_SECOND * 0.2);
+			etimer_set(&button_press_reset, CLOCK_SECOND * 0.5);
+			uint16_t temp = random_rand() & 0b00011111;
+			printf("I'm a MASTERNODE %d\n",random_rand());
+			printf("Red: 0b%b\n",temp);
+			i2c_single_send(0x39, (LED_RED | temp));
+			temp = random_rand() & 0b00011111;
+			printf("Red: 0b%b\n",( temp));
+			i2c_single_send(0x39, (LED_BLUE | temp));
+			temp = random_rand() & 0b00011111;
+			printf("Red: 0b%b\n",( temp));
+			i2c_single_send(0x39, (LED_GREEN | temp));
 
 		}
 		if (button_press_counter == 10)
@@ -493,7 +503,11 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 		//initialize I2C
 		i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN,
 		I2C_SCL_FAST_BUS_SPEED);
+		i2c_single_send(0x39, 0b00000000);
 
+
+				//set led brightness to inital brightness
+				i2c_single_send(0x39, (LED_BRIGHTNESS | lastBRIGHTNESS));
 		//initialize serial line
 		serial_line_init();
 
