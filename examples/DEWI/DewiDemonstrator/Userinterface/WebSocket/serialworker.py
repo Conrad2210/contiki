@@ -66,11 +66,13 @@ class SerialProcess(multiprocessing.Process):
 
         if "Temperature" in data:
             T_addr = data[data.index("(")+1:data.index(")")]
+            T_addr = T_addr[0:2]+":"+T_addr[2:4]
             temperature = data[data.index("'")+1:data.index("C")+1]
             self.dewi.add_temperature_data(T_addr, temperature)
 
         if "Battery" in data:
             B_addr = data[data.index("(")+1:data.index(")")]
+            B_addr = B_addr[0:2]+":"+B_addr[2:4]
             temperature = data[data.index("'")+1:data.index("'",data.index("'")+1,len(data))]
             self.dewi.add_battery_stat(B_addr, temperature)
 

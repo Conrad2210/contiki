@@ -108,55 +108,55 @@ void updatePerformanceStats(uint16_t seq, uint16_t latency)
 }
 
 // convert battery voltage level to battery percentage status, and send over serial port
-void sendBatteryStatusByserialP(int b_data, int a, int b)
+void sendBatteryStatusByserialP(int b_data, linkaddr_t addr)
 {
 	if (b_data >= 3240)
 	{
-		printf("node(%d:%d) Battery '100%%' \r\n", a, b);
+		printf("node(%04x) Battery '100%%' \r\n", addr.u16);
 	}
 	else if (b_data >= 3230 && b_data < 3240)
 	{
-		printf("node(%d:%d) Battery '90%%' \r\n", a, b);
+		printf("node(%04x) Battery '90%%' \r\n", addr.u16);
 	}
 	else if (b_data >= 3200 && b_data < 3230)
 	{
-		printf("node(%d:%d) Battery '80%%' \r\n", a, b);
+		printf("node(%04x) Battery '80%%' \r\n", addr.u16);
 	}
 	else if (b_data >= 3170 && b_data < 3200)
 	{
-		printf("node(%d:%d) Battery '70%%' \r\n", a, b);
+		printf("node(%04x) Battery '70%%' \r\n", addr.u16);
 	}
 	else if (b_data >= 3100 && b_data < 3170)
 	{
-		printf("node(%d:%d) Battery '60%%' \r\n", a, b);
+		printf("node(%04x) Battery '60%%' \r\n", addr.u16);
 	}
 	else if (b_data >= 3050 && b_data < 3100)
 	{
-		printf("node(%d:%d) Battery '50%%' \r\n", a, b);
+		printf("node(%04x) Battery '50%%' \r\n", addr.u16);
 	}
 	else if (b_data >= 2950 && b_data < 3050)
 	{
-		printf("node(%d:%d) Battery '40%%' \r\n", a, b);
+		printf("node(%04x) Battery '40%%' \r\n", addr.u16);
 	}
 	else if (b_data >= 2900 && b_data < 2950)
 	{
-		printf("node(%d:%d) Battery '30%%' \r\n", a, b);
+		printf("node(%04x) Battery '30%%' \r\n", addr.u16);
 	}
 	else if (b_data >= 2800 && b_data < 2900)
 	{
-		printf("node(%d:%d) Battery '20%%' \r\n", a, b);
+		printf("node(%04x) Battery '20%%' \r\n", addr.u16);
 	}
 	else if (b_data >= 2600 && b_data < 2800)
 	{
-		printf("node(%d:%d) Battery '10%%' \r\n", a, b);
+		printf("node(%04x) Battery '10%%' \r\n", addr.u16);
 	}
 	else if (b_data >= 2350 && b_data < 2600)
 	{
-		printf("node(%d:%d) Battery '5%%' \r\n", a, b);
+		printf("node(%04x) Battery '5%%' \r\n", addr.u16);
 	}
 	else if (b_data < 2350)
 	{
-		printf("node(%d:%d) Battery '0%%' \r\n", a, b);
+		printf("node(%04x) Battery '0%%' \r\n", addr.u16);
 	}
 }
 
@@ -329,7 +329,7 @@ void handleProcessEvent( data)
 		waitForTopologyUpdate--;
 	}
 
-/*	if (sendSensorDataCountdown == 0)
+	if (sendSensorDataCountdown == 0)
 	{ // sensor data counter expired
 		// obtain temperature and battery values and send them
 		int temperature, battery;
@@ -340,24 +340,25 @@ void handleProcessEvent( data)
 
 		struct APP_PACKET temp;
 		temp.subType = APP_SENSORDATA;
-		temp.values[0] = linkaddr_node_addr.u8[0];
-		temp.values[1] = linkaddr_node_addr.u8[1];
-		temp.values[2] = (uint16_t) temperature;
-		temp.values[3] = (uint16_t) battery;
+		temp.temperature = (uint8_t) temperature;
+		temp.battery = (uint8_t) battery;
+		temp.timeSend = current_asn;
+		temp.dst = tsch_broadcast_address;
+		temp.src = linkaddr_node_addr;
+		temp.seqNo = seqNo++;
 		// add performance stats to packet
-		temp.values[4] = stat.cumulativeLatency * 1000 / stat.packetCounter; // average latency, multiplied by 1000 to avoid floating point
+/*		temp.values[4] = stat.cumulativeLatency * 1000 / stat.packetCounter; // average latency, multiplied by 1000 to avoid floating point
 		temp.values[5] = stat.packetCounter;
-		temp.values[6] = stat.lastSeq;
+		temp.values[6] = stat.lastSeq;*/
 		sendRLLDataMessage(temp);
 		if (isGateway)
 		{
 			// if this is the gateway, send data on serial port as well
-			printf("node(%d:%d) Temperature = '%dC' \r\n", linkaddr_node_addr.u8[0],
-					linkaddr_node_addr.u8[1], temperature);
-			sendBatteryStatusByserialP(battery, linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
-			printf("node(%d:%d) Statistics: Packets = '%d', PLR = '%d', Latency = '%d'\r\n",
+			printf("node(%04x) Temperature = '%dC' \r\n", linkaddr_node_addr.u16, temperature);
+			sendBatteryStatusByserialP(battery, linkaddr_node_addr);
+/*			printf("node(%d:%d) Statistics: Packets = '%d', PLR = '%d', Latency = '%d'\r\n",
 					linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1], stat.packetCounter, 0,
-					(stat.cumulativeLatency * 1000 / stat.packetCounter));
+					(stat.cumulativeLatency * 1000 / stat.packetCounter));*/
 		}
 		sendSensorDataCountdown = 10; // do this every 10th loop
 	}
@@ -366,7 +367,7 @@ void handleProcessEvent( data)
 		sendSensorDataCountdown--;
 	}
 
-*/
+
 }
 
 // handle an incoming topology information request
@@ -575,12 +576,11 @@ if (linkaddr_cmp(&data->dst, &linkaddr_node_addr) == 1 || linkaddr_cmp(&data->ds
 	}
 	else if ((data->subType == APP_SENSORDATA) && isGateway)
 	{ // received sensor data, forward them to serial port if this is the gateway
-		printf("node(%d:%d) Temperature = '%dC' \r\n", data->values[0], data->values[1],
-				data->values[2]);
-		sendBatteryStatusByserialP(data->values[3], data->values[0], data->values[1]);
-		printf("node(%d:%d) Statistics: Packets = '%d', PLR = '%d', Latency = '%d'\r\n",
+		printf("node(%04x) Temperature = '%dC' \r\n", data->src.u16, data->temperature);
+		sendBatteryStatusByserialP(data->battery, data->src);
+		/*printf("node(%d:%d) Statistics: Packets = '%d', PLR = '%d', Latency = '%d'\r\n",
 				data->values[0], data->values[1], data->values[5],
-				(1000 - (data->values[5] * 1000 / stat.packetCounter)), data->values[4]);
+				(1000 - (data->values[5] * 1000 / stat.packetCounter)), data->values[4]);*/
 
 	}
 	else if (data->subType == APP_TOPOLOGYREQUEST)
