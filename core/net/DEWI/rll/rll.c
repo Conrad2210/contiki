@@ -443,6 +443,7 @@ switch (tempPacket->subType)
 case RLL_DATA:
 	if (tempPacket->seqNo != lastRxSeqNo)
 	{
+		tsch_queue_reset();
 		if (RLL_CIDERState == 5)
 		{
 			struct tsch_link *temp;

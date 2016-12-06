@@ -190,6 +190,9 @@ tsch_queue_flush_nbr_queue(struct tsch_neighbor *n)
       /* Set return status for packet_sent callback */
       p->ret = MAC_TX_ERR;
       PRINTF("TSCH-queue:! flushing packet\n");
+#if WITH_DEWI
+      TSCHDELETEPACKET();
+#endif
       /* Call packet_sent callback */
       mac_call_sent_callback(p->sent, p->ptr, p->ret, p->transmissions);
       /* Free packet queuebuf */
@@ -232,7 +235,7 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
  while(ready == 1)
  {
 	 clock_delay_usec(500);
-	 if(waitCounter < 2)
+	 if(waitCounter < 5)
 		 ready = tsch_is_locked();
 	 else
 		 ready = 0;
