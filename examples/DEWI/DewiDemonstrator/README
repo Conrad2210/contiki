@@ -1,0 +1,5 @@
+This demonstrator version contains some messages and methods to build a dummy
+topology by one node advertising itself as master and the others joining as
+child nodes. These bits should be removed later when the topology will result
+from CIDER instead. This applies in particular to the creation, reception and
+handling of APP_PACKETS of subtype MASTERMSG and CHILDMSG.
