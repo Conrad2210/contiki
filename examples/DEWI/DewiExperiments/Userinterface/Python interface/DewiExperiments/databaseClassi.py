@@ -2,7 +2,7 @@ import mysql.connector as mysql
 import time
 
 
-class  dewi():
+class  databaseConnection():
 
     dbConnection = 0
     db = 'dewi_experiments';                 
