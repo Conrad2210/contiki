@@ -35,21 +35,13 @@ class SerialProcess(multiprocessing.Process):
         else:
             return False
 
-    def toHex(s):
-        lst = []
-        for ch in s:
-            hv = hex(ord(ch)).replace('0x', '')
-            if len(hv) == 1:
-                hv = '0'+hv
-                lst.append(hv)
-
-        return reduce(lambda x,y:x+y, lst)
+    def toHex(self,s):
+        return hex(int(s,16))[2:]
 
     def collectAddrM_addrS(self):
         self.addrM1 = self.addrMasterSlave[0:2]
         self.addrM1 = self.toHex(self.addrM1);
         self.addrM2 = self.addrMasterSlave[2:4]
-        self.delete_sign = self.addrM2;
         self.addrM2 = self.toHex(self.addrM2)
         self.addrM = self.addrM1+":"+self.addrM2;
         self.addrS1 = self.addrMasterSlave[4:6]
@@ -61,8 +53,7 @@ class SerialProcess(multiprocessing.Process):
 
     def handle_tab(self):
         self.order = 0
-        self.dewi.save_node_details(self.addrS,self.addrM,self.delete_sign,self.order);
-        self.dewi.drop_node_details(self.addrS,self.delete_sign);
+        self.dewi.save_node_details(self.addrS,self.addrM,self.order);
 
     def saveIntoDewiDB(self):
         self.collectAddrM_addrS();
@@ -75,11 +66,13 @@ class SerialProcess(multiprocessing.Process):
 
         if "Temperature" in data:
             T_addr = data[data.index("(")+1:data.index(")")]
+            T_addr = T_addr[0:2]+":"+T_addr[2:4]
             temperature = data[data.index("'")+1:data.index("C")+1]
             self.dewi.add_temperature_data(T_addr, temperature)
 
         if "Battery" in data:
             B_addr = data[data.index("(")+1:data.index(")")]
+            B_addr = B_addr[0:2]+":"+B_addr[2:4]
             temperature = data[data.index("'")+1:data.index("'",data.index("'")+1,len(data))]
             self.dewi.add_battery_stat(B_addr, temperature)
 
