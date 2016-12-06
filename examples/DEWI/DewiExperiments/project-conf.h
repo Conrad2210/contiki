@@ -84,6 +84,7 @@
 
 
 #define APPDATACALLBACK applicationDataCallback
+#define TSCHDELETEPACKET packetDeletedFromQueue
 
 #ifndef LPDEVICE
 #define LPDEVICE 0
