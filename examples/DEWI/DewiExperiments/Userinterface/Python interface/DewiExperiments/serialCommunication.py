@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import serial
-
+import sys
 class serialCommunication():
     serialPort = {}
 #    serial.Serial(
@@ -23,4 +23,19 @@ class serialCommunication():
         
     def closeConnection(self):
         self.serialPort.close()
+        
+    def serialWrite(self,output):
+        self.serialPort.write(str(output) + "\n")
+        
+    def serialRead(self):
+        out = ''
+        while self.serialPort.inWaiting() > 0:
+            out =+ self.serialPort.read(1)
+            
+        return out
+        
 
+        
+    
+    
+    

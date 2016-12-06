@@ -5,21 +5,25 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 import databaseClassi
+import serialCommunication
+import thread
 
 class MainWindow(QtGui.QMainWindow):    #The MainWindow is the core of the graphical interface
 
-    
+    output = ""
     def __init__(self):
         super(MainWindow, self).__init__()
         self.db = databaseClassi.databaseConnection()
+        self.serial = serialCommunication.serialCommunication();
+        
+        self.receivingThread = thread
+        self.receivingThreadID = 0
         self.initUI()
 
     def initUI(self):                      #The initUI method initiates the whole graphical layout and start the output Qthread
-    
-        global output
+
         global delay_queue
         
-        self.setWindowIcon(QtGui.QIcon('C:\\Users\\R00145386\\Desktop\\clement.festal\\Notes\\Scripts\\Images\\network.png')) 
         self.statusBar().showMessage('Ready !')    #The statusBar helps the user know what is going on and sends general and shows the progress of an experiement
                     
         self.xmax = 2000                            #xmax defines the highest horizontal lenght of the latency graph
@@ -41,34 +45,35 @@ class MainWindow(QtGui.QMainWindow):    #The MainWindow is the core of the graph
         self.window_reset()
                                                                     #Then, a lot of declarations appears.
         number_label = QtGui.QLabel()                                #The following declaration serves for the TEST part of the window
-        number_label.setText("Number of message per Burst :")        
+        number_label.setText("# MSG's per Burst:")        
         self.number_text = QtGui.QLineEdit()
         
+        neighConnected_label = QtGui.QLabel();
+        neighConnected_label.setText(("Neighbours Connected: {0}").format(0))
+        
         burst_label = QtGui.QLabel()                                    
-        burst_label.setText("Number of Burst for the experiment :")        
+        burst_label.setText("# Bursts:")        
         self.burst_text = QtGui.QLineEdit()
         
         test_label = QtGui.QLabel()
-        test_label.setText("Name of the Test : ")
+        test_label.setText("Description: ")
         self.experiment_line = QtGui.QLineEdit()
         
+        serialPort_label = QtGui.QLabel()
+        serialPort_label.setText("Serial Port")
+        
         interval_label = QtGui.QLabel()                                    
-        interval_label.setText("Interval between each message in ms:")        
+        interval_label.setText("Interarrivaltime [ms]:")        
         self.interval_combo = QtGui.QComboBox()
         self.interval_combo.addItem("50")
         self.interval_combo.addItem("100")
         self.interval_combo.addItem("200")
         self.interval_combo.addItem("300")
-        self.interval_combo.addItem("400")
-        self.interval_combo.addItem("500")
-        self.interval_combo.addItem("1000")
-        self.interval_combo.addItem("2000")
         
-        rebroadcast_label = QtGui.QLabel()
-        rebroadcast_label.setText("Ask nodes to rebroadcast :")        
-        self.rebroadcast_combo = QtGui.QComboBox()
-        self.rebroadcast_combo.addItem("no")
-        self.rebroadcast_combo.addItem("yes")
+        self.serialPorts_combo = QtGui.QComboBox()
+        
+        for string in self.serial.serial_ports():
+            self.serialPorts_combo.addItem(string)
         
         self.compare1 = QtGui.QComboBox()
         self.compare2 = QtGui.QComboBox()
@@ -87,11 +92,11 @@ class MainWindow(QtGui.QMainWindow):    #The MainWindow is the core of the graph
         self.parameters3 = QtGui.QLabel()
         self.parameters4 = QtGui.QLabel()
         self.parameters5 = QtGui.QLabel()
-        self.parameters1.setText("cast per message :  | burst : | interval :    | rebroadcast :  | number of node :  ")
-        self.parameters2.setText("cast per message :  | burst : | interval :    | rebroadcast :  | number of node :  ")
-        self.parameters3.setText("cast per message :  | burst : | interval :    | rebroadcast :  | number of node :  ")
-        self.parameters4.setText("cast per message :  | burst : | interval :    | rebroadcast :  | number of node :  ")
-        self.parameters5.setText("cast per message :  | burst : | interval :    | rebroadcast :  | number of node :  ")
+        self.parameters1.setText("Title: | # Bursts : | Interarrivaltime : | number of node :  ")
+        self.parameters2.setText("Title: | # Bursts : | Interarrivaltime : | number of node :  ")
+        self.parameters3.setText("Title: | # Bursts : | Interarrivaltime : | number of node :  ")
+        self.parameters4.setText("Title: | # Bursts : | Interarrivaltime : | number of node :  ")
+        self.parameters5.setText("Title: | # Bursts : | Interarrivaltime : | number of node :  ")
         
         self.compare1.activated.connect(self.parameters_update1)
         self.compare2.activated.connect(self.parameters_update2)
@@ -99,31 +104,22 @@ class MainWindow(QtGui.QMainWindow):    #The MainWindow is the core of the graph
         self.compare4.activated.connect(self.parameters_update4)
         self.compare5.activated.connect(self.parameters_update5)
         
-        TEST_button = QtGui.QPushButton('~  TEST  ~')
+        START_button = QtGui.QPushButton('~  START  ~')
         STOP_button = QtGui.QPushButton('~  STOP  ~')
         PLOT_button = QtGui.QPushButton('PLOT')
                 
         ser_out_label = QtGui.QLabel()                                #Then the Communication part
         ser_out_label.setText("Serial Output : ")
         self.ser_out = QtGui.QTextEdit()
-        self.ser_in = QtGui.QLineEdit()
         
-        LIST_button = QtGui.QPushButton('LIST')                            
-        PING_button = QtGui.QPushButton('PING')
-        SEND_button = QtGui.QPushButton('SEND')
-        TIMA_button = QtGui.QPushButton('TIMA')
-        RFRL_button = QtGui.QPushButton('RFRL')
-        SYNC_button = QtGui.QPushButton('SYNC')
-        
+        NeighUpdate_button = QtGui.QPushButton('Neigh Update')                            
+        PRINT_button = QtGui.QPushButton('Print List')
+        self.CONNECT_button = QtGui.QPushButton('Connect')
+
         PLOT_button.clicked.connect(self.compare)                    #The buttons are then connected to their method
-        LIST_button.clicked.connect(self.LIST)                            
-        PING_button.clicked.connect(self.PING)
-        SEND_button.clicked.connect(self.SEND)
-        TIMA_button.clicked.connect(self.TIMA)
-        RFRL_button.clicked.connect(self.RFRL)
-        SYNC_button.clicked.connect(self.SYNC)
-        TEST_button.clicked.connect(self.TEST)
-        STOP_button.clicked.connect(self.STOP)
+        NeighUpdate_button.clicked.connect(self.neighUpdate)                            
+        PRINT_button.clicked.connect(self.printList)
+        self.CONNECT_button.clicked.connect(self.connectSerial)
         
         top_widget = QtGui.QWidget()                                #Since the mainwindow is a MainWindow, it need a QWidget as a Central Widget
         top_Hbox = QtGui.QHBoxLayout()                                #The Layout is done with QVBoxLayout and QHBoxLayout
@@ -134,17 +130,7 @@ class MainWindow(QtGui.QMainWindow):    #The MainWindow is the core of the graph
         comm_HBox2 = QtGui.QHBoxLayout()
         comm_HBox3 = QtGui.QHBoxLayout()
         
-        comm_HBox1.addWidget(self.ser_in)
-        comm_HBox1.addWidget(SEND_button)
-        
-        comm_HBox2.addWidget(LIST_button)
-        comm_HBox2.addWidget(TIMA_button)
-        comm_HBox2.addWidget(PING_button)
-        comm_HBox2.addWidget(RFRL_button)
-        
-        comm_HBox3.addStretch(1)
-        comm_HBox3.addWidget(SYNC_button)
-        comm_HBox3.addStretch(1)
+
         
         comm_VBox.addLayout(comm_HBox1)
         comm_VBox.addLayout(comm_HBox2)
@@ -152,6 +138,15 @@ class MainWindow(QtGui.QMainWindow):    #The MainWindow is the core of the graph
         comm_VBox.addWidget(ser_out_label)
         comm_VBox.addWidget(self.ser_out)
         
+        comm_HBox1.addWidget(NeighUpdate_button)
+        comm_HBox1.addWidget(PRINT_button)
+        
+        comm_HBox2.addWidget(neighConnected_label)        
+
+        comm_HBox3.addWidget(serialPort_label)
+        comm_HBox3.addWidget(self.serialPorts_combo)
+        comm_HBox3.addWidget(self.CONNECT_button)
+
         
         test_VBox = QtGui.QVBoxLayout()
         test_HBox1 = QtGui.QHBoxLayout()
@@ -192,11 +187,6 @@ class MainWindow(QtGui.QMainWindow):    #The MainWindow is the core of the graph
         test_HBox23.addWidget(number_label)
         test_HBox23.addStretch(1)    
         test_HBox23.addWidget(self.number_text)        
-        test_HBox23.addStretch(1)    
-        test_HBox24.addWidget(rebroadcast_label)
-        test_HBox24.addStretch(1)    
-        test_HBox24.addWidget(self.rebroadcast_combo)
-        test_HBox24.addStretch(1)    
         
         test_VBox2.addLayout(test_HBox23)
         test_VBox2.addLayout(test_HBox24)
@@ -205,7 +195,7 @@ class MainWindow(QtGui.QMainWindow):    #The MainWindow is the core of the graph
         test_HBox2.addLayout(test_VBox2)
         
         test_HBox4.addStretch(1)
-        test_HBox4.addWidget(TEST_button)
+        test_HBox4.addWidget(START_button)
         test_HBox4.addWidget(STOP_button)
         test_HBox4.addStretch(1)
         
@@ -278,7 +268,7 @@ class MainWindow(QtGui.QMainWindow):    #The MainWindow is the core of the graph
         self.connect(self.test_thread, SIGNAL("list_update(PyQt_PyObject)") ,self.list_update)
         self.connect(self.test_thread, SIGNAL("status_bar_print(PyQt_PyObject)") ,self.status_bar_print)
         
-        self.out_thread = Out_Worker()
+        self.out_thread = Out_Worker(self.output)
         self.connect(self.out_thread, SIGNAL("output(PyQt_PyObject)") ,self.output_update)
         self.out_thread.start()
         
@@ -310,156 +300,150 @@ class MainWindow(QtGui.QMainWindow):    #The MainWindow is the core of the graph
         c.movePosition(QtGui.QTextCursor.End)
         self.ser_out.setTextCursor(c)
     
-    def parameters_update1 (self) :            #The parameters_update methods display the parameter of each selected experiment
-        db_lock.acquire()
-        db = sqlite3.connect('Backup\\MyDb.db')
-        cursor = db.cursor()
-        
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS tables(
-            experiment_name TEXT,
-            cast_number INTEGER,
-            burst_number INTEGER,
-            interval INTEGER,
-            rebroadcast INTEGER,
-            node_number INTEGER)""")
-        # cursor.execute("SELECT * FROM tables")
-        # for row in cursor :
-            # print row 
-        
-        cursor.execute("SELECT cast_number, burst_number, interval, rebroadcast, node_number FROM tables WHERE experiment_name=?", (str(self.compare1.currentText()) , ) )
-        for row in cursor :
-            self.parameters1.setText("cast per message : "+ str(row[0]) +" | burst : "+ str(row[1]) +" | interval : "+ str(row[2]) +" | rebroadcast : "+ str(row[3]) +" | number of node : "+ str(row[4]))
-        db.close()
-        db_lock.release()
+    def parameters_update1 (self) : 
+        temp = 1    
+           #The parameters_update methods display the parameter of each selected experiment
+#        db_lock.acquire()
+#        db = sqlite3.connect('Backup\\MyDb.db')
+#        cursor = db.cursor()
+#        
+#        cursor.execute("""
+#        CREATE TABLE IF NOT EXISTS tables(
+#            experiment_name TEXT,
+#            cast_number INTEGER,
+#            burst_number INTEGER,
+#            interval INTEGER,
+#            rebroadcast INTEGER,
+#            node_number INTEGER)""")
+#        # cursor.execute("SELECT * FROM tables")
+#        # for row in cursor :
+#            # print row 
+#        
+#        cursor.execute("SELECT cast_number, burst_number, interval, rebroadcast, node_number FROM tables WHERE experiment_name=?", (str(self.compare1.currentText()) , ) )
+#        for row in cursor :
+#            self.parameters1.setText("cast per message : "+ str(row[0]) +" | burst : "+ str(row[1]) +" | interval : "+ str(row[2]) +" | rebroadcast : "+ str(row[3]) +" | number of node : "+ str(row[4]))
+#        db.close()
+#        db_lock.release()
         
     def parameters_update2 (self) :
-        db_lock.acquire()
-        db = sqlite3.connect('Backup\\MyDb.db')
-        cursor = db.cursor()
-        
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS tables(
-            experiment_name TEXT,
-            cast_number INTEGER,
-            burst_number INTEGER,
-            interval INTEGER,
-            rebroadcast INTEGER,
-            node_number INTEGER)""")
-        # cursor.execute("SELECT * FROM tables")
-        # for row in cursor :
-            # print row 
-        
-        cursor.execute("SELECT cast_number, burst_number, interval, rebroadcast, node_number FROM tables WHERE experiment_name=?", (str(self.compare2.currentText()) , ) )
-        for row in cursor :
-            self.parameters2.setText("cast per message : "+ str(row[0]) +" | burst : "+ str(row[1]) +" | interval : "+ str(row[2]) +" | rebroadcast : "+ str(row[3]) +" | number of node : "+ str(row[4]))
-        db.close()
-        db_lock.release()
+        temp = 1
+#        db_lock.acquire()
+#        db = sqlite3.connect('Backup\\MyDb.db')
+#        cursor = db.cursor()
+#        
+#        cursor.execute("""
+#        CREATE TABLE IF NOT EXISTS tables(
+#            experiment_name TEXT,
+#            cast_number INTEGER,
+#            burst_number INTEGER,
+#            interval INTEGER,
+#            rebroadcast INTEGER,
+#            node_number INTEGER)""")
+#        # cursor.execute("SELECT * FROM tables")
+#        # for row in cursor :
+#            # print row 
+#        
+#        cursor.execute("SELECT cast_number, burst_number, interval, rebroadcast, node_number FROM tables WHERE experiment_name=?", (str(self.compare2.currentText()) , ) )
+#        for row in cursor :
+#            self.parameters2.setText("cast per message : "+ str(row[0]) +" | burst : "+ str(row[1]) +" | interval : "+ str(row[2]) +" | rebroadcast : "+ str(row[3]) +" | number of node : "+ str(row[4]))
+#        db.close()
+#        db_lock.release()
 
     def parameters_update3 (self) :
-        db_lock.acquire()
-        db = sqlite3.connect('Backup\\MyDb.db')
-        cursor = db.cursor()
-        
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS tables(
-            experiment_name TEXT,
-            cast_number INTEGER,
-            burst_number INTEGER,
-            interval INTEGER,
-            rebroadcast INTEGER,
-            node_number INTEGER)""")
-        # cursor.execute("SELECT * FROM tables")
-        # for row in cursor :
-            # print row 
-        
-        cursor.execute("SELECT cast_number, burst_number, interval, rebroadcast, node_number FROM tables WHERE experiment_name=?", (str(self.compare3.currentText()) , ) )
-        for row in cursor :
-            self.parameters3.setText("cast per message : "+ str(row[0]) +" | burst : "+ str(row[1]) +" | interval : "+ str(row[2]) +" | rebroadcast : "+ str(row[3]) +" | number of node : "+ str(row[4]))
-        db.close()
-        db_lock.release()
+        temp = 1
+#        db_lock.acquire()
+#        db = sqlite3.connect('Backup\\MyDb.db')
+#        cursor = db.cursor()
+#        
+#        cursor.execute("""
+#        CREATE TABLE IF NOT EXISTS tables(
+#            experiment_name TEXT,
+#            cast_number INTEGER,
+#            burst_number INTEGER,
+#            interval INTEGER,
+#            rebroadcast INTEGER,
+#            node_number INTEGER)""")
+#        # cursor.execute("SELECT * FROM tables")
+#        # for row in cursor :
+#            # print row 
+#        
+#        cursor.execute("SELECT cast_number, burst_number, interval, rebroadcast, node_number FROM tables WHERE experiment_name=?", (str(self.compare3.currentText()) , ) )
+#        for row in cursor :
+#            self.parameters3.setText("cast per message : "+ str(row[0]) +" | burst : "+ str(row[1]) +" | interval : "+ str(row[2]) +" | rebroadcast : "+ str(row[3]) +" | number of node : "+ str(row[4]))
+#        db.close()
+#        db_lock.release()
         
     def parameters_update4 (self) :
-        db_lock.acquire()
-        db = sqlite3.connect('Backup\\MyDb.db')
-        cursor = db.cursor()
-        
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS tables(
-            experiment_name TEXT,
-            cast_number INTEGER,
-            burst_number INTEGER,
-            interval INTEGER,
-            rebroadcast INTEGER,
-            node_number INTEGER)""")
-        # cursor.execute("SELECT * FROM tables")
-        # for row in cursor :
-            # print row 
-        
-        cursor.execute("SELECT cast_number, burst_number, interval, rebroadcast, node_number FROM tables WHERE experiment_name=?", (str(self.compare4.currentText()) , ) )
-        for row in cursor :
-            self.parameters4.setText("cast per message : "+ str(row[0]) +" | burst : "+ str(row[1]) +" | interval : "+ str(row[2]) +" | rebroadcast : "+ str(row[3]) +" | number of node : "+ str(row[4]))
-        db.close()
-        db_lock.release()
+        temp = 1
+#        db_lock.acquire()
+#        db = sqlite3.connect('Backup\\MyDb.db')
+#        cursor = db.cursor()
+#        
+#        cursor.execute("""
+#        CREATE TABLE IF NOT EXISTS tables(
+#            experiment_name TEXT,
+#            cast_number INTEGER,
+#            burst_number INTEGER,
+#            interval INTEGER,
+#            rebroadcast INTEGER,
+#            node_number INTEGER)""")
+#        # cursor.execute("SELECT * FROM tables")
+#        # for row in cursor :
+#            # print row 
+#        
+#        cursor.execute("SELECT cast_number, burst_number, interval, rebroadcast, node_number FROM tables WHERE experiment_name=?", (str(self.compare4.currentText()) , ) )
+#        for row in cursor :
+#            self.parameters4.setText("cast per message : "+ str(row[0]) +" | burst : "+ str(row[1]) +" | interval : "+ str(row[2]) +" | rebroadcast : "+ str(row[3]) +" | number of node : "+ str(row[4]))
+#        db.close()
+#        db_lock.release()
 
     def parameters_update5 (self) :
-        db_lock.acquire()
-        db = sqlite3.connect('Backup\\MyDb.db')
-        cursor = db.cursor()
-        
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS tables(
-            experiment_name TEXT,
-            cast_number INTEGER,
-            burst_number INTEGER,
-            interval INTEGER,
-            rebroadcast INTEGER,
-            node_number INTEGER)""")
-        # cursor.execute("SELECT * FROM tables")
-        # for row in cursor :
-            # print row 
-        
-        cursor.execute("SELECT cast_number, burst_number, interval, rebroadcast, node_number FROM tables WHERE experiment_name=?", (str(self.compare5.currentText()) , ) )
-        for row in cursor :
-            self.parameters5.setText("cast per message : "+ str(row[0]) +" | burst : "+ str(row[1]) +" | interval : "+ str(row[2]) +" | rebroadcast : "+ str(row[3]) +" | number of node : "+ str(row[4]))
-        db.close()
-        db_lock.release()
+        temp = 0
+#        db_lock.acquire()
+#        db = sqlite3.connect('Backup\\MyDb.db')
+#        cursor = db.cursor()
+#        
+#        cursor.execute("""
+#        CREATE TABLE IF NOT EXISTS tables(
+#            experiment_name TEXT,
+#            cast_number INTEGER,
+#            burst_number INTEGER,
+#            interval INTEGER,
+#            rebroadcast INTEGER,
+#            node_number INTEGER)""")
+#        # cursor.execute("SELECT * FROM tables")
+#        # for row in cursor :
+#            # print row 
+#        
+#        cursor.execute("SELECT cast_number, burst_number, interval, rebroadcast, node_number FROM tables WHERE experiment_name=?", (str(self.compare5.currentText()) , ) )
+#        for row in cursor :
+#            self.parameters5.setText("cast per message : "+ str(row[0]) +" | burst : "+ str(row[1]) +" | interval : "+ str(row[2]) +" | rebroadcast : "+ str(row[3]) +" | number of node : "+ str(row[4]))
+#        db.close()
+#        db_lock.release()
     
     def experiments_combo_update (self) :    #Updates the items in the ComboBox that are used to select the experiments to plot
         experiment_list = []
-        db_lock.acquire()
-        db = sqlite3.connect('Backup\\MyDb.db')
-        cursor = db.cursor()
-        
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS tables(
-            experiment_name TEXT,
-            cast_number INTEGER,
-            burst_number INTEGER,
-            interval INTEGER,
-            rebroadcast INTEGER,
-            node_number INTEGER)""")
-        
-        cursor.execute("SELECT experiment_name FROM tables")
-        for row in cursor :
-            experiment_list.append(str(row[0]))
-        db.close()
-        db_lock.release()
-            
-        self.compare1.clear()
-        self.compare2.clear()
-        self.compare3.clear()
-        self.compare4.clear()
-        self.compare5.clear()
-            
-        self.compare1.addItems(experiment_list)
-        self.compare2.addItems(experiment_list)
-        self.compare3.addItems(experiment_list)
-        self.compare4.addItems(experiment_list)
-        self.compare5.addItems(experiment_list)
-        
-        print ("list of the different experiments updated : ")
-        print(experiment_list)
+
+##        cursor = db.cursor()
+##        
+##
+##        for row in cursor :
+##            experiment_list.append(str(row[0]))
+##            
+#        self.compare1.clear()
+#        self.compare2.clear()
+#        self.compare3.clear()
+#        self.compare4.clear()
+#        self.compare5.clear()
+#            
+#        self.compare1.addItems(experiment_list)
+#        self.compare2.addItems(experiment_list)
+#        self.compare3.addItems(experiment_list)
+#        self.compare4.addItems(experiment_list)
+#        self.compare5.addItems(experiment_list)
+#        
+#        print ("list of the different experiments updated : ")
+#        print(experiment_list)
         
     def compare (self) :                    #Plot the data of the chosen experiments
 
@@ -512,114 +496,45 @@ class MainWindow(QtGui.QMainWindow):    #The MainWindow is the core of the graph
         
         burst_count = 0
         
-        try : 
-            db_lock.acquire()
-            db = sqlite3.connect('Backup\\MyDb.db')
-            cursor = db.cursor()
-            cursor.execute("""SELECT burst_number FROM tables WHERE experiment_name=?""", (experiment_name,))
-            for row in cursor :
-                burst_count = row[0]
-            db.close
-            db_lock.release()
-        except sqlite3.Error as er:
-            print 'get burst er:', er.message
-        except Exception as e:
-            print(e)
+#        try : 
+#            db_lock.acquire()
+#            db = sqlite3.connect('Backup\\MyDb.db')
+#            cursor = db.cursor()
+#            cursor.execute("""SELECT burst_number FROM tables WHERE experiment_name=?""", (experiment_name,))
+#            for row in cursor :
+#                burst_count = row[0]
+#            db.close
+#            db_lock.release()
+#        except sqlite3.Error as er:
+#            print 'get burst er:', er.message
+#        except Exception as e:
+#            print(e)
         
         return burst_count
+    def neighUpdate(self):
+        temp = 0
+        
+    def printList(self):
+        temp = 0
+        
+    def closeSerial(self):
+        self.serial.closeConnection()
+        self.CONNECT_button.clicked.connect(self.connectSerial)
+        self.CONNECT_button.setText("Connect")
+        
+        
+    def connectSerial(self):
+        self.serial.openConnection(self.serialPorts_combo.currentText())        
+        self.CONNECT_button.clicked.connect(self.closeSerial)
+     
+        
+        self.CONNECT_button.setText("Close")
     
     def STOP(self) :                        #When the user presses the STOP button, it sends a burst_stop order to the test_thread
         self.test_thread.burst_stop_order()
-    
-    def RFRL (self) :                        #RFRL for Refresh list : clear the node_list and send a command to update it
-        global node_list
-        global output
-        temp_list = node_list
-        node_list = []
-        time.sleep(1)
-        for i in range(0,len(temp_list)) :
-            output.append("PING" + temp_list[i] + "0")
-            ser.write("PING" + temp_list[i] + "0")
-            time.sleep(0.2)
-        output.append("List refreshed !")                                                                        #------------------PRINT------------------                
-    
-    def SYNC (self) :                        #Give the same time for every node (precision only up to seconds) 
-        ser.write("TIME0|"+datetime.datetime.now().strftime("%Y%m%d%I%M00")+"0")
-    
-    def LIST (self) :                        #prints the list of node registered
-        output.append("---------------Begining of the list!----------------")
-        for i in range(0,len(node_list)) :
-            output.append("{} : ".format(i) + node_list[i])
-        output.append("---------------Ending of the list!------------------")
-    
-    def PING (self) :                        #PING every node registered in the node_list
-        output.append("---------------Begining of the PING sequence!----------------")
-        for i in range(0,len(node_list)) :
-            output.append("PING" + node_list[i] + "0")
-            ser.write("PING" + node_list[i] + "0")
-            time.sleep(0.2)
-        
-    def TIMA (self) :                        #QTIM every node registered in the list
-        output.append("---------------Sending QTIM request!----------------")
-        output.append("QTIM" + "0" + "0")
-        ser.write("QTIM" + "0" + "0")
-        time.sleep(0.2)
-        for i in range(0,len(node_list)) :
-            output.append("QTIM" + node_list[i] + "0")
-            ser.write("QTIM" + node_list[i] + "0")
-            time.sleep(0.2)
-    
-    def SEND (self) :                        #Send the message wrapped in the separators  0 via the serial connection 
-        input = unicode(self.ser_in.text(), "utf-8")
-        if input != "" :
-            ser.write(""+input.encode()+"0"+"\n")
-            output.append(""+input+"0"+"\n")
-            self.ser_in.setText("")
-    
-    def TEST (self) :                        #Execute a serie of CAST with defined parameters
-        global burst                            #burst is the number of the current burst (for the experiment)
-        global output
-        global experiment_name                    #experiment_name is the name of the current experiment
-        global delay_queue
-        global name_labels                        #name_labels is a global list to pass the current experiement names to add a legend on the axes
-        
-        name_labels = []
-        temp_plr_y = []
-        self.plr_x = [[0]]
-        self.plr_y = [[]]
-        
-        try :
-            burst_number = 0
-            cast_number = ""
-            interval = ""
-            rebroadcast = "0"
-            cast_number = str(self.number_text.text())
-            burst_number = int(self.burst_text.text())
-            interval = str(self.interval_combo.currentText())
-            burst = 0
-            experiment_name = str(self.experiment_line.text())
-            print ("Experiment for the TEST : {}".format(experiment_name))
-            assert (experiment_name != "")
-            if self.rebroadcast_combo.currentText() == "yes" :
-                rebroadcast = "1"
-                                                #if not ebough information is provided, ends the test and print an error message
-        except :                                                                                                #------------------PRINT------------------                
-            print "INVALID INPUT cast : {}, burst_number : {}, interval : {}, rebroadcast : {}".format(cast_number , burst_number, interval , rebroadcast)
-            return 
-            
-        node_number = len(node_list)
-        if node_number == 0 :
-            print "Insufficent number of node connected for the experiment !"                                    #------------------PRINT------------------    
-            return
-            
-        if experiment_name != "tables" :        #One cannot name his experiment tables. It would mess up the database organization... and wouldn't make much sens.
-            database_init(experiment_name,cast_number,burst_number, interval, rebroadcast, node_number)    
-            #print ("Database init !")                                                                            #------------------PRINT------------------    
-            self.test_thread.launching(experiment_name , burst_number , cast_number , interval , rebroadcast , node_number)
-        
-        else :
-            output.append("'tables' is a reserved name, use another one if you want to conduct an experiment.\n")        #------------------PRINT------------------    
-
+     
+    def START (self) :                        #Execute a serie of CAST with defined parameters
+        temp = 0
     def latency_draw (self, data) :                #Draws the current data list in order to make it easier to have latency info
         
         if len(data) == 0 :
@@ -725,14 +640,258 @@ class MainWindow(QtGui.QMainWindow):    #The MainWindow is the core of the graph
         
         self.canvas_latency.draw()
         self.canvas_plr.draw()
+
+
+class serialRead_Worker(QThread):
+    def __init__(self, output,parent = None):
+
+        QThread.__init__(self, parent)
+        self.stop = 0
+          
+class Out_Worker(QThread):                            #Out_Worker is the Qthread responsible for the update of the ser_out text 
+
+    def __init__(self, output,parent = None):
+
+        QThread.__init__(self, parent)
+        self.stop = 0
+        self.output = output
+        
+    def setOutput(out):
+        self.output.append(out)
+
+    def run(self):                                    #The run method is the method called as a thread
+        
+        
+        while 1 :
+            if len(self.output) != 0 :
+                self.emit(SIGNAL("output(PyQt_PyObject)"), self.output[0])
+                self.output.remove(self.output[0])
+                
+            if self.stop == 1 :
+                print("\nOutput thread ended")
+                self.terminate()
     
-def data_backup(mode)    :                            #Saves the data list in 'mode' mode
-    global data
+    def stop_order(self):
+        self.stop = 1
+        
+class Plt_Worker(QThread):                            #Plt_Worker is the Qthread responsible for the update of the different axes used to plot the datas 
+                                                    #It is called at the end of each burst_processing session
+    def __init__(self, parent = None):
+
+        QThread.__init__(self, parent)
+        self.stop = 0
+        self.delay = []
+        
+
+    def run(self):
+        
+        print("\nUpdating the graph...\n")
+        self.delay = sorted(self.delay)
+        self.window_reset()
+        self.latency_draw(self.delay)
+
+        if self.stop == 1 :
+            print("\nPlt thread ended")
+            self.terminate()
     
-    if (len(data) > 0) :
-            data_file = open("C:\\Users\\R00145386\\Desktop\\clement.festal\\Notes\\Scripts\\Backup\\data.txt" , mode)
-            data_file.write("\n------------------------\n")    
-            data_file.write(datetime.datetime.now().strftime("%d/%m/%Y %Ih%Mm00")+"\n\n")
-            for i in range(0,len(data)) :
-                data_file.write (data[i]+"\n")
-            data_file.close()
+    def latency_draw (self, data) :                #Draws the current data list in order to make it easier to have latency info
+        self.emit(SIGNAL("latency_draw(PyQt_PyObject)"), data)
+    
+    def window_reset(self) :                    #Clears the current axes and reset the axis and title parameters
+        self.emit(SIGNAL("window_reset()"))
+    
+    def launching (self, delay_queue) :            #The launching method helps sending data to the thread before starting it
+        self.delay = delay_queue
+        self.start()
+    
+    def stop_order(self):
+        self.stop = 1
+        
+class Test_Worker(QThread):                            #Test_Worker is the Qthread responsible for the running of the experiments
+                                                    #It is called at the end of the TEST function and is there to time the different steps of an experiement
+    def __init__(self, parent = None):                #This way, the time.sleep() commands don't freeze the main thread which is the whole window.
+                                                    #It acts the same way as the end of the old TEST function
+        QThread.__init__(self, parent)
+        self.experiment_name = ""
+        self.burst_number = 0
+        self.cast_number = 0
+        self.interval = 0
+        self.rebroadcast = 0
+        self.node_number = 0
+        self.stop = 0
+        self.burst_stop = 0
+
+    def run(self):
+    
+        global node_list 
+        global name_labels
+        global burst
+        global delay_queue
+        global RQCT_send 
+        global RQDT_received
+        global CAST_end                                #CAST_end is a global flag used to tell this thread that the store thread has received the last CAST of the burst
+                                                    #This way, the Test thread can wait for the last CAST to begin the RQDT sequence.
+        self.plr_y = []                                #These two variable link the data of the process with the other threads (including the main)
+        temp_plr_y = []
+        delay_queue = []
+        CAST_end = 0                                #This flag is modified in the store() process to show that all the CASTs have been send for this burst
+        RQCT_send = 0
+        RQDT_received = 0
+        
+        nodes_time = datetime.datetime.now() - datetime.datetime.now()
+        nodes_time_mean = 0.0
+        node_time = datetime.datetime.now() - datetime.datetime.now()
+        node_time_mean = 0.0
+        cast_time = datetime.datetime.now() - datetime.datetime.now()
+        cast_time_mean = 0.0
+        burst_time = datetime.datetime.now() - datetime.datetime.now()
+        burst_time_begin = datetime.datetime.now()
+        burst_time_mean = 0.0
+        timeout = 120                                #The timeout variable sets a limit in sec after which the behaviour of the loop changes
+        timeout_count = 0                            #timeout_count is the variable incremented every second in the while loops
+        self.burst_stop = 0                            #burst_stop is a flag used to send a stop message to the test thread.
+        burst_stopped = 0                            #When received, it stops the experiement at the end of the current burst
+                                                    #If the stop order is sent before the end of the CASTs, it stop the CASTs and finishes right away
+        for j in range(self.burst_number) :
+            timeout_count = 0
+            burst_time_begin = datetime.datetime.now()
+#            output.append("---------------Begining of burst"+str(j + 1)+"!----------------")
+            self.status_bar_print("----------Burst {} processed, cast time : {}, mean : {}, node time : {}, mean : {} , nodes time : {}, mean : {} , burst time : {}, mean : {}----------".format(j + 1, cast_time, cast_time_mean, node_time, node_time_mean, nodes_time, nodes_time_mean , burst_time, burst_time_mean))
+            cast_time = datetime.datetime.now()
+            input = ("CAST"+self.cast_number+"|30|"+self.interval+"|"+self.rebroadcast+"|00")
+            
+#            ser.write(input)
+            while CAST_end == 0 :                    #While the network is waiting for a CAST, the process wait
+                                                    #But if a burst_order is sent, the while breaks and we modifies the values of the burst_number
+                if self.burst_stop == 1 :            #so that it is the last burst succesfully processed that counts
+                    print("\nTest stopped")
+                    burst_stopped = 1
+#                    db_lock.acquire()                                #Accessing to the database : the lock is acquired.
+#                    db = sqlite3.connect('Backup\\MyDb.db')
+#                    cursor = db.cursor()
+#                    cursor.execute("UPDATE tables set burst_number = "+str(j)+" WHERE experiment_name=?""", (self.experiment_name, ))
+#                    db.commit()
+#                    db.close()
+#                    db_lock.release()
+                    break
+                if timeout_count == timeout :        #If we can't ensure every message is sent, the loop breaks
+                        print "Packets missing, timeout achieved"
+                        break
+                time.sleep(1)
+                timeout_count += 1
+                
+#            cast_time = datetime.datetime.now() - cast_time
+#            cast_time_mean = float(cast_time_mean * (j) + cast_time.total_seconds() ) / float(j + 1)
+#            self.status_bar_print("----------Burst {} in process, cast time : {}, mean : {}, node time : {}, mean : {} , nodes time : {}, mean : {} , burst time : {}, mean : {}----------".format(j + 1, cast_time, cast_time_mean, node_time, node_time_mean, nodes_time, nodes_time_mean , burst_time, burst_time_mean))
+#            
+#            if burst_stopped == 1 :
+#                break
+#            time.sleep(1)
+#            print "---------CAST_end received !!---------"
+#            time.sleep(30)
+#            CAST_end = 0
+#            for i in range(0,self.node_number) :
+#                nodes_time = datetime.datetime.now() 
+#                node_time = datetime.datetime.now() 
+#                print"Beginning of the RQCT/RQDT sequence !!! for node {} number {}".format(node_list[i], i )
+#                timeout_count = 0
+#                RQCT_send = 1
+#                time.sleep(2)
+#                ser.write("RQCT" + node_list[i] + "0")
+#                time.sleep(2)
+#                ser.write("RQDT" + node_list[i] + "0")
+#                print"waiting for RQDT_received for {}".format(node_list[i])
+#                while RQDT_received == 0 :
+#                    if timeout_count == timeout/2 :
+#                        print "Node {} not answering !"
+#                        # print"Asking again !"
+#                        # timeout_count = timeout/2
+#                        # RQCT_send = 1
+#                        # time.sleep(0.5)
+#                        # ser.write("RQCT" + node_list[i] + "0")
+#                        # time.sleep(0.5)
+#                        # ser.write("RQDT" + node_list[i] + "0")
+#                        break
+#                    time.sleep(1)
+#                    timeout_count += 1
+#                print "Datas from node {} received !".format(node_list[i])
+#                RQDT_received = 0
+#                RQCT_send = 0
+#                time.sleep(1)
+#                node_time = datetime.datetime.now() - node_time
+#                node_time_mean = float(node_time_mean * (j) + node_time.total_seconds() ) / float((j + 1) * (i + 1))
+#                self.status_bar_print("----------Burst {} in process, cast time : {}, mean : {}, node time : {}, mean : {} , nodes time : {}, mean : {} , burst time : {}, mean : {}----------".format(j + 1, cast_time, cast_time_mean, node_time, node_time_mean, nodes_time, nodes_time_mean , burst_time, burst_time_mean))
+#            nodes_time = datetime.datetime.now() - nodes_time
+#            nodes_time_mean = float(nodes_time_mean * (j) + nodes_time.total_seconds() ) / float((j + 1))
+#            self.status_bar_print("----------Burst {} in process, cast time : {}, mean : {}, node time : {}, mean : {} , nodes time : {}, mean : {} , burst time : {}, mean : {}----------".format(j + 1, cast_time, cast_time_mean, node_time, node_time_mean, nodes_time, nodes_time_mean , burst_time, burst_time_mean))
+#            time.sleep(2)
+#            output.append("-----Burst "+str(j + 1)+" acquired-----")
+#            temp_plr_y.append(burst_processing(self.experiment_name, j))
+#            name_labels.append(self.experiment_name)
+#            self.plr_y = [sum(temp_plr_y)/len(temp_plr_y)]    
+#            self.list_update()
+#            
+#            self.status_bar_print("----------Burst {} processed, cast time : {}, mean : {}, node time : {}, mean : {} , nodes time : {}, mean : {} , burst time : {}, mean : {}----------".format(j + 1, cast_time, cast_time_mean, node_time, node_time_mean, nodes_time, nodes_time_mean , burst_time, burst_time_mean))
+#            
+#            self.plt_thread_launch(delay_queue)
+#            burst +=1
+#            if self.burst_stop == 1 :                #if the stop_order is received after the RQDT sequence beginning, the last process will be the one currently processed        
+#                print("\nTest stopped")
+#                db_lock.acquire()                                    #Accessing to the database : the lock is acquired.
+#                db = sqlite3.connect('Backup\\MyDb.db')
+#                cursor = db.cursor()
+#                cursor.execute("UPDATE tables set burst_number = "+str(j+1)+" WHERE experiment_name=?""", (self.experiment_name, ))
+#                db.commit()
+#                db.close()
+#                db_lock.release()
+#                break
+#            time.sleep(60)
+#            if self.burst_stop == 1 :                #if the stop_order is received after the RQDT sequence beginning, the last process will be the one currently processed        
+#                print("\nTest stopped")
+#                db_lock.acquire()                                    #Accessing to the database : the lock is acquired.
+#                db = sqlite3.connect('Backup\\MyDb.db')
+#                cursor = db.cursor()
+#                cursor.execute("UPDATE tables set burst_number = "+str(j+1)+" WHERE experiment_name=?""", (self.experiment_name, ))
+#                db.commit()
+#                db.close()
+#                db_lock.release()
+#                break
+#            burst_time = datetime.datetime.now() - burst_time_begin
+#            burst_time_mean = float(burst_time_mean * (j) + burst_time.total_seconds() ) / float(j + 1)
+#            self.status_bar_print("----------Burst {} processed, cast time : {}, mean : {}, node time : {}, mean : {} , nodes time : {}, mean : {} , burst time : {}, mean : {}----------".format(j + 1, cast_time, cast_time_mean, node_time, node_time_mean, nodes_time, nodes_time_mean , burst_time, burst_time_mean))
+#            
+#        self.experiments_combo_update()
+#        self.status_bar_print("----------Ready !cast time : {}, mean : {}, node time : {}, mean : {} , nodes time : {}, mean : {} , burst time : {}, mean : {}----------".format( cast_time, cast_time_mean, node_time, node_time_mean, nodes_time, nodes_time_mean , burst_time, burst_time_mean))
+#        delay_queue = []
+#
+#        if self.stop == 1 :
+#            print("\nTest thread ended")
+#            self.terminate()
+                                                                        #The launching method helps sending data to the thread before starting it
+    def launching (self, experiment_name , burst_number , cast_number , interval , node_number) :
+        self.experiment_name = experiment_name
+        self.burst_number = burst_number
+        self.cast_number = cast_number
+        self.interval = interval
+        self.node_number = node_number
+        self.start()
+    
+    def status_bar_print(self, str) :                                    #This method prints a message on the status bar
+        self.emit(SIGNAL("status_bar_print(PyQt_PyObject)"), str)
+    
+    def experiments_combo_update(self) :                                #This method calls the experiments_combo_update method of the main window
+        self.emit(SIGNAL("experiments_combo_update()"))
+        
+    def plt_thread_launch(self, delay_queue) :                            #This method launches the plt_thread from the main window
+        self.emit(SIGNAL("plt_thread_launch(PyQt_PyObject)"), delay_queue)
+        
+    def list_update(self) :                                                #This method calls the list_update method of the main window
+        self.emit(SIGNAL("list_update(PyQt_PyObject)"), self.plr_y)
+    
+    def burst_stop_order(self):                                            #This method is called when the user presses the STOP button
+        self.burst_stop = 1                                                #It stops the waiting for the end of the Cast 
+        self.status_bar_print("Waiting for the end of burst"+str(burst))#Or finishes the last RQDT sequence if received after the last CAST is received
+        
+    def stop_order(self):                                                #This method terminates the thread
+        self.stop = 1
+        self.status_bar_print("Ending the Test Thread")

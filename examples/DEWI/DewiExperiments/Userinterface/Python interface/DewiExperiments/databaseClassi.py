@@ -88,6 +88,7 @@ class  databaseConnection():
     
     def insertSettings(self,id, session_id, txPower, numberBursts, burstDuration,MSGPerBurst):        
         try:
+            print ("INSERT INTO settings(id, session_id, txPower, numberBursts, burstDuration,MSGPerBurst) VALUES ({0},{1},{2},{3},{4},{5})").format(id, session_id, txPower, numberBursts, burstDuration,MSGPerBurst)
             cursor = self.dbConnection.cursor()
             cursor.execute(("INSERT INTO settings(id, session_id, txPower, numberBursts, burstDuration,MSGPerBurst) VALUES ({0},{1},{2},{3},{4},{5})").format(id, session_id, txPower, numberBursts, burstDuration,MSGPerBurst))
             self.dbConnection.commit()
@@ -130,8 +131,26 @@ class  databaseConnection():
             except IndexError:
                 print "MySQL Error: %s" % str(e)
                 
+    def getLastExperimentID(self):
+        try:
+            cursor = self.dbConnection.cursor()
+            print "SELECT MAX(id) FROM experiments"
+            cursor.execute(("SELECT MAX(id) FROM experiments"))
+            
+            for id in cursor:
+                print str(id[0])
+                if str(id[0]) == 'None':
+                    return -1
+                else:
+                    return int(id[0])
+        except mysql.Error, e:
+            try:
+                print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+            except IndexError:
+                print "MySQL Error: %s" % str(e)
+        
+        return 0
+                       
 
     
     
-
-
