@@ -66,37 +66,42 @@ uint16_t rxPackets = 0;
 linkaddr_t master_addr1; //parent or master address
 char waitForTopologyUpdate;  //is 1 if topology information is ongoing, else 0
 char isGateway; // is 1 if this node is a gateway, else 0
-struct resultCounter { //structure for each child node that the master or parent node has
+struct resultCounter
+{ //structure for each child node that the master or parent node has
 	uint8_t timeslot;
 	uint16_t counter;
 };
 
 uint8_t tempresult[50] = { 0 };
 uint8_t tempResultCounter = 0;
-const struct etimer processResults_timer;
+const struct etimer processResults_timer, topologyReply_timer;
 uint8_t addResult(struct resultCounter *res);
 void getResult(uint8_t timeslot, struct resultCounter *res);
-LIST(result_list); //list of child nodes
+uint8_t getAllResults(uint8_t timeslot[], uint16_t values[]);
 MEMB(result_mem, struct resultCounter, 10);
+LIST(result_list); //list of child nodes
 
 PROCESS(dewiDemo, "DEWI Demonstrator, using CIDER and RLL");	//main process
 AUTOSTART_PROCESSES(&dewiDemo);
 
 // function to handle incoming sensor events
 // input: the data object associated with the event
-void handleSensorsEvent(process_data_t data) {
+void handleSensorsEvent(process_data_t data)
+{
 	PROCESS_CONTEXT_BEGIN(&dewiDemo)
 		;
-		if (data == &button_sensor) { // receiving user button event
+		if (data == &button_sensor)
+		{ // receiving user button event
 
-			if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL)
-					== BUTTON_SENSOR_PRESSED_LEVEL) {
+			if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL) == BUTTON_SENSOR_PRESSED_LEVEL)
+			{
 
 				button_press_counter = button_press_counter + 1;
 				etimer_set(&button_press_reset, CLOCK_SECOND * 0.2);
 
 			}
-			if (button_press_counter == 10) {
+			if (button_press_counter == 10)
+			{
 				CIDER_start();
 			}
 		}
@@ -106,14 +111,16 @@ void handleSensorsEvent(process_data_t data) {
 
 // function to handle incoming data on serial port
 // input: the data object associated with the event
-void handleSerialInput(process_data_t data) {
+void handleSerialInput(process_data_t data)
+{
 	char* ch_data, *ptr;
 	ch_data = (char*) data;
 	char t1[2];
 	long i_data;
 	uint32_t R, G, B;
-	if (strstr(ch_data, "Experiment") != NULL) {
-		tsch_queue_reset();
+	if (strstr(ch_data, "Experiment") != NULL)
+	{
+
 		printf("[APP]: Experiment received, send message\n");
 		struct APP_PACKET packet;
 		packet.src = linkaddr_node_addr;
@@ -126,24 +133,47 @@ void handleSerialInput(process_data_t data) {
 		sendRLLDataMessage(packet);
 
 	}
+	else if (strstr(ch_data, "topologyrefresh") != NULL)
+	{
+
+		printf("[APP]: TopologyRefresh received, send message\n");
+		struct APP_PACKET packet;
+		packet.src = linkaddr_node_addr;
+		packet.dst = tsch_broadcast_address;
+		packet.subType = APP_TOPOLOGYREQUEST;
+		sendRLLDataMessage(packet);
+	}
+	else if (strstr(ch_data, "0x") != NULL)
+	{
+
+		printf("[APP]: APP_RESULTREQUEST received, send message\n");
+		struct APP_PACKET packet;
+		packet.src = linkaddr_node_addr;
+		packet.dst.u16 = (uint16_t) strtol(ch_data, NULL, 16);
+		packet.subType = APP_RESULTREQUEST;
+		sendRLLDataMessage(packet);
+	}
 
 }
 
 // function to handle process events
 // input: the data object associated with the event
-void handleProcessEvent( data) {
+void handleProcessEvent( data)
+{
 
 }
 
 // handle an incoming topology information request
 // only master nodes need to respond
-void handleTopologyRequest() {
+void handleTopologyRequest()
+{
 
 }
 
 // handle incoming topology information
 // input: the incoming packet
-void handleTopologyReply(struct APP_PACKET *data) {
+void handleTopologyReply(struct APP_PACKET *data)
+{
 
 }
 
@@ -170,43 +200,53 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 		//don't wait for topology updates initially
 
 		//initialize lists for child addresses and topology information
-		list_init(result_list);
-		memb_init(&result_mem);
+		//list_init(result_list);
+		//memb_init(&result_mem);
 
 		//initially set isGateway to 0. Will be set to one when messages are received on serial port
 		isGateway = 0;
 		;
 
 		// main loop
-		while (1) {
+		while (1)
+		{
 			PROCESS_YIELD()
 			;
-			if (ev == sensors_event) { // receiving sensor or button event
+			if (ev == sensors_event)
+			{ // receiving sensor or button event
 				printf("received sensors event\n");
 				handleSensorsEvent(data);
-			} else if (ev == serial_line_event_message) { // receiving data on serial port
+			}
+			else if (ev == serial_line_event_message)
+			{ // receiving data on serial port
 				printf("received serial event\n");
-				if (isGateway == 0) {
+				if (isGateway == 0)
+				{
 					// node realizes that it must be a gateway
 					// set isGateway to 1 and reset statistics collection in the network
 					isGateway = 1;
 
 				}
 				handleSerialInput(data);
-			} else if (ev == PROCESS_EVENT_TIMER) { // receiving a process event
-				if (data == &button_press_reset) {
+			}
+			else if (ev == PROCESS_EVENT_TIMER)
+			{ // receiving a process event
+				if (data == &button_press_reset)
+				{
 					button_press_counter = 0;
-				} else if (data == &processResults_timer) {
+				}
+				else if (data == &processResults_timer)
+				{
 					printf("[APP]: process results\n");
 					struct resultCounter Result;
 					int i = 0;
-					for (i = 0; i < tempResultCounter; i++) {
+					for (i = 0; i < tempResultCounter; i++)
+					{
 						printf("[APP]: Timeslot: %d\n", tempresult[i]);
 						Result.counter = 0;
 						Result.timeslot = 0;
 						getResult(tempresult[i], &Result);
-						if (Result.timeslot == 0)
-							Result.timeslot = tempresult[i];
+						Result.timeslot = tempresult[i];
 						Result.counter++;
 
 						addResult(&Result);
@@ -215,9 +255,73 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 					tempResultCounter = 0;
 
 				}
-			} else if (ev == button_press_duration_exceeded) {
-				if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_PRESS_DURATION)
-						== 10) {
+				else if (data == &topologyReply_timer)
+				{
+
+					printf("[APP]: send TopologyReply\n");
+					struct APP_PACKET packet;
+					packet.src = linkaddr_node_addr;
+					packet.dst = tsch_broadcast_address;
+					packet.subType = APP_TOPOLOGYREPLY;
+					packet.timeslot[0] = getTier();
+					packet.timeslot[1] = getColour();
+					uint8_t numChildren = 0; // number of children
+					linkaddr_t children[CONF_MAX_NEIGHBOURS];
+					numChildren = getChildAddresses(children);
+					printf("got topology request, have %d children\r\n", numChildren);
+
+
+					if (numChildren < 23)
+					{
+						//send one packet
+
+						uint8_t temp = 0;
+						packet.values[numChildren] = 0;
+						packet.values[numChildren + 1] = 0;
+						for (temp = 0; temp < numChildren; temp++)
+						{
+							packet.values[temp] = children[temp].u16;
+						}
+
+						packet.remainingData = 0;
+						//packet.
+						sendRLLDataMessage(packet);
+					}
+					else
+					{
+						//send more than one packet
+						uint8_t temp = 0, sentPacket = 0, lowerBorder;
+						uint8_t numPackets = numChildren / 23;
+
+						for (sentPacket = 0; sentPacket < numPackets; sentPacket++)
+						{
+							uint8_t maxBorder = (sentPacket + 1) * 23;
+							if (maxBorder > numChildren)
+							{
+								maxBorder = numChildren;
+								packet.remainingData = 0;
+								packet.values[numChildren] = 0;
+								packet.values[numChildren + 1] = 0;
+							}
+							else packet.remainingData = 1;
+							lowerBorder = 0 + sentPacket * 23;
+							temp = 0;
+							for (lowerBorder; lowerBorder < maxBorder; lowerBorder++)
+							{
+								packet.values[temp] = children[lowerBorder].u16;
+								temp++;
+							}
+							sendRLLDataMessage(packet);
+						}
+
+					}
+
+				}
+			}
+			else if (ev == button_press_duration_exceeded)
+			{
+				if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_PRESS_DURATION) == 10)
+				{
 					printf("[APP]: Start Node as Coordinator\n");
 					leds_off(LEDS_ALL);
 					leds_on(LEDS_ALL);
@@ -233,40 +337,132 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 
 // callback to handle application data received from the network
 // input: the application packet and its sequence number
-void applicationDataCallback(struct APP_PACKET *data) {
+void applicationDataCallback(struct APP_PACKET *data)
+{
 if (linkaddr_cmp(&data->dst, &linkaddr_node_addr) == 1
-		|| linkaddr_cmp(&data->dst, &tsch_broadcast_address) == 1) {
+		|| linkaddr_cmp(&data->dst, &tsch_broadcast_address) == 1)
+{
 	struct asn_t receivedAt = current_asn;
 	uint16_t latency = ASN_DIFF(receivedAt, data->timeSend);
-	printf(
-			"[APP]: Data received: Type: %d, from: 0x%4x with seqNo: %d, latency: %d\n",
+	printf("[APP]: Data received: Type: %d, from: 0x%4x with seqNo: %d, latency: %d\n",
 			data->subType, data->src.u16, data->seqNo, latency * 10);
 
-	if (data->subType == APP_EXPERIMENT) { // received color packet, set LED color and update performance stats
-										   //here save data
-		if (isGateway == 0) {
+	if (data->subType == APP_EXPERIMENT)
+	{ // received color packet, set LED color and update performance stats
+	  //here save data
+		if (isGateway == 0)
+		{
 			tempresult[tempResultCounter] = latency;
 			tempResultCounter++;
 			txPackets++;
 			PROCESS_CONTEXT_BEGIN(&dewiDemo)
-			;
-			etimer_stop(&processResults_timer);
-			etimer_set(&processResults_timer, CLOCK_SECOND * 1);
-			PROCESS_CONTEXT_END(&dewiDemo);
+				;
+				etimer_stop(&processResults_timer);
+				etimer_set(&processResults_timer,
+				CLOCK_SECOND);
+				PROCESS_CONTEXT_END(&dewiDemo);
 		}
 
-	} else if (data->subType == APP_QUERYRESULT) {
-		printf("[APP]: return results\n");
+	}
+	else if (data->subType == APP_TOPOLOGYREQUEST)
+	{
+		if (getCIDERState() == 5)
+		{
+			PROCESS_CONTEXT_BEGIN(&dewiDemo)
+				;
+				etimer_stop(&topologyReply_timer);
+				etimer_set(&topologyReply_timer, CLOCK_SECOND * getColour() + CLOCK_SECOND * 0.2);
+				PROCESS_CONTEXT_END(&dewiDemo);
+		}
+	}
+	else if (data->subType == APP_TOPOLOGYREPLY)
+	{
+		if (isGateway == 1)
+		{
+
+			if (data->remainingData == 1)
+			{
+				uint8_t temp;
+				for (temp = 0; temp < 23; temp++)
+				{
+					printf("TPReply:0x%4x,0x%4x,%d,%d\n", data->src.u16, data->values[temp],
+							data->timeslot[0], data->timeslot[1]);
+				}
+			}
+
+			else
+			{
+				uint8_t temp;
+				for (temp = 0; temp < 23; temp++)
+				{
+					if (data->values[temp] == 0)
+						break;
+					else printf("TPReply:0x%4x,0x%4x,%d,%d\n", data->src.u16, data->values[temp],
+							data->timeslot[0], data->timeslot[1]);
+				}
+			}
+		}
+	}
+	else if (data->subType == APP_RESULTREQUEST)
+	{
+		if (data->dst.u16 == linkaddr_node_addr.u16)
+		{
+
+			uint8_t values[10] = { };
+			uint8_t timeslot[10] = { };
+			uint8_t numResults = getAllResults(timeslot, values);
+			struct APP_PACKET packet;
+			packet.src = linkaddr_node_addr;
+			packet.dst = tsch_broadcast_address;
+			packet.subType = APP_RESULTREPLY;
+			printf("[APP]: send APP_RESULTREPLY\n");
+
+			uint8_t temp = 0;
+			packet.values[numResults] = 0;
+			packet.values[numResults + 1] = 0;
+			packet.timeslot[numResults] = 0;
+			packet.timeslot[numResults + 1] = 0;
+			for (temp = 0; temp < numResults; temp++)
+			{
+				packet.values[temp] = values[temp];
+				packet.timeslot[temp] = timeslot[temp];
+			}
+
+			packet.remainingData = 0;
+			packet.count = rxPackets;
+			sendRLLDataMessage(packet);
+
+		}
+	}
+
+	else if (data->subType == APP_RESULTREPLY)
+	{
+		if (isGateway == 1)
+		{
+
+			uint8_t temp;
+			for (temp = 0; temp < 23; temp++)
+			{
+				if (data->values[temp] == 0)
+					break;
+				else printf("RESULTReplyLatency:0x%4x,,%d,%d\n", data->src.u16,
+						data->timeslot[temp], data->values[temp]);
+			}
+			printf("RESULTReplyRxPackets:0x%4x,,%d,%d\n", data->src.u16, data->count);
+
+		}
 	}
 }
 }
 
-void packetDeletedFromQueue() {
+void packetDeletedFromQueue()
+{
 printf("[APP]: Packet deleted from Queue\n");
 txPackets--;
 }
 
-void tsch_dewi_callback_joining_network(void) {
+void tsch_dewi_callback_joining_network(void)
+{
 printf("[APP]: joining network\n");
 setCoord(0);
 initScheduler();
@@ -274,7 +470,8 @@ initNeighbourTable();
 leds_off(LEDS_ALL);
 leds_on(LEDS_GREEN);
 }
-void tsch_dewi_callback_leaving_network(void) {
+void tsch_dewi_callback_leaving_network(void)
+{
 printf("[APP]: Leaving network\n");
 scheduler_reset();
 neighbourTable_reset();
@@ -282,51 +479,58 @@ CIDER_reset();
 leds_off(LEDS_ALL);
 leds_on(LEDS_RED);
 }
-void tsch_dewi_callback_ka(void) {
+void tsch_dewi_callback_ka(void)
+{
 printf("[APP]: Keep Alive sent\n");
 leds_off(LEDS_ALL);
 leds_on(LEDS_YELLOW);
 }
 
-void getResult(uint8_t timeslot, struct resultCounter *res) {
+void getResult(uint8_t timeslot, struct resultCounter *res)
+{
 struct resultCounter *n;
 n = NULL;
-for (n = list_head(result_list); n != NULL; n = list_item_next(n)) {
+for (n = list_head(result_list); n != NULL; n = list_item_next(n))
+{
 	/* We break out of the loop if the address of the neighbor matches
 	 the address of the neighbor from which we received this
 	 broadcast message. */
-	if (n->timeslot == timeslot) {
+	if (n->timeslot == timeslot)
+	{
 		break;
 	}
 }
 
 if (n == NULL)
 	res = NULL;
-else
-	res = n;
+else res = n;
 
 }
-uint8_t addResult(struct resultCounter *res) {
+uint8_t addResult(struct resultCounter *res)
+{
 struct resultCounter *newRes;
 uint8_t isNewRes = 1;
-for (newRes = list_head(result_list); newRes != NULL;
-		newRes = list_item_next(newRes)) {
+for (newRes = list_head(result_list); newRes != NULL; newRes = list_item_next(newRes))
+{
 
 	/* We break out of the loop if the address of the neighbor matches
 	 the address of the neighbor from which we received this
 	 broadcast message. */
-	if (newRes->timeslot == res->timeslot) {
+	if (newRes->timeslot == res->timeslot)
+	{
 		break;
 	}
 }
 
-if (newRes == NULL) {
+if (newRes == NULL)
+{
 	newRes = memb_alloc(&result_mem);
 
 	/* If we could not allocate a new neighbor entry, we give up. We
 	 could have reused an old neighbor entry, but we do not do this
 	 for now. */
-	if (newRes == NULL) {
+	if (newRes == NULL)
+	{
 		return 0;
 	}
 }
@@ -334,4 +538,18 @@ newRes->counter = res->counter;
 newRes->timeslot = res->timeslot;
 list_add(result_list, newRes);
 return isNewRes;
+}
+
+uint8_t getAllResults(uint8_t timeslot[], uint16_t values[])
+{
+struct resultCounter *newRes;
+uint8_t counter = 0;
+for (newRes = list_head(result_list); newRes != NULL; newRes = list_item_next(newRes))
+{
+	printf("[APP]: timeslot: %d, count: %d\n",newRes->timeslot,newRes->counter);
+	timeslot[counter] = newRes->timeslot;
+	values[counter] = newRes->counter;
+	counter++;
+}
+return counter;
 }
