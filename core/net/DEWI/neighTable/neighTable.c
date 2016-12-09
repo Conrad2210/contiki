@@ -151,9 +151,8 @@ void getNeighbour(linkaddr_t *addr, struct neighbour *neigh)
 		}
 	}
 
-	if (n == NULL)
-		neigh = NULL;
-	else copyNeighbour(neigh, n);
+	if (n != NULL)
+		copyNeighbour(neigh, n);
 
 }
 int8_t getColourParent(linkaddr_t parent)
