@@ -56,7 +56,7 @@
 #define BUTTON_PRESS_EVENT_INTERVAL (CLOCK_SECOND)
 
 #define NUM_ADDR_ENTRIES 100		//number of child nodes that a master node can have
-#define MAX_RESULTS_ENTRIES 10
+#define MAX_RESULTS_ENTRIES 30
 static struct etimer button_press_reset;
 uint8_t button_press_counter = 0;
 uint8_t lastBRIGHTNESS = 0b00000001;
@@ -64,6 +64,9 @@ uint16_t seqNo = 1;
 uint16_t txPackets = 0;
 uint16_t rxPackets = 0;
 uint8_t lock = 1;
+uint16_t ackAddress;
+uint8_t ackType;
+
 linkaddr_t master_addr1; //parent or master address
 char waitForTopologyUpdate;  //is 1 if topology information is ongoing, else 0
 char isGateway; // is 1 if this node is a gateway, else 0
@@ -80,11 +83,11 @@ LIST(result_list);
 
 uint8_t tempresult[50] = { 0 };
 uint8_t tempResultCounter = 0;
-const struct etimer processResults_timer, topologyReply_timer,resultReply_timer;
+const struct etimer processResults_timer, topologyReply_timer, resultReply_timer, ackTimer;
 uint8_t addResult(struct resultCounter *res);
 void getResult(uint8_t timeslot, struct resultCounter *res);
 uint8_t getAllResults(uint8_t timeslot[], uint16_t values[]);
-
+void sendACK(linkaddr_t addr);
 PROCESS(dewiDemo, "DEWI Demonstrator, using CIDER and RLL");	//main process
 AUTOSTART_PROCESSES(&dewiDemo);
 
@@ -136,8 +139,7 @@ void handleSerialInput(process_data_t data)
 		packet.seqNo = seqNo++;
 		packet.subType = APP_EXPERIMENT;
 
-
-		lock = 0 ;
+		lock = 0;
 		sendRLLDataMessage(packet);
 
 	}
@@ -150,7 +152,7 @@ void handleSerialInput(process_data_t data)
 		packet.dst = tsch_broadcast_address;
 		packet.subType = APP_TOPOLOGYREQUEST;
 
-		lock =1;
+		lock = 1;
 		sendRLLDataMessage(packet);
 	}
 	else if (strstr(ch_data, "0x") != NULL)
@@ -163,6 +165,10 @@ void handleSerialInput(process_data_t data)
 			txPackets = 0;
 
 		}
+		else if(temp == 0)
+		{
+			sendACK(tsch_broadcast_address);
+		}
 		else
 		{
 			printf("[APP]: APP_RESULTREQUEST received, send message\n");
@@ -171,7 +177,7 @@ void handleSerialInput(process_data_t data)
 			packet.dst.u16 = temp;
 			packet.subType = APP_RESULTREQUEST;
 
-			lock =1;
+			lock = 1;
 			sendRLLDataMessage(packet);
 		}
 	}
@@ -182,111 +188,110 @@ void handleSerialInput(process_data_t data)
 // input: the application packet and its sequence number
 void applicationDataCallback(struct APP_PACKET *data)
 {
-	if (linkaddr_cmp(&data->dst, &linkaddr_node_addr) == 1
-			|| linkaddr_cmp(&data->dst, &tsch_broadcast_address) == 1)
+
+	struct asn_t receivedAt = current_asn;
+	uint16_t latency = ASN_DIFF(receivedAt, data->timeSend);
+	printf("[APP]: MSG received: Type: %d, from: 0x%4x with seqNo: %d\n",
+						data->subType, data->src.u16, data->seqNo);
+	if (data->subType == APP_EXPERIMENT)
+	{ // received color packet, set LED color and update performance stats
+	  //here save data
+		if (isGateway == 0)
+		{
+			printf("[APP]: Data received: Type: %d, from: 0x%4x with seqNo: %d, latency: %d\n",
+					data->subType, data->src.u16, data->seqNo, latency * 10);
+			tempresult[tempResultCounter] = latency;
+			tempResultCounter++;
+			rxPackets++;
+			PROCESS_CONTEXT_BEGIN(&dewiDemo)
+				;
+				etimer_stop(&processResults_timer);
+				etimer_set(&processResults_timer,
+				CLOCK_SECOND);
+				PROCESS_CONTEXT_END(&dewiDemo);
+		}
+
+	}
+	else if (data->subType == APP_TOPOLOGYREQUEST)
 	{
-		struct asn_t receivedAt = current_asn;
-		uint16_t latency = ASN_DIFF(receivedAt, data->timeSend);
-
-		if (data->subType == APP_EXPERIMENT)
-		{ // received color packet, set LED color and update performance stats
-		  //here save data
-			if (isGateway == 0)
-			{
-				printf("[APP]: Data received: Type: %d, from: 0x%4x with seqNo: %d, latency: %d\n",
-						data->subType, data->src.u16, data->seqNo, latency * 10);
-				tempresult[tempResultCounter] = latency;
-				tempResultCounter++;
-				rxPackets++;
-				PROCESS_CONTEXT_BEGIN(&dewiDemo)
-					;
-					etimer_stop(&processResults_timer);
-					etimer_set(&processResults_timer,
-					CLOCK_SECOND);
-					PROCESS_CONTEXT_END(&dewiDemo);
-			}
-
-		}
-		else if (data->subType == APP_TOPOLOGYREQUEST)
+		if (getCIDERState() == 5 && isGateway == 0)
 		{
-			if (getCIDERState() == 5 && isGateway == 0)
-			{
-				PROCESS_CONTEXT_BEGIN(&dewiDemo)
-					;
-					etimer_stop(&topologyReply_timer);
-					etimer_set(&topologyReply_timer,
-					CLOCK_SECOND * getColour() + CLOCK_SECOND * 0.2);
-					PROCESS_CONTEXT_END(&dewiDemo);
-			}
-		}
-		else if (data->subType == APP_TOPOLOGYREPLY)
-		{
-			if (isGateway == 1)
-			{
-
-				if (data->remainingData == 1)
-				{
-					uint8_t temp;
-					for (temp = 0; temp < 23; temp++)
-					{
-						printf("TPReply:0x%4x,0x%4x,%d,%d\n", data->src.u16, data->values[temp],
-								data->timeslot[0], data->timeslot[1]);
-					}
-				}
-
-				else
-				{
-					uint8_t temp;
-					for (temp = 0; temp < 23; temp++)
-					{
-						if (data->values[temp] == 0)
-							break;
-						else printf("TPReply:0x%4x,0x%4x,%d,%d\n", data->src.u16,
-								data->values[temp], data->timeslot[0], data->timeslot[1]);
-					}
-				}
-			}
-		}
-		else if (data->subType == APP_RESULTREQUEST)
-		{
-			if (data->dst.u16 == linkaddr_node_addr.u16 && isGateway == 0)
-			{
-				PROCESS_CONTEXT_BEGIN(&dewiDemo)
-					;
-					etimer_stop(&resultReply_timer);
-					etimer_set(&resultReply_timer,
-					CLOCK_SECOND);
-					PROCESS_CONTEXT_END(&dewiDemo);
-
-
-			}
-		}
-
-		else if (data->subType == APP_RESULTREPLY)
-		{
-			if (isGateway == 1)
-			{
-
-				uint8_t temp;
-				printf("[APP]: dataSets received: %d, RxPackets: %d\n", data->remainingData,
-						data->count);
-				for (temp = 0; temp < data->remainingData; temp++)
-				{
-					printf("RESULTReplyLatency:0x%4x,%d,%d\n", data->src.u16, data->timeslot[temp],
-							data->values[temp]);
-				}
-				printf("RESULTReplyRxPackets:0x%4x,%d\n", data->src.u16, data->count);
-
-			}
+			PROCESS_CONTEXT_BEGIN(&dewiDemo)
+				;
+				etimer_stop(&topologyReply_timer);
+				etimer_set(&topologyReply_timer,
+				CLOCK_SECOND * getColour() + CLOCK_SECOND * 0.2);
+				PROCESS_CONTEXT_END(&dewiDemo);
 		}
 	}
+	else if (data->subType == APP_TOPOLOGYREPLY)
+	{
+		if (isGateway == 1)
+		{
+
+				uint8_t temp;
+				for (temp = 0; temp < data->count; temp++)
+				{
+					printf("TPReply:0x%4x,0x%4x,%d,%d\n", data->src.u16, data->values[temp],
+							data->timeslot[0], data->timeslot[1]);
+				}
+		}
+	}
+	else if (data->subType == APP_RESULTREQUEST)
+	{
+
+		printf("[APP]: APP_RESULTREQUEST received: Type: %d, from: 0x%4x for 0x%4x\n",
+							data->subType, data->src.u16, data->dst.u16);
+		if (data->dst.u16 == linkaddr_node_addr.u16 && isGateway == 0)
+		{
+			PROCESS_CONTEXT_BEGIN(&dewiDemo)
+				;
+				etimer_stop(&resultReply_timer);
+				etimer_set(&resultReply_timer,
+				CLOCK_SECOND);
+				PROCESS_CONTEXT_END(&dewiDemo);
+
+		}
+	}
+
+	else if (data->subType == APP_RESULTREPLY)
+	{
+		if (isGateway == 1)
+		{
+
+			uint8_t temp;
+			printf("[APP]: dataSets received: %d, RxPackets: %d\n", data->remainingData,
+					data->count);
+			for (temp = 0; temp < data->remainingData; temp++)
+			{
+				printf("RESULTReplyLatency:0x%4x,%d,%d\n", data->src.u16, data->timeslot[temp],
+						data->values[temp]);
+			}
+			printf("RESULTReplyRxPackets:0x%4x,%d\n", data->src.u16, data->count);
+
+			printf("[APP]: send Ack to: 0x%4x \n",data->src.u16);
+			printf("[APP]: APP_RESULTREQUEST received, send message\n");
+		}
+	}
+	else if (data->subType == APP_ACK)
+	{
+
+			printf("[APP]: Ack received\n");
+
+
+			rxPackets = 0;
+			clearResults();
+
+	}
+
 }
 
 void packetDeletedFromQueue()
 {
-	if(lock == 0){
-	printf("[APP]: Packet sent\n");
-	txPackets++;
+	if (lock == 0)
+	{
+		printf("[APP]: Packet sent\n");
+		txPackets++;
 	}
 }
 
@@ -313,6 +318,15 @@ void tsch_dewi_callback_ka(void)
 	printf("[APP]: Keep Alive sent\n");
 	leds_off(LEDS_ALL);
 	leds_on(LEDS_YELLOW);
+}
+
+void sendACK(linkaddr_t addr){
+	struct APP_PACKET packet;
+	packet.src = linkaddr_node_addr;
+	packet.dst = addr;
+	packet.subType = APP_ACK;
+	lock = 1;
+	sendRLLDataMessage(packet);
 }
 
 void getResult(uint8_t timeslot, struct resultCounter *res)
@@ -447,12 +461,14 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 			}
 			else if (ev == PROCESS_EVENT_TIMER)
 			{ // receiving a process event
+				printf("[APP]: Timer expired\n");
 				if (data == &button_press_reset)
 				{
 					button_press_counter = 0;
 				}
 				else if (data == &processResults_timer)
 				{
+					printf("[APP]: processResults_timer expired, num results: %d\n",tempResultCounter);
 
 					struct resultCounter Result;
 					int i = 0;
@@ -461,11 +477,7 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 						printf("[APP]: Timeslot: %d\n", tempresult[i]);
 						Result.counter = 0;
 						Result.timeslot = 0;
-						printf("[APP]: process results, timeslot: %d, counter: %d\n",
-								Result.timeslot, Result.counter);
 						getResult(tempresult[i], &Result);
-						printf("[APP]: process results, timeslot: %d, counter: %d\n",
-								Result.timeslot, Result.counter);
 						Result.timeslot = tempresult[i];
 						Result.counter++;
 						printf("[APP]: process results, timeslot: %d, counter: %d\n",
@@ -496,23 +508,21 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 						//send one packet
 
 						uint8_t temp = 0;
-						packet.values[numChildren] = 0;
-						packet.values[numChildren + 1] = 0;
 						for (temp = 0; temp < numChildren; temp++)
 						{
 							packet.values[temp] = children[temp].u16;
 						}
-
+						packet.count = numChildren;
 						packet.remainingData = 0;
 						//packet.
-						lock =1;
+						lock = 1;
 						sendRLLDataMessage(packet);
 					}
 					else
 					{
 						//send more than one packet
 						uint8_t temp = 0, sentPacket = 0, lowerBorder;
-						uint8_t numPackets = numChildren / 23;
+						uint8_t numPackets = (uint8_t)ceilf((float)numChildren / 23.);
 
 						for (sentPacket = 0; sentPacket < numPackets; sentPacket++)
 						{
@@ -521,27 +531,32 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 							{
 								maxBorder = numChildren;
 								packet.remainingData = 0;
-								packet.values[numChildren] = 0;
-								packet.values[numChildren + 1] = 0;
 							}
-							else packet.remainingData = 1;
-							lowerBorder = 0 + sentPacket * 23;
+							else {
+								packet.remainingData = 1;
+
+							}
 							temp = 0;
-							for (lowerBorder; lowerBorder < maxBorder; lowerBorder++)
+
+
+							for (lowerBorder = 0 + sentPacket * 23; lowerBorder < maxBorder; lowerBorder++)
 							{
 								packet.values[temp] = children[lowerBorder].u16;
 								temp++;
 							}
-							lock =1;
+
+							packet.count = temp;
+							lock = 1;
 							sendRLLDataMessage(packet);
 						}
 
 					}
 
 				}
-				else if(data == &resultReply_timer ){
-					uint16_t values[10] = { };
-					uint8_t timeslot[10] = { };
+				else if (data == &resultReply_timer)
+				{
+					uint16_t values[MAX_RESULTS_ENTRIES] = { 0 };
+					uint8_t timeslot[MAX_RESULTS_ENTRIES] = { 0 };
 					uint8_t numResults = getAllResults(timeslot, values);
 					struct APP_PACKET packet;
 					packet.src = linkaddr_node_addr;
@@ -553,19 +568,51 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 					packet.remainingData = numResults;
 					for (temp = 0; temp < numResults; temp++)
 					{
-						printf("[APP]: Add Result to packet; timeslot: %d, value: %d\n", timeslot[temp],
-								values[temp]);
+						printf("[APP]: Add Result to packet; timeslot: %d, value: %d\n",
+								timeslot[temp], values[temp]);
 						packet.values[temp] = values[temp];
 						packet.timeslot[temp] = timeslot[temp];
 					}
 
 					printf("[APP]: #MSG received %d\n", rxPackets);
 					packet.count = rxPackets;
-					lock =1;
+					lock = 1;
 					sendRLLDataMessage(packet);
+				}
+				else if (data == &ackTimer)
+				{
 
-					rxPackets = 0;
-					clearResults();
+					if (ackType == APP_RESULTREPLY)
+					{
+						uint16_t values[MAX_RESULTS_ENTRIES] = { 0 };
+						uint8_t timeslot[MAX_RESULTS_ENTRIES] = { 0 };
+						uint8_t numResults = getAllResults(timeslot, values);
+						struct APP_PACKET packet;
+						packet.src = linkaddr_node_addr;
+						packet.dst = tsch_broadcast_address;
+						packet.subType = APP_RESULTREPLY;
+						printf("[APP]: send APP_RESULTREPLY with %d results\n", numResults);
+
+						uint8_t temp = 0;
+						packet.remainingData = numResults;
+						for (temp = 0; temp < numResults; temp++)
+						{
+							printf("[APP]: Add Result to packet; timeslot: %d, value: %d\n",
+									timeslot[temp], values[temp]);
+							packet.values[temp] = values[temp];
+							packet.timeslot[temp] = timeslot[temp];
+						}
+
+						printf("[APP]: #MSG received %d\n", rxPackets);
+						packet.count = rxPackets;
+						lock = 1;
+						sendRLLDataMessage(packet);
+
+						ackType = APP_RESULTREPLY;
+						etimer_set(&ackTimer, CLOCK_SECOND * 5);
+
+					}
+
 				}
 			}
 			else if (ev == button_press_duration_exceeded)

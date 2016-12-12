@@ -44,8 +44,8 @@
 /***************************************/
 /***************************************/
 
-uint8_t RLLSeqNo = 0;
-uint8_t lastRxSeqNo = 0;
+int RLLSeqNo = 0;
+int lastRxSeqNo = -1;
 uint8_t RLL_started = 0;
 uint8_t RLL_sendCounter = 0;
 uint8_t RLL_schedule_set = 0;
@@ -108,7 +108,7 @@ PROCESS(dewi_rll_process, "DEWI Coluring PROCESS");
 
 void RLL_init()
 {
-
+	RLLSeqNo = random_rand();
 	process_start(&dewi_rll_init_process, NULL);
 }
 
@@ -275,6 +275,9 @@ static void thread_cs(struct RLL_PACKET *data)
 			baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
 			currentTimeslot = temp->timeslot - baseTimeslot;
 			timeslot = baseTimeslot + 10;
+			if(timeslot == temp->timeslot)
+				timeslot = timeslot + 10;
+
 			if (timeslot > 50) timeslot = 10;
 		}
 		else if (currentCalcTimeslot == 0 && temp->timeslot == 0)
@@ -283,12 +286,7 @@ static void thread_cs(struct RLL_PACKET *data)
 			baseTimeslot = 0;
 			currentTimeslot = 0;
 		}
-		else
-		{
-			timeslot = temp->timeslot;
-			baseTimeslot = timeslot - 10;
-			currentTimeslot = timeslot;
-		}PRINTF("[RLL]:Send to CS base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
+		PRINTF("[RLL]:Send to CS base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
 		packetbuf_copyfrom(tempPacket, sizeof(struct RLL_PACKET));
 		packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
 		packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, timeslot);
@@ -314,21 +312,21 @@ static void thread_child(struct RLL_PACKET *data)
 			tx2 = 9;
 			temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
 			currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
-			if (currentCalcTimeslot == tx1)
-			{
-				timeslot = temp->timeslot;
-				baseTimeslot = timeslot - tx1;
-				currentTimeslot = timeslot;
-			}
-			else if (currentCalcTimeslot == tx2)
-			{
-
-				timeslot = temp->timeslot;
-				baseTimeslot = timeslot - tx2;
-				currentTimeslot = timeslot;
-			}
-			else
-			{
+//			if (currentCalcTimeslot == tx1)
+//			{
+//				timeslot = temp->timeslot;
+//				baseTimeslot = timeslot - tx1;
+//				currentTimeslot = timeslot;
+//			}
+//			else if (currentCalcTimeslot == tx2)
+//			{
+//
+//				timeslot = temp->timeslot;
+//				baseTimeslot = timeslot - tx2;
+//				currentTimeslot = timeslot;
+//			}
+//			else
+//			{
 				baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
 				currentTimeslot = temp->timeslot - baseTimeslot;
 				if (currentTimeslot < tx1)
@@ -338,7 +336,8 @@ static void thread_child(struct RLL_PACKET *data)
 				else timeslot = baseTimeslot + 10 + tx1;
 
 				if (timeslot > 50) timeslot = tx1;
-			}PRINTF("[RLL]:Send to Parent \%2=0 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
+//			}
+		PRINTF("[RLL]:Send to Parent \%2=0 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
 		}
 		else
 		{
@@ -347,21 +346,21 @@ static void thread_child(struct RLL_PACKET *data)
 			temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
 			tx1 = 3;
 			tx2 = 7;
-			if (currentCalcTimeslot == tx1)
-			{
-				timeslot = temp->timeslot;
-				baseTimeslot = timeslot - tx1;
-				currentTimeslot = timeslot;
-			}
-			else if (currentCalcTimeslot == tx2)
-			{
-
-				timeslot = temp->timeslot;
-				baseTimeslot = timeslot - tx2;
-				currentTimeslot = timeslot;
-			}
-			else
-			{
+//			if (currentCalcTimeslot == tx1)
+//			{
+//				timeslot = temp->timeslot;
+//				baseTimeslot = timeslot - tx1;
+//				currentTimeslot = timeslot;
+//			}
+//			else if (currentCalcTimeslot == tx2)
+//			{
+//
+//				timeslot = temp->timeslot;
+//				baseTimeslot = timeslot - tx2;
+//				currentTimeslot = timeslot;
+//			}
+//			else
+//			{
 				baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
 				currentTimeslot = temp->timeslot - baseTimeslot;
 				if (currentTimeslot < tx1)
@@ -371,7 +370,8 @@ static void thread_child(struct RLL_PACKET *data)
 				else timeslot = baseTimeslot + 10 + tx1;
 
 				if (timeslot > 50) timeslot = tx1;
-			}PRINTF("[RLL]:Send to Parent \%2=1 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
+//			}
+			PRINTF("[RLL]:Send to Parent \%2=1 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
 		}
 		packetbuf_copyfrom(tempPacket, sizeof(struct RLL_PACKET));
 		packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
@@ -408,34 +408,39 @@ static void thread_send(struct APP_PACKET *data)
 		RLLPacket.subType = RLL_DATA;
 		RLLPacket.appData = *data;
 		RLLPacket.seqNo = RLLSeqNo++;
+		RLLPacket.initalSRC = linkaddr_node_addr;
 		lastRxSeqNo = RLLSeqNo - 1;
+		printf("[APP]: try to send msg\n");
 		if (RLL_CIDERState == 7)
 		{
 			struct tsch_link *temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
 			uint8_t timeslot = 0;
 			uint8_t baseTimeslot = 0;
 			uint8_t currentTimeslot = 0;
-			if (temp->timeslot % 10 != 1)
-			{
-				baseTimeslot = (temp->timeslot / 10) * 10;
-				currentTimeslot = temp->timeslot - baseTimeslot;
-				timeslot = baseTimeslot + 1;
-				if (timeslot > 50) timeslot = 1;
-			}
-			else if (temp->timeslot == 1)
-			{
-				timeslot = 1;
-				baseTimeslot = 0;
-				currentTimeslot = 1;
-			}
-			else
-			{
-				timeslot = temp->timeslot;
-				baseTimeslot = timeslot - 1;
-				currentTimeslot = timeslot;
-			}
-			//Here insert Send first time
+			uint8_t currentCalcTimeslot = 0;
+			uint8_t tx1 = 1;
+			temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+			currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
+//						if (currentCalcTimeslot == tx1)
+//						{
+//							timeslot = temp->timeslot;
+//							baseTimeslot = timeslot - tx1;
+//							currentTimeslot = timeslot;
+//						}
+//						else
+//						{
+			baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
+			currentTimeslot = temp->timeslot - baseTimeslot;
+			if (currentTimeslot < tx1 - 1)
+				timeslot = baseTimeslot + tx1;
+			else timeslot = baseTimeslot + 10 + tx1;
 
+			if (timeslot > 50) timeslot = tx1;
+						PRINTF("[RLL]:Send to Parent \%2=0 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
+
+			//Here insert Send first time
+			printf("[APP]: try to send msg, lasttimeslo %d, next timeslot %d\n", lastTimeslotSend,
+					timeslot);
 			if (lastTimeslotSend != timeslot)
 			{
 
@@ -647,8 +652,15 @@ static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from
 	switch (tempPacket->subType)
 	{
 		case RLL_DATA:
-			if (tempPacket->seqNo != lastRxSeqNo)
+			if (tempPacket->seqNo == lastRxSeqNo)
 			{
+				PRINTF("[RLL]: Packet received, but outdated. Current SeqNo: %d, received SeqNo: %d\n",lastRxSeqNo,tempPacket->seqNo);
+
+			}else if(tempPacket->initalSRC.u16 == linkaddr_node_addr.u16)
+			{
+				PRINTF("[RLL]: Packet originates to me, do nothing\n",RLLSeqNo,tempPacket->seqNo);
+			}
+			else{
 				//tsch_queue_reset();
 				if (RLL_CIDERState == 5)
 				{
@@ -708,10 +720,6 @@ static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from
 				RLLAppPacket = tempPacket->appData;
 				mt_exec(&app_thread);
 				//APPDATACALLBACK(&RLLDataPacket);
-			}
-			else
-			{
-				PRINTF("[RLL]: Packet received, but outdated. Current SeqNo: %d, received SeqNo: %d\n",RLLSeqNo,tempPacket->seqNo);
 			}
 			break;
 		case RLL_PING:

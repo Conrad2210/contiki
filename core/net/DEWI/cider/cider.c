@@ -385,11 +385,11 @@ void callbackSendTimer()
 			CIDERPacket.args[0] = getTier();
 			CIDERPacket.args[1] = getColour();
 			int i;
-			for (i = 2; i < 45; i++)
+			for (i = 2; i < 50; i++)
 			{
 				CIDERPacket.args[i] = 0;
 			}
-			updateNeighListCS(&CIDERPacket.args, 45, linkaddr_node_addr);
+			updateNeighListCS(&CIDERPacket.args, 50, linkaddr_node_addr);
 			break;
 		case CIDER_LP_PING:
 			PRINTF("[CIDER]:Create CIDER LP PING MESSAGE \n");
@@ -1073,11 +1073,11 @@ void callbackCompetitionTimer()
 	PRINTF("[CIDER]:Create CH MESSAGE \n");
 	CIDERPacket.subType = CIDER_CH;
 	int i;
-	for (i = 1; i < 45; i++)
+	for (i = 1; i < 50; i++)
 	{
 		CIDERPacket.args[i] = 0;
 	}
-	updateNeighListCS(&CIDERPacket.args, 45, linkaddr_node_addr);
+	updateNeighListCS(&CIDERPacket.args, 50, linkaddr_node_addr);
 	sendCounter = sendCounter + 1;
 	packetbuf_copyfrom(&CIDERPacket, sizeof(struct CIDER_PACKET));
 
