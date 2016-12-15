@@ -375,7 +375,7 @@ void COLOURING_callbackSendTimer()
 void COLOURING_callbackReleaseWaitTimer()
 {
 
-	setRandNumberStatus((uint16_t) random_rand());
+	setRandNumberStatus((uint16_t) random_rand() & 0b111);
 	COLOURING_currentState = COLOUR_UPDATE;
 	COLOURING_sendCounter = 0;
 

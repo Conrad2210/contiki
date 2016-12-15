@@ -53,6 +53,7 @@ uint8_t RLL_CIDERState = 0;
 uint8_t RLLNumChildCH = 0;
 uint8_t RLLNumCS = 0;
 int8_t RLLTier = -1;
+uint8_t RLL_lock = 0;
 static struct mt_thread parent_thread;
 static struct mt_thread child_thread;
 static struct mt_thread cs_thread;
@@ -312,21 +313,21 @@ static void thread_child(struct RLL_PACKET *data)
 			tx2 = 9;
 			temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
 			currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
-//			if (currentCalcTimeslot == tx1)
-//			{
-//				timeslot = temp->timeslot;
-//				baseTimeslot = timeslot - tx1;
-//				currentTimeslot = timeslot;
-//			}
-//			else if (currentCalcTimeslot == tx2)
-//			{
-//
-//				timeslot = temp->timeslot;
-//				baseTimeslot = timeslot - tx2;
-//				currentTimeslot = timeslot;
-//			}
-//			else
-//			{
+			if (currentCalcTimeslot == tx1)
+			{
+				timeslot = temp->timeslot;
+				baseTimeslot = timeslot - tx1;
+				currentTimeslot = timeslot;
+			}
+			else if (currentCalcTimeslot == tx2)
+			{
+
+				timeslot = temp->timeslot;
+				baseTimeslot = timeslot - tx2;
+				currentTimeslot = timeslot;
+			}
+			else
+			{
 				baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
 				currentTimeslot = temp->timeslot - baseTimeslot;
 				if (currentTimeslot < tx1)
@@ -336,7 +337,7 @@ static void thread_child(struct RLL_PACKET *data)
 				else timeslot = baseTimeslot + 10 + tx1;
 
 				if (timeslot > 50) timeslot = tx1;
-//			}
+			}
 		PRINTF("[RLL]:Send to Parent \%2=0 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
 		}
 		else
@@ -346,21 +347,21 @@ static void thread_child(struct RLL_PACKET *data)
 			temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
 			tx1 = 3;
 			tx2 = 7;
-//			if (currentCalcTimeslot == tx1)
-//			{
-//				timeslot = temp->timeslot;
-//				baseTimeslot = timeslot - tx1;
-//				currentTimeslot = timeslot;
-//			}
-//			else if (currentCalcTimeslot == tx2)
-//			{
-//
-//				timeslot = temp->timeslot;
-//				baseTimeslot = timeslot - tx2;
-//				currentTimeslot = timeslot;
-//			}
-//			else
-//			{
+			if (currentCalcTimeslot == tx1)
+			{
+				timeslot = temp->timeslot;
+				baseTimeslot = timeslot - tx1;
+				currentTimeslot = timeslot;
+			}
+			else if (currentCalcTimeslot == tx2)
+			{
+
+				timeslot = temp->timeslot;
+				baseTimeslot = timeslot - tx2;
+				currentTimeslot = timeslot;
+			}
+			else
+			{
 				baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
 				currentTimeslot = temp->timeslot - baseTimeslot;
 				if (currentTimeslot < tx1)
@@ -370,7 +371,7 @@ static void thread_child(struct RLL_PACKET *data)
 				else timeslot = baseTimeslot + 10 + tx1;
 
 				if (timeslot > 50) timeslot = tx1;
-//			}
+			}
 			PRINTF("[RLL]:Send to Parent \%2=1 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
 		}
 		packetbuf_copyfrom(tempPacket, sizeof(struct RLL_PACKET));
@@ -390,7 +391,6 @@ static void thread_app(struct APP_PACKET *data)
 		struct APP_PACKET *temp = data;
 		APPDATACALLBACK(temp);
 
-		PRINTF("[RLL]: Packet sent upwards: Seq No.: %d, from: 0x%4x\n",temp->seqNo,temp->src.u16);
 		mt_yield();
 	}
 	mt_exit();
@@ -438,12 +438,9 @@ static void thread_send(struct APP_PACKET *data)
 			if (timeslot > 50) timeslot = tx1;
 						PRINTF("[RLL]:Send to Parent \%2=0 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
 
-			//Here insert Send first time
-			printf("[APP]: try to send msg, lasttimeslo %d, next timeslot %d\n", lastTimeslotSend,
-					timeslot);
+
 			if (lastTimeslotSend != timeslot)
 			{
-
 				lastTimeslotSend = timeslot;
 				PRINTF("[RLL]:Send to Parent \%2=1 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
 
@@ -456,7 +453,6 @@ static void thread_send(struct APP_PACKET *data)
 		}
 		if (RLL_CIDERState == 5)
 		{
-			tsch_queue_reset();
 			struct tsch_link *temp;
 			uint8_t timeslot = 0;
 			uint8_t baseTimeslot = 0;
@@ -732,8 +728,9 @@ static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from
 	}
 }
 
-void sendRLLDataMessage(struct APP_PACKET dataPacket)
+void sendRLLDataMessage(struct APP_PACKET dataPacket, uint8_t lock)
 {
+	RLL_lock = lock;
 	PRINTF("[RLL]: sendRLLDataMessage, RLL_Started: %d, msg received from APP at: asn-%x.%lx\n",RLL_started,current_asn.ms1b,current_asn.ls4b);
 	if (RLL_started == 1)
 	{

@@ -272,7 +272,7 @@ void updateState()
 				}
 			}
 
-			if (sendCounter > 2)
+			if (sendCounter > 5)
 			{
 //			if (getTier() != 0) ciderInterval = CLOCK_SECOND * (random_rand() % (10 + 1 - 2) + 2);
 //					else
@@ -280,7 +280,7 @@ void updateState()
 
 				PRINTF("[CIDER]: CIDER intervall = %d\n", ciderInterval/CLOCK_SECOND);
 			}
-			if (getTier() == 0 || sendCounter < 2) startSendTimer();
+			if (getTier() == 0 || sendCounter < 5) startSendTimer();
 			break;
 
 		case CIDER_CS:
@@ -312,7 +312,7 @@ void updateState()
 			{
 				PRINTF("[CIDER]: Change State to: CH \n");
 				currentState = CIDER_CH;
-				sendCounter = -4;
+				sendCounter = 0;
 				resetMSGCounter();
 				printNodeStatus("updateState");
 			}
@@ -598,9 +598,13 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 			n.lpDegree = temp->args[2];
 			n.clusterDegree = temp->args[3];
 			n.CIDERState = CIDER_CS_PING;
-			if (currentState == CIDER_CH && sendCounter >= 2)
+			if (currentState == CIDER_CH && sendCounter >= 5)
 			{
 				n.msgCounter = n.msgCounter + 1;
+			}
+			else
+			{
+				resetMSGCounter();
 			}
 
 			newNeigh = addNeighbour(&n);

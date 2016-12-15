@@ -726,7 +726,7 @@ uint8_t checkForPromotion(uint8_t CIDERState)
 		{
 			msgCount = msgCount + n->msgCounter;
 
-			if (msgCount >= 5)
+			if (msgCount >= 20)
 			{
 
 				return 1;

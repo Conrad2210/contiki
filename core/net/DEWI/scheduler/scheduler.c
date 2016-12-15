@@ -309,7 +309,8 @@ void setRLLTier0()
 		}
 		else if (i % 10 == 2 || i % 10 == 3)
 		{
-			tsch_schedule_remove_link_by_timeslot(tempHandle, i);
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &linkaddr_null, i, 0);
 		}
 		else if (i % 10 == 4)
 		{
@@ -325,7 +326,8 @@ void setRLLTier0()
 		}
 		else if (i % 10 == 6 || i % 10 == 7)
 		{
-			tsch_schedule_remove_link_by_timeslot(tempHandle, i);
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &linkaddr_null, i, 0);
 		}
 		else if (i % 10 == 8)
 		{
