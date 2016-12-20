@@ -14,6 +14,7 @@
 				<th>Temperature</th>
 				<th>Battery</th>
 				<th>Parent's address</th>
+				<th>Colour</th>
 			</tr>
 		</thead>
 	</table>
@@ -30,7 +31,7 @@
 		$('#empTable').dataTable({
 			"ajax": "ntwkJson.json",
 			 "columnDefs": [
-				{ className: "dt-body-center","targets": [0,1,2,3,4,5,6]}
+				{ className: "dt-body-center","targets": [0,1,2,3,4,5,6,7]}
 			  ],
 			"columns": [
 				{"data": "id"},
@@ -39,7 +40,8 @@
 				{"data": "NGrp"},
 				{"data": "temperature"},
 				{"data": "battery"},
-				{"data": "a_target"}
+				{"data": "a_target"},
+				{"data": "colour"}
 			]
 		});   
 	});

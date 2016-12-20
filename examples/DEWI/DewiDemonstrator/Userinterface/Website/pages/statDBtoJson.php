@@ -4,7 +4,7 @@
 				or die("Error ".mysqli_error($connection));
 
 	// fetch nodes table rows from mysql db
-	$sql = "select * from Dewi_statsTab order by id";
+	$sql = "select addr, sum(packets) as pkt_sum, (sum(packets*latency)/sum(packets)) as avg_lat from Dewi_statsTab group by addr";
 	$result = mysqli_query($connection, $sql) or die ("Error in Selecting "
 		.myqli_error($connection));
 

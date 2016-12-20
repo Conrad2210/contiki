@@ -22,7 +22,7 @@ class SerialProcess(multiprocessing.Process):
         self.sp.close()
 
     def writeSerial(self, data):
-        self.sp.write(data)
+        self.sp.write(data.encode())
         # time.sleep(1)
 
     def readSerial(self):
@@ -76,13 +76,19 @@ class SerialProcess(multiprocessing.Process):
             temperature = data[data.index("'")+1:data.index("'",data.index("'")+1,len(data))]
             self.dewi.add_battery_stat(B_addr, temperature)
 
-        if "Statistics" in data:
+        if "colour" in data:
+            C_addr = data[data.index("(")+1:data.index(")")]
+            C_addr = C_addr[0:2]+":"+C_addr[2:4]
+            colour = data[data.index("'")+1:data.index("'",data.index("'")+1,len(data))]
+            self.dewi.add_colour_stat(C_addr, colour)
+
+        if "Stats" in data:
             addr = data[data.index("(")+1:data.index(")")]
+            addr = addr[0:2]+":"+addr[2:4]
             splitted = data.split("'");
             packets = splitted[1];
-            plr = splitted[3];
-            latency = splitted[5];
-            self.dewi.add_statistics(addr, packets, plr, latency)
+            latency = int(splitted[3]);
+            self.dewi.add_statistics(addr, packets, latency)
             
     def sendToSerial(self,data):
         if "resetstatistics" in data:
