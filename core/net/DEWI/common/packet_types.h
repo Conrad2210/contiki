@@ -75,7 +75,7 @@ enum RLLsubpackettype
 };
 enum APPsubpackettype
 {
-	APP_RESET, APP_COLOR, APP_BRIGHTNESS, APP_SENSORDATA, APP_TOPOLOGYREQUEST, APP_TOPOLOGYREPLY, APP_STATSRESET
+	APP_RESET, APP_COLOR, APP_BRIGHTNESS, APP_SENSORDATA, APP_TOPOLOGYREQUEST, APP_TOPOLOGYREPLY, APP_STATSRESET,APP_EXPERIMENT,APP_RESULTREQUEST,APP_RESULTREPLY, APP_ACK
 };
 
 struct BasePacket
@@ -104,19 +104,21 @@ struct APP_PACKET
 		uint8_t remainingData;
 		uint8_t battery;
 		uint8_t temperature;
+		uint16_t count;
 };
 
 struct CIDER_PACKET
 {
 		struct BasePacket base;
 		enum CIDERsubpackettype subType;
-		uint16_t args[45];
+		uint16_t args[50];
 		linkaddr_t parent;
 };
 struct RLL_PACKET
 {
 		struct BasePacket base;
 		enum RLLsubpackettype subType;
+		linkaddr_t initalSRC;
 		struct APP_PACKET appData;
 		uint16_t seqNo;
 

@@ -92,6 +92,12 @@ tsch_log_process_pending(void)
              log->asn.ms1b, log->asn.ls4b,
              log->link->slotframe_handle, sf ? sf->size.val : 0, log->link->timeslot, log->link->channel_offset,
              tsch_calculate_channel(&log->asn, log->link->channel_offset));
+
+
+#if WITH_DEWI
+      if(log->link->timeslot % 10 == 1)
+		TSCHDELETEPACKET();
+#endif
     }
     switch(log->type) {
       case tsch_log_tx:
