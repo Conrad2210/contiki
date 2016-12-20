@@ -214,7 +214,7 @@ void handleSensorsEvent(process_data_t data)
 				temp.dst = tsch_broadcast_address;
 				temp.src = linkaddr_node_addr;
 				temp.seqNo = seqNo++;
-				sendRLLDataMessage(temp);
+				sendRLLDataMessage(temp, 0);
 				updatePerformanceStats(0);
 
 			}
@@ -250,7 +250,7 @@ void handleSerialInput(process_data_t data)
 		temp.dst = tsch_broadcast_address;
 		temp.src = linkaddr_node_addr;
 		temp.seqNo = seqNo++;
-		sendRLLDataMessage(temp);
+		sendRLLDataMessage(temp, 0);
 
 		// set a flag to wait for topology updates
 		waitForTopologyUpdate = 2;
@@ -303,7 +303,7 @@ void handleSerialInput(process_data_t data)
 		temp.dst = tsch_broadcast_address;
 		temp.src = linkaddr_node_addr;
 		temp.seqNo = seqNo++;
-		sendRLLDataMessage(temp);
+		sendRLLDataMessage(temp, 0);
 		// reset own statistics
 		list_init(perfStat_list);
 	}
@@ -322,7 +322,7 @@ void handleSerialInput(process_data_t data)
 		temp.dst = tsch_broadcast_address;
 		temp.src = linkaddr_node_addr;
 		temp.seqNo = seqNo++;
-		sendRLLDataMessage(temp);
+		sendRLLDataMessage(temp, 0);
 		updatePerformanceStats(0);
 
 	}
@@ -346,7 +346,7 @@ void handleSerialInput(process_data_t data)
 		temp.dst = tsch_broadcast_address;
 		temp.src = linkaddr_node_addr;
 		temp.seqNo = seqNo++;
-		sendRLLDataMessage(temp);
+		sendRLLDataMessage(temp, 0);
 		updatePerformanceStats(0);
 
 	}
@@ -379,7 +379,7 @@ void handleProcessEvent( data)
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
-			sendRLLDataMessage(temp);
+			sendRLLDataMessage(temp, 0);
 
 			// set a flag to wait for topology updates
 			waitForTopologyUpdate = 2;
@@ -418,7 +418,7 @@ void handleProcessEvent( data)
 			if (i==22){
 				// packet full, send it and create a new one
 				temp.remainingData = 1;
-				sendRLLDataMessage(temp);
+				sendRLLDataMessage(temp, 0);
 				i = 0;
 				temp.seqNo = seqNo++;
 
@@ -438,7 +438,7 @@ void handleProcessEvent( data)
 			temp.values[i] = 0;
 			i++;
 		}
-		sendRLLDataMessage(temp);
+		sendRLLDataMessage(temp, 0);
 
 		if (isGateway)
 		{
@@ -482,7 +482,7 @@ void handleTopologyRequest()
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
-			sendRLLDataMessage(temp);
+			sendRLLDataMessage(temp, 0);
 		}
 	}
 
@@ -602,7 +602,7 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 					temp.dst = tsch_broadcast_address;
 					temp.src = linkaddr_node_addr;
 					temp.seqNo = seqNo++;
-					sendRLLDataMessage(temp);
+					sendRLLDataMessage(temp, 0);
 					list_init(perfStat_list);
 				}
 				handleSerialInput(data);
@@ -698,6 +698,16 @@ if (linkaddr_cmp(&data->dst, &linkaddr_node_addr) == 1 || (linkaddr_cmp(&data->d
 	}
 }
 }
+
+void packetDeletedFromQueue()
+{
+//	if (lock == 0)
+//	{
+//		printf("[APP]: Packet sent\n");
+//		txPackets++;
+//	}
+}
+
 
 void tsch_dewi_callback_joining_network(void)
 {
