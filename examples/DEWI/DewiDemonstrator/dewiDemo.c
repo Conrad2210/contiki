@@ -89,6 +89,8 @@ MEMB(topologyInfo_mem, struct topologyInfo_entry, NUM_ADDR_ENTRIES);
 LIST(perfStat_list); // list of performance statistics
 MEMB(perfStat_mem, struct performanceStatEntry, 255); // as latency is a uint8_t, we can handle max 255 different latencies
 
+const struct etimer topologyReply_timer;
+
 PROCESS(dewiDemo, "DEWI Demonstrator, using CIDER and RLL");	//main process
 AUTOSTART_PROCESSES(&dewiDemo);
 
@@ -446,13 +448,12 @@ void handleProcessEvent( data)
 			printf("node(%04x) Temperature = '%dC' \r\n", linkaddr_node_addr.u16, temperature);
 			sendBatteryStatusByserialP(battery, linkaddr_node_addr);
 		}
-		sendSensorDataCountdown = 5 + linkaddr_node_addr.u16%10; // do this every xth loop, x being between 5 and 14
+		sendSensorDataCountdown = 5 + linkaddr_node_addr.u16%15; // do this every xth loop, x being between 5 and 14
 	}
 	else
 	{
 		sendSensorDataCountdown--;
 	}
-
 
 }
 
@@ -614,6 +615,10 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 					handleProcessEvent(data);
 					etimer_set(&et, 3 * CLOCK_SECOND);
 				}
+				else if(data == &topologyReply_timer)
+				{
+					handleTopologyRequest();
+				}
 				else if (data == &button_press_reset)
 				{
 					button_press_counter = 0;
@@ -683,7 +688,14 @@ if (linkaddr_cmp(&data->dst, &linkaddr_node_addr) == 1 || (linkaddr_cmp(&data->d
 	}
 	else if (data->subType == APP_TOPOLOGYREQUEST)
 	{ // topology information has been requested, reply with data if master
-		handleTopologyRequest();
+		if(getCIDERState()==5){
+			PROCESS_CONTEXT_BEGIN(&dewiDemo);
+			etimer_stop(&topologyReply_timer);
+			etimer_set(&topologyReply_timer,
+			CLOCK_SECOND * getColour() + CLOCK_SECOND * 0.2);
+			PROCESS_CONTEXT_END(&dewiDemo);
+		}
+		//handleTopologyRequest();
 
 	}
 	else if (data->subType == APP_TOPOLOGYREPLY && waitForTopologyUpdate)
