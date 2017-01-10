@@ -641,21 +641,25 @@ class MainWindow(QtGui.QMainWindow):
         str = str.replace(' ','')
         if len("TPReply:") < len(str):
             if "TPReply:" in str:
+                print str
                 result = str[str.index(":") + 1:len(str)]
                 result = result.split(",")
                 self.db.insertTempNeighbour(
                     0, result[0], result[1], result[2], result[3])
             if "RESULTReplyTxPackets:" in str:
+                print str
                 result = str[str.index(":") + 1:len(str)]
                 result = result.split(",")
                 self.db.insertTxPackets(0,self.db.getLastExperimentID(),result[0],result[1])
                 self.NextRequestResult(result[0])
             if "RESULTReplyRxPackets:" in str:
+                print str
                 result = str[str.index(":") + 1:len(str)]
                 result = result.split(",")
                 self.db.insertRxPackets(0,self.db.getLastExperimentID(),result[0],result[1])
                 self.NextRequestResult(result[0])
             if "RESULTReplyLatency:" in str:
+                print str
                 result = str[str.index(":") + 1:len(str)]
                 result = result.split(",")
                 self.db.insertLatency(0,self.db.getLastExperimentID(),result[0],result[1],result[2])
@@ -832,13 +836,10 @@ class MainWindow(QtGui.QMainWindow):
             self.requestResults(self.neighList[0])
         except IndexError:
             print "All results collected"
-            ser.write("0x0\n")    
-            time.sleep(1)
-            ser.write("0x0\n")    
-            time.sleep(1)
-            ser.write("0x0\n")    
-            time.sleep(1)
-            ser.write("0x0\n")   
+            for i in range(0,5):                
+                ser.write("0x0\n")    
+                time.sleep(1)
+
             self.START_button.setEnabled(True)
             self.NeighUpdate_button.setEnabled(True)
             self.PRINT_button.setEnabled(True)
@@ -997,18 +998,18 @@ class MainWindow(QtGui.QMainWindow):
                         x_99 = self.x_list[i][j]
                         break
                 for j in range(len(self.x_list[i])):
-                    if self.x_list[i][j] >= 250:
+                    if self.x_list[i][j] >= 240:
                         y_200 = self.y_list[i][j]
                         break
                 if(y_200 == 0):
                     y_200 = 1
-                self.axes_latency.plot([250, 250], [0.0, 100.0], label="".format(
+                self.axes_latency.plot([240, 240], [0.0, 100.0], label="".format(
                     y_200 * 100))
                 
                                    
-                self.axes_latency.set_title("200ms: {0:.2f} %, 99%: {1}ms".format( y_200,x_99))  
+                self.axes_latency.set_title("240ms: {0:.2f} %, 99%: {1}ms".format( y_200,x_99))  
                 self.axes_latency.set_xlabel("latency [ms]")
-                self.axes_latency.set_ylabel("Fx(x) [%]")
+                self.axes_latency.set_ylabel(r"$F_x(x)$ [%]")
         if(max(self.xmax) < 200):
             self.xmax = 200
         else:
@@ -1025,6 +1026,9 @@ class MainWindow(QtGui.QMainWindow):
             print self.plr_y[i]
             
             self.axes_plr.bar(self.plr_x[i] + 1,self.plr_y[i], align='center')
+            self.axes_plr.set_title("Packet Loss Rate")  
+            self.axes_plr.set_xlabel("Number Experiment")
+            self.axes_plr.set_ylabel("[%]")
             #self.axes_plr.xticks(self.plr_y[i] + 1, self.plr_y[i])
 
         
