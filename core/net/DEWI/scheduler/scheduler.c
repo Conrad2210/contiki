@@ -152,14 +152,15 @@ void setRLLNode()
 	{
 		if (i % 10 != 0 && i % 10 != 1)
 		{
-			tsch_schedule_remove_link_by_timeslot(tempHandle, i);
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &linkaddr_null, i, 0);
 		}
-		if (i % 10 == 1)
+		else if (i % 10 == 1)
 		{
 			tsch_schedule_add_link(tempHandle,
 			LINK_OPTION_TX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
 		}
-		if (i % 10 == 0)
+		else if (i % 10 == 0)
 		{
 			tsch_schedule_add_link(tempHandle,
 			LINK_OPTION_RX, LINK_TYPE_NORMAL, &tsch_broadcast_address, i, getColour());
@@ -308,7 +309,8 @@ void setRLLTier0()
 		}
 		else if (i % 10 == 2 || i % 10 == 3)
 		{
-			tsch_schedule_remove_link_by_timeslot(tempHandle, i);
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &linkaddr_null, i, 0);
 		}
 		else if (i % 10 == 4)
 		{
@@ -324,7 +326,8 @@ void setRLLTier0()
 		}
 		else if (i % 10 == 6 || i % 10 == 7)
 		{
-			tsch_schedule_remove_link_by_timeslot(tempHandle, i);
+			tsch_schedule_add_link(tempHandle,
+			LINK_OPTION_TX, LINK_TYPE_NORMAL, &linkaddr_null, i, 0);
 		}
 		else if (i % 10 == 8)
 		{

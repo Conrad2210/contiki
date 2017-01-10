@@ -66,21 +66,21 @@
 //CIDER FeatureScale config
 
 #define CONF_ND_min 1.0;
-#define CONF_ND_max 5.0;
+#define CONF_ND_max 40.0;
 #define CONF_CD_min 1.0;
-#define CONF_CD_max 5.0;
+#define CONF_CD_max 40.0;
 #define CONF_LP_min 1.0;
-#define CONF_LP_max 5.0;
+#define CONF_LP_max 40.0;
 #define CONF_RSSI_min -94.0;
 #define CONF_RSSI_max -30.0;
-#define CLUSTER_RADIUS -50
+#define CLUSTER_RADIUS -72
 
 #define CIDER_LOG_LEVEL 0
 #define NEIGHBOURTABLE_LOG_LEVEL 0
 #define TSCH_LOG_LEVEL 0
 #define COLOURING_LOG_LEVEL 0
 #define SCHEDULER_LOG_LEVEL 0
-#define RLL_LOG_LEVEL 1
+#define RLL_LOG_LEVEL 0
 
 
 #define APPDATACALLBACK applicationDataCallback

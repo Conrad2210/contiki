@@ -17,12 +17,15 @@
 					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.MakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.VCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.autotools.core.ErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 				<configuration artifactName="${ProjName}" buildProperties="" description="" id="ilg.gnuarmeclipse.managedbuild.cross.toolchain.base.1479935585" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="ilg.gnuarmeclipse.managedbuild.cross.toolchain.base.1479935585.33077418" name="/" resourcePath="">
-						<toolChain id="ilg.gnuarmeclipse.managedbuild.cross.toolchain.base.389933614" name="Cross ARM GCC" superClass="ilg.gnuarmeclipse.managedbuild.cross.toolchain.base">
+						<toolChain id="ilg.gnuarmeclipse.managedbuild.cross.toolchain.base.389933614" name="Cross ARM GCC">
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.architecture.516930951" name="Architecture" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.architecture" value="ilg.gnuarmeclipse.managedbuild.cross.option.architecture.arm" valueType="enumerated"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.prefix.548884162" name="Prefix" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.prefix" value="arm-none-eabi-" valueType="string"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.command.suffix.784562851" name="Suffix" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.command.suffix"/>
@@ -93,67 +96,8 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.prof.1716498625" name="Generate prof information (-p)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.prof"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.gprof.320215931" name="Generate gprof information (-pg)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.gprof"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.other.808682622" name="Other debugging flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.debugging.other"/>
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform.1887054137" isAbstract="false" osList="all" superClass="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform"/>
-							<builder arguments="${TARGET} ${BOARD}" buildPath="${CONTIKI_BUILD_LOC}" command="make" id="ilg.gnuarmeclipse.managedbuild.cross.builder.994080099" incrementalBuildTarget="${CONTIKI_APP}" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="ilg.gnuarmeclipse.managedbuild.cross.builder"/>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.1020497994" name="Cross ARM GNU Assembler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler">
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.usepreprocessor.582575142" name="Use preprocessor" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.usepreprocessor" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.include.paths.1039285011" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.assembler.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/platform/zoul"/>
-								</option>
-								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input.268832166" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.assembler.input"/>
-							</tool>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.209485425" name="Cross ARM C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler">
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths.96198847" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/platform/zoul"/>
-									<listOptionValue builtIn="false" value="/usr/lib/gcc/arm-none-eabi/4.9.3/include"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/platform/zoul/dev"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/platform/zoul/remote-reva"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/platform/zoul/remote-revb"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/cpu/cc2538"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/cpu/cc2538/dev"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/cpu/cc2538/usb"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/core"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/core/net"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/core/net/rpl"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/core/net/ip"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/core/net/ipv6"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/core/net/ipv4"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/core/net/mac"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/core/net/llsec"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/core/net/ip64"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/core/net/rime"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/core/sys"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/core/lib"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/dev"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/dev/cc1200"/>
-									<listOptionValue builtIn="false" value="/home/user/DEWI/DEWI-Nimbus-Contiki/dev/enc28j60"/>
-									<listOptionValue builtIn="false" value="/usr/arm-none-eabi/include"/>
-								</option>
-								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.45385897" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input"/>
-							</tool>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1010794516" name="Cross ARM C++ Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler"/>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.1971780813" name="Cross ARM C Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker">
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.gcsections.593539448" name="Remove unused sections (-Xlinker --gc-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.linker.gcsections" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.input.1259567672" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.linker.input">
-									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
-									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
-								</inputType>
-							</tool>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.1854936872" name="Cross ARM C++ Linker" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker">
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.gcsections.1030434448" name="Remove unused sections (-Xlinker --gc-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.gcsections" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-							</tool>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.archiver.1310414819" name="Cross ARM GNU Archiver" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.archiver"/>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.createflash.1129533744" name="Cross ARM GNU Create Flash Image" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.createflash"/>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.createlisting.47023325" name="Cross ARM GNU Create Listing" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.createlisting">
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.createlisting.source.1698546112" name="Display source (--source|-S)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.createlisting.source" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.createlisting.allheaders.739124441" name="Display all headers (--all-headers|-x)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.createlisting.allheaders" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.createlisting.demangle.299230101" name="Demangle names (--demangle|-C)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.createlisting.demangle" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.createlisting.linenumbers.586509449" name="Display line numbers (--line-numbers|-l)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.createlisting.linenumbers" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.createlisting.wide.1537592571" name="Wide lines (--wide|-w)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.createlisting.wide" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-							</tool>
-							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.printsize.1739592500" name="Cross ARM GNU Print Size" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.printsize">
-								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.printsize.format.1165650095" name="Size format" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.printsize.format" useByScannerDiscovery="false"/>
-							</tool>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnuarmeclipse.managedbuild.cross.targetPlatform.1887054137" isAbstract="false" osList="all"/>
+							<builder arguments="${TARGET} ${BOARD}" buildPath="${CONTIKI_BUILD_LOC}" command="make" id="ilg.gnuarmeclipse.managedbuild.cross.builder.994080099" incrementalBuildTarget="${CONTIKI_APP}" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder"/>
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>

@@ -57,7 +57,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-void sendRLLDataMessage(struct APP_PACKET dataPacket);
+void sendRLLDataMessage(struct APP_PACKET dataPacket, uint8_t lock);
 void RLL_init();
 void RLL_start();
 void RLL_notify();
