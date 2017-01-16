@@ -259,7 +259,7 @@ class Experiment_Worker(QThread):
                     ser.write("Experiment\n")
                     time.sleep(float(self.interval) / 1000.0)
 
-                sleep = random.uniform(1.0, 2.0)
+                sleep = random.uniform(2.0, 4.0)
                 print "time sleep: {0:.2f}".format(sleep)
                 
                 time.sleep(sleep)
@@ -759,27 +759,27 @@ class MainWindow(QtGui.QMainWindow):
               self.plr_y = []
               try:
                   if self.check1.isChecked() == True:
-                      session_ids.append(int(self.compare1.currentText()[self.compare1.currentText().index("[")+1:self.compare1.currentText().index("]")]))
+                      session_ids.append(int(str(self.compare1.currentText())[str(self.compare1.currentText()).index("[")+1:str(self.compare1.currentText()).index("]")]))
               except  ValueError:
                   print ValueError 
               try:
                   if self.check2.isChecked() == True:
-                      session_ids.append(int(self.compare2.currentText()[self.compare2.currentText().index("[")+1:self.compare2.currentText().index("]")]))
+                      session_ids.append(int(str(self.compare2.currentText())[str(self.compare2.currentText()).index("[")+1:str(self.compare2.currentText()).index("]")]))
               except  ValueError:
                   print ValueError 
               try:
                   if self.check3.isChecked() == True:
-                      session_ids.append(int(self.compare3.currentText()[self.compare3.currentText().index("[")+1:self.compare3.currentText().index("]")]))
+                      session_ids.append(int(str(self.compare3.currentText())[str(self.compare3.currentText()).index("[")+1:str(self.compare3.currentText()).index("]")]))
               except  ValueError:
                   print ValueError
               try:
                   if self.check4.isChecked() == True:
-                      session_ids.append(int(self.compare4.currentText()[self.compare4.currentText().index("[")+1:self.compare4.currentText().index("]")]))
+                      session_ids.append(int(str(self.compare4.currentText())[str(self.compare4.currentText()).index("[")+1:str(self.compare4.currentText()).index("]")]))
               except  ValueError:
                   print ValueError
               try:
                   if self.check5.isChecked() == True:
-                      session_ids.append(int(self.compare5.currentText()[self.compare5.currentText().index("[")+1:self.compare5.currentText().index("]")]))
+                      session_ids.append(int(str(self.compare5.currentText())[str(self.compare5.currentText()).index("[")+1:str(self.compare5.currentText()).index("]")]))
               except  ValueError:
                   print ValueError
             
@@ -877,7 +877,8 @@ class MainWindow(QtGui.QMainWindow):
         self.CONNECT_button.setText("Connect")
 
     def connectSerial(self):
-        ser.port = self.serialPorts_combo.currentText()
+        print self.serialPorts_combo.currentText()
+        ser.port = str(self.serialPorts_combo.currentText())
         ser.open()
         thread.start_new_thread(receiving, ())
         self.CONNECT_button.clicked.connect(self.closeSerial)
