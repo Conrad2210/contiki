@@ -389,6 +389,18 @@ class MainWindow(QtGui.QMainWindow):
         self.neighConnected_label.setText(
             ("Neighbours Connected: {0}").format(0))
 
+        RSSIRadius_label = QtGui.QLabel()
+        RSSIRadius_label.setText("RSSI Radius [dB]:")
+        self.RSSIRadius_text = QtGui.QLineEdit()
+        self.RSSIRadius_button = QtGui.QPushButton('RSSI Send')
+        self.RSSIRadius_button.clicked.connect(self.RSSISend)
+        LQIRadius_label = QtGui.QLabel()
+        LQIRadius_label.setText("LQI Radius [0-255]:")
+        self.LQIRadius_button = QtGui.QPushButton('LQI Send')
+        self.LQIRadius_button.clicked.connect(self.LQISend)
+
+        self.LQIRadius_text = QtGui.QLineEdit()
+
         numberBursts_label = QtGui.QLabel()
         numberBursts_label.setText("# Bursts:")
         self.numberBursts_text = QtGui.QLineEdit()
@@ -460,10 +472,14 @@ class MainWindow(QtGui.QMainWindow):
         comm_HBox1 = QtGui.QHBoxLayout()
         comm_HBox2 = QtGui.QHBoxLayout()
         comm_HBox3 = QtGui.QHBoxLayout()
+        comm_HBox4 = QtGui.QHBoxLayout()
+        comm_HBox5 = QtGui.QHBoxLayout()
 
         comm_VBox.addLayout(comm_HBox1)
         comm_VBox.addLayout(comm_HBox2)
         comm_VBox.addLayout(comm_HBox3)
+        comm_VBox.addLayout(comm_HBox4)
+        comm_VBox.addLayout(comm_HBox5)
         comm_VBox.addWidget(ser_out_label)
         comm_VBox.addWidget(self.ser_out)
 
@@ -476,6 +492,13 @@ class MainWindow(QtGui.QMainWindow):
         comm_HBox3.addWidget(serialPort_label)
         comm_HBox3.addWidget(self.serialPorts_combo)
         comm_HBox3.addWidget(self.CONNECT_button)
+
+        comm_HBox4.addWidget(RSSIRadius_label)
+        comm_HBox4.addWidget(self.RSSIRadius_text)
+        comm_HBox4.addWidget(self.RSSIRadius_button)
+        comm_HBox5.addWidget(LQIRadius_label)
+        comm_HBox5.addWidget(self.LQIRadius_text)
+        comm_HBox5.addWidget(self.LQIRadius_button)
 
         test_VBox = QtGui.QVBoxLayout()
         test_HBox1 = QtGui.QHBoxLayout()
@@ -820,6 +843,17 @@ class MainWindow(QtGui.QMainWindow):
     def neighUpdate(self):
         self.db.clearTempNeighbourList()
         ser.write("topologyrefresh\n")
+
+    def LQISend(self):
+        ser.write("LQI\n")
+        ser.write("{0}\n".format(self.db.returnHex(int(self.LQIRadius_text.text()))))
+
+    def RSSISend(self):
+        ser.write("RSSI\n")
+        temp = int(self.RSSIRadius_text.text())
+        if temp < 0:
+            temp = temp * -1
+        ser.write("{0}\n".format(self.db.returnHex(temp)))
 
     def startRequestResults(self):
         print self.neighList

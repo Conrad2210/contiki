@@ -350,3 +350,9 @@ class  databaseConnection():
                 print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
             except IndexError:
                 print "MySQL Error: %s" % str(e)
+
+    def returnHex(self,text):
+        try:
+            return hex(text)
+        except TypeError, e:
+            print e;
