@@ -400,6 +400,12 @@ class MainWindow(QtGui.QMainWindow):
         self.LQIRadius_button.clicked.connect(self.LQISend)
 
         self.LQIRadius_text = QtGui.QLineEdit()
+        TXPower_label = QtGui.QLabel()
+        TXPower_label.setText("Tx Power [-23..7dBm]:")
+        self.TXPower_button = QtGui.QPushButton('TXPower Send')
+        self.TXPower_button.clicked.connect(self.TXPowerSend)
+
+        self.TXPower_text = QtGui.QLineEdit()
 
         numberBursts_label = QtGui.QLabel()
         numberBursts_label.setText("# Bursts:")
@@ -474,12 +480,14 @@ class MainWindow(QtGui.QMainWindow):
         comm_HBox3 = QtGui.QHBoxLayout()
         comm_HBox4 = QtGui.QHBoxLayout()
         comm_HBox5 = QtGui.QHBoxLayout()
+        comm_HBox6 = QtGui.QHBoxLayout()
 
         comm_VBox.addLayout(comm_HBox1)
         comm_VBox.addLayout(comm_HBox2)
         comm_VBox.addLayout(comm_HBox3)
         comm_VBox.addLayout(comm_HBox4)
         comm_VBox.addLayout(comm_HBox5)
+        comm_VBox.addLayout(comm_HBox6)
         comm_VBox.addWidget(ser_out_label)
         comm_VBox.addWidget(self.ser_out)
 
@@ -499,6 +507,9 @@ class MainWindow(QtGui.QMainWindow):
         comm_HBox5.addWidget(LQIRadius_label)
         comm_HBox5.addWidget(self.LQIRadius_text)
         comm_HBox5.addWidget(self.LQIRadius_button)
+        comm_HBox6.addWidget(TXPower_label)
+        comm_HBox6.addWidget(self.TXPower_text)
+        comm_HBox6.addWidget(self.TXPower_button)
 
         test_VBox = QtGui.QVBoxLayout()
         test_HBox1 = QtGui.QHBoxLayout()
@@ -847,6 +858,16 @@ class MainWindow(QtGui.QMainWindow):
     def LQISend(self):
         ser.write("LQI\n")
         ser.write("{0}\n".format(self.db.returnHex(int(self.LQIRadius_text.text()))))
+    def TXPowerSend(self):
+        ser.write("TXPOWER\n")
+
+        temp = int(self.TXPower_text.text())
+        if temp < 0:
+            ser.write("NEGATIV\n")
+        temp = abs(temp)
+
+        print temp
+        ser.write("{0}\n".format(self.db.returnHex(temp)))
 
     def RSSISend(self):
         ser.write("RSSI\n")
