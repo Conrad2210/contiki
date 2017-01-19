@@ -494,6 +494,7 @@ class MainWindow(QtGui.QMainWindow):
         comm_HBox1.addWidget(self.NeighUpdate_button)
         comm_HBox1.addWidget(self.PRINT_button)
         comm_HBox1.addWidget(self.FlushResults_button)
+        comm_HBox1.addWidget(self.StartCIDER_button)
 
         comm_HBox2.addWidget(self.neighConnected_label)
         comm_HBox2.addWidget(REQUEST_button)
@@ -907,7 +908,7 @@ class MainWindow(QtGui.QMainWindow):
     def FlushResults(self):
         ser.write("0x0\n")
 
-    def FlushResults(self):
+    def StartCIDER(self):
         ser.write("STARTCIDER\n")
 
     def startRequestResults(self):
