@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 import databaseClassi
+
 # configures the serial connections (the parameters differ depending on
 # the device you are connected to)
 ser = serial.Serial(
@@ -35,6 +36,7 @@ db_lock = thread.allocate_lock()
 # A global declaration used by the store the TEST function to give the
 # experiment name to the store process
 experiment_name = ""
+
 
 # This Script consists in three main threads.
 # One to receive data and select which should be store.
@@ -107,11 +109,12 @@ def receiving():  # receiving prints the informations received on the serial por
 
         # The Worker classes aree used by the PyQt window to create threads
         # They are either working for ever, like the Out_Worker or are called at a precise moment when needed.
+
+
 # Out_Worker is the Qthread responsible for the update of the ser_out text
 
 
 class Out_Worker(QThread):
-
     def __init__(self, parent=None):
 
         QThread.__init__(self, parent)
@@ -137,18 +140,16 @@ class Out_Worker(QThread):
 # Plt_Worker is the Qthread responsible for the update of the different
 # axes used to plot the datas
 class Plt_Worker(QThread):
-                                                    # It is called at the end
-                                                    # of each burst_processing
-                                                    # session
+    # It is called at the end
+    # of each burst_processing
+    # session
 
     def __init__(self, parent=None):
-
         QThread.__init__(self, parent)
         self.stop = 0
         self.delay = []
 
     def run(self):
-
         print("\nUpdating the graph...\n")
         self.delay = sorted(self.delay)
         self.window_reset()
@@ -173,25 +174,24 @@ class Plt_Worker(QThread):
 
     def stop_order(self):
         self.stop = 1
-        
+
+
 class resultTimerThread(QThread):
-                                                    # It is called at the end
-                                                    # of each burst_processing
-                                                    # session
+    # It is called at the end
+    # of each burst_processing
+    # session
 
     def __init__(self, parent=None):
-
         QThread.__init__(self, parent)
 
-        
-        self.resultTimer = Timer(5,self.startRequestResults)
-        
+        self.resultTimer = Timer(5, self.startRequestResults)
+
         self.connect(parent, SIGNAL("stopTimer()"), self.stopTimer)
         self.connect(parent, SIGNAL("startTimer()"), self.run)
 
     def run(self):
         print "timer started"
-        self.resultTimer = Timer(5,self.startRequestResults)
+        self.resultTimer = Timer(5, self.startRequestResults)
         self.resultTimer.start()
 
     # Draws the current data list in order to make it easier to have latency
@@ -200,28 +200,26 @@ class resultTimerThread(QThread):
         print "timer ecpired"
         self.emit(SIGNAL("requestResult()"))
 
-
     # The launching method helps sending data to the thread before starting it
     def stopTimer(self):
-        
         print "timer stopped"
         self.resultTimer.cancel()
 
 
 # Test_Worker is the Qthread responsible for the running of the experiments
 class Experiment_Worker(QThread):
-                                                    # It is called at the end
-                                                    # of the TEST function and
-                                                    # is there to time the
-                                                    # different steps of an
-                                                    # experiement
+    # It is called at the end
+    # of the TEST function and
+    # is there to time the
+    # different steps of an
+    # experiement
 
     # This way, the time.sleep() commands don't freeze the main thread which
     # is the whole window.
     def __init__(self, parent=None):
-                                                    # It acts the same way as
-                                                    # the end of the old TEST
-                                                    # function
+        # It acts the same way as
+        # the end of the old TEST
+        # function
         QThread.__init__(self, parent)
         self.parent = parent
         self.experiment_name = ""
@@ -236,7 +234,7 @@ class Experiment_Worker(QThread):
     def run(self):
         print "test"
         print self.listNeighbours
-        if(len(self.listNeighbours) != 0):
+        if (len(self.listNeighbours) != 0):
             global output
             global name_labels
             global burst
@@ -261,14 +259,13 @@ class Experiment_Worker(QThread):
 
                 sleep = random.uniform(2.0, 4.0)
                 print "time sleep: {0:.2f}".format(sleep)
-                
+
                 time.sleep(sleep)
                 self.status_bar_print(
                     "----------Burst {0} of {1} processed----------".format(j + 1, self.numberBursts))
                 if self.burst_stop == 1:
                     break
-            
-            
+
             self.emit(SIGNAL("experimentFinished()"))
         else:
             output.append("Can't run experiment, neighbourlist is 0")
@@ -318,7 +315,6 @@ class Experiment_Worker(QThread):
 
 # The MainWindow is the core of the graphical interface
 class MainWindow(QtGui.QMainWindow):
-
     output = ""
 
     def __init__(self):
@@ -400,11 +396,11 @@ class MainWindow(QtGui.QMainWindow):
         self.LQIRadius_button.clicked.connect(self.LQISend)
 
         self.LQIRadius_text = QtGui.QLineEdit()
+
         TXPower_label = QtGui.QLabel()
         TXPower_label.setText("Tx Power [-23..7dBm]:")
         self.TXPower_button = QtGui.QPushButton('TXPower Send')
         self.TXPower_button.clicked.connect(self.TXPowerSend)
-
         self.TXPower_text = QtGui.QLineEdit()
 
         numberBursts_label = QtGui.QLabel()
@@ -453,13 +449,15 @@ class MainWindow(QtGui.QMainWindow):
 
         self.NeighUpdate_button = QtGui.QPushButton('Neigh Update')
         self.PRINT_button = QtGui.QPushButton('Print List')
+        self.FlushResults_button = QtGui.QPushButton('FlushResults')
+        self.StartCIDER_button = QtGui.QPushButton('StartCIDER')
         REQUEST_button = QtGui.QPushButton('Request Results')
         self.CONNECT_button = QtGui.QPushButton('Connect')
 
         self.START_button.clicked.connect(self.START)
         # The buttons are then connected to their method
-        
-        
+
+
         self.addCheckBox = QtGui.QRadioButton("add")
         self.seperateCheckBox = QtGui.QRadioButton("seperate")
         PLOT_button.clicked.connect(self.compare)
@@ -467,6 +465,8 @@ class MainWindow(QtGui.QMainWindow):
         self.PRINT_button.clicked.connect(self.printList)
         REQUEST_button.clicked.connect(self.startRequestResults)
         self.CONNECT_button.clicked.connect(self.connectSerial)
+        self.FlushResults_button.clicked.connect(self.FlushResults)
+        self.FlushResults_button.clicked.connect(self.StartCIDER)
 
         # Since the mainwindow is a MainWindow, it need a QWidget as a Central
         # Widget
@@ -493,6 +493,7 @@ class MainWindow(QtGui.QMainWindow):
 
         comm_HBox1.addWidget(self.NeighUpdate_button)
         comm_HBox1.addWidget(self.PRINT_button)
+        comm_HBox1.addWidget(self.FlushResults_button)
 
         comm_HBox2.addWidget(self.neighConnected_label)
         comm_HBox2.addWidget(REQUEST_button)
@@ -631,12 +632,12 @@ class MainWindow(QtGui.QMainWindow):
             "list_update(PyQt_PyObject)"), self.list_update)
         self.connect(self.experiment_thread, SIGNAL(
             "status_bar_print(PyQt_PyObject)"), self.status_bar_print)
-        
+
         self.out_thread = Out_Worker()
         self.connect(self.out_thread, SIGNAL(
             "output(PyQt_PyObject)"), self.output_update)
         self.out_thread.start()
-        
+
         self.requestResultTimer = resultTimerThread(self)
         self.connect(self.requestResultTimer, SIGNAL(
             "requestResult()"), self.startRequestResults)
@@ -672,7 +673,7 @@ class MainWindow(QtGui.QMainWindow):
     # out_thread
     def output_update(self, str):
         self.ser_out.append(str)
-        str = str.replace(' ','')
+        str = str.replace(' ', '')
         if len("TPReply:") < len(str):
             if "TPReply:" in str:
                 print str
@@ -684,26 +685,26 @@ class MainWindow(QtGui.QMainWindow):
                 print str
                 result = str[str.index(":") + 1:len(str)]
                 result = result.split(",")
-                self.db.insertTxPackets(0,self.db.getLastExperimentID(),result[0],result[1])
+                self.db.insertTxPackets(0, self.db.getLastExperimentID(), result[0], result[1])
                 self.NextRequestResult(result[0])
             if "RESULTReplyRxPackets:" in str:
                 print str
                 result = str[str.index(":") + 1:len(str)]
                 result = result.split(",")
-                self.db.insertRxPackets(0,self.db.getLastExperimentID(),result[0],result[1])
+                self.db.insertRxPackets(0, self.db.getLastExperimentID(), result[0], result[1])
                 self.NextRequestResult(result[0])
             if "RESULTReplyLatency:" in str:
                 print str
                 result = str[str.index(":") + 1:len(str)]
                 result = result.split(",")
-                self.db.insertLatency(0,self.db.getLastExperimentID(),result[0],result[1],result[2])
+                self.db.insertLatency(0, self.db.getLastExperimentID(), result[0], result[1], result[2])
                 # self.db.insertTempNeighbour(0,hex(result[0]),hex(result[1]),result[2],result[3])
 
         c = self.ser_out.textCursor()
         c.movePosition(QtGui.QTextCursor.End)
         self.ser_out.setTextCursor(c)
-    
-    def experiments_combo_update(self):#
+
+    def experiments_combo_update(self):  #
         self.compare1.clear()
         self.compare2.clear()
         self.compare3.clear()
@@ -715,139 +716,165 @@ class MainWindow(QtGui.QMainWindow):
         self.compare4.addItem(str("[session_id]: description, #Bursts, duration, #msg"))
         self.compare5.addItem(str("[session_id]: description, #Bursts, duration, #msg"))
         experiment_list = self.db.getExperiments()
-        for i in range(0,len(experiment_list)):
-            self.compare1.addItem(str("[{0}]: {1}, {2}, {3}, {4},".format(experiment_list[i][1],experiment_list[i][0],experiment_list[i][2],experiment_list[i][3],experiment_list[i][4])))
-            self.compare2.addItem(str("[{0}]: {1}, {2}, {3}, {4},".format(experiment_list[i][1],experiment_list[i][0],experiment_list[i][2],experiment_list[i][3],experiment_list[i][4])))
-            self.compare3.addItem(str("[{0}]: {1}, {2}, {3}, {4},".format(experiment_list[i][1],experiment_list[i][0],experiment_list[i][2],experiment_list[i][3],experiment_list[i][4])))
-            self.compare4.addItem(str("[{0}]: {1}, {2}, {3}, {4},".format(experiment_list[i][1],experiment_list[i][0],experiment_list[i][2],experiment_list[i][3],experiment_list[i][4])))
-            self.compare5.addItem(str("[{0}]: {1}, {2}, {3}, {4},".format(experiment_list[i][1],experiment_list[i][0],experiment_list[i][2],experiment_list[i][3],experiment_list[i][4])))
-        
+        for i in range(0, len(experiment_list)):
+            self.compare1.addItem(str(
+                "[{0}]: {1}, {2}, {3}, {4},".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
+                                                    experiment_list[i][3], experiment_list[i][4])))
+            self.compare2.addItem(str(
+                "[{0}]: {1}, {2}, {3}, {4},".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
+                                                    experiment_list[i][3], experiment_list[i][4])))
+            self.compare3.addItem(str(
+                "[{0}]: {1}, {2}, {3}, {4},".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
+                                                    experiment_list[i][3], experiment_list[i][4])))
+            self.compare4.addItem(str(
+                "[{0}]: {1}, {2}, {3}, {4},".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
+                                                    experiment_list[i][3], experiment_list[i][4])))
+            self.compare5.addItem(str(
+                "[{0}]: {1}, {2}, {3}, {4},".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
+                                                    experiment_list[i][3], experiment_list[i][4])))
 
-        #        cursor = db.cursor()
-#
-#
-# for row in cursor :
-# experiment_list.append(str(row[0]))
+
+            #        cursor = db.cursor()
+        #
+        #
+        # for row in cursor :
+        # experiment_list.append(str(row[0]))
 
 
 
-#
-#        print ("list of the different experiments updated : ")
-#        print(experiment_list)
+        #
+        #        print ("list of the different experiments updated : ")
+        #        print(experiment_list)
 
     def compare(self):  # Plot the data of the chosen experiments
-          if self.addCheckBox.isChecked() == True:
-              session_ids = []
-              templat = []
-              try:
-                  if self.check1.isChecked() == True:
-                      session_ids.append(int(self.compare1.currentText()[self.compare1.currentText().index("[")+1:self.compare1.currentText().index("]")]))
-              except  ValueError:
-                  print ValueError 
-              try:
-                  if self.check2.isChecked() == True:
-                      session_ids.append(int(self.compare2.currentText()[self.compare2.currentText().index("[")+1:self.compare2.currentText().index("]")]))
-              except  ValueError:
-                  print ValueError 
-              try:
-                  if self.check3.isChecked() == True:
-                      session_ids.append(int(self.compare3.currentText()[self.compare3.currentText().index("[")+1:self.compare3.currentText().index("]")]))
-              except  ValueError:
-                  print ValueError
-              try:
-                  if self.check4.isChecked() == True:
-                      session_ids.append(int(self.compare4.currentText()[self.compare4.currentText().index("[")+1:self.compare4.currentText().index("]")]))
-              except  ValueError:
-                  print ValueError
-              try:
-                  if self.check5.isChecked() == True:
-                      session_ids.append(int(self.compare5.currentText()[self.compare5.currentText().index("[")+1:self.compare5.currentText().index("]")]))
-              except  ValueError:
-                  print ValueError
-            
-              for i in range(0,len(session_ids)):
-                  templat.append(self.db.getLatencyResult(session_ids[i]))
-                  
-              latency = []
-              for k in range(0,len(templat)):
-                  for i in range(0,len(templat[k])):
-                      for j in range(0,templat[k][i][1]):
-                          latency.append(int(templat[k][i][0] * 10))
-              
-             
-              ecdf = ECDF(latency)
-              self.x_list = []
-              self.y_list = []
-              self.x_list.append(list(ecdf.x))
-              self.y_list.append(list(ecdf.y))
-              self.plot()
-          else:
-              session_ids = []
-              templat = []
-              temprx = []
-              temptx=[]
-              
-              self.x_list = []
-              self.y_list = []
-              self.plr_x = []
-              self.plr_y = []
-              try:
-                  if self.check1.isChecked() == True:
-                      session_ids.append(int(str(self.compare1.currentText())[str(self.compare1.currentText()).index("[")+1:str(self.compare1.currentText()).index("]")]))
-              except  ValueError:
-                  print ValueError 
-              try:
-                  if self.check2.isChecked() == True:
-                      session_ids.append(int(str(self.compare2.currentText())[str(self.compare2.currentText()).index("[")+1:str(self.compare2.currentText()).index("]")]))
-              except  ValueError:
-                  print ValueError 
-              try:
-                  if self.check3.isChecked() == True:
-                      session_ids.append(int(str(self.compare3.currentText())[str(self.compare3.currentText()).index("[")+1:str(self.compare3.currentText()).index("]")]))
-              except  ValueError:
-                  print ValueError
-              try:
-                  if self.check4.isChecked() == True:
-                      session_ids.append(int(str(self.compare4.currentText())[str(self.compare4.currentText()).index("[")+1:str(self.compare4.currentText()).index("]")]))
-              except  ValueError:
-                  print ValueError
-              try:
-                  if self.check5.isChecked() == True:
-                      session_ids.append(int(str(self.compare5.currentText())[str(self.compare5.currentText()).index("[")+1:str(self.compare5.currentText()).index("]")]))
-              except  ValueError:
-                  print ValueError
-            
-              for i in range(0,len(session_ids)):
-                  templat.append(self.db.getLatencyResult(session_ids[i]))
-                  temprx.append(self.db.getRXPackets(session_ids[i]))
-                  temptx.append(self.db.getTXPackets(session_ids[i]))
-                  
-              latency = []
-              for k in range(0,len(templat)):
-                  latency = []
-                  for i in range(0,len(templat[k])):                      
-                      for j in range(0,templat[k][i][1]):
-                          latency.append(int(templat[k][i][0] * 10))
-                          
-                  ecdf = ECDF(latency)
-                  self.x_list.append(list(ecdf.x))
-                  self.y_list.append(list(ecdf.y))
+        if self.addCheckBox.isChecked() == True:
+            session_ids = []
+            templat = []
+            try:
+                if self.check1.isChecked() == True:
+                    session_ids.append(int(self.compare1.currentText()[
+                                           self.compare1.currentText().index("[") + 1:self.compare1.currentText().index(
+                                               "]")]))
+            except  ValueError:
+                print ValueError
+            try:
+                if self.check2.isChecked() == True:
+                    session_ids.append(int(self.compare2.currentText()[
+                                           self.compare2.currentText().index("[") + 1:self.compare2.currentText().index(
+                                               "]")]))
+            except  ValueError:
+                print ValueError
+            try:
+                if self.check3.isChecked() == True:
+                    session_ids.append(int(self.compare3.currentText()[
+                                           self.compare3.currentText().index("[") + 1:self.compare3.currentText().index(
+                                               "]")]))
+            except  ValueError:
+                print ValueError
+            try:
+                if self.check4.isChecked() == True:
+                    session_ids.append(int(self.compare4.currentText()[
+                                           self.compare4.currentText().index("[") + 1:self.compare4.currentText().index(
+                                               "]")]))
+            except  ValueError:
+                print ValueError
+            try:
+                if self.check5.isChecked() == True:
+                    session_ids.append(int(self.compare5.currentText()[
+                                           self.compare5.currentText().index("[") + 1:self.compare5.currentText().index(
+                                               "]")]))
+            except  ValueError:
+                print ValueError
 
-              for k in range(0,len(temprx)):
-                  for i in range(0,len(temprx[k])): 
-                      temprx[k][i] = 100. - ((100. * float(temprx[k][i]))/float(temptx[k][0]))
+            for i in range(0, len(session_ids)):
+                templat.append(self.db.getLatencyResult(session_ids[i]))
 
-                      
-                  self.plr_x.append(k)    
-                  self.plr_y.append(float(sum(temprx[k])/len(temprx[k])))
+            latency = []
+            for k in range(0, len(templat)):
+                for i in range(0, len(templat[k])):
+                    for j in range(0, templat[k][i][1]):
+                        latency.append(int(templat[k][i][0] * 10))
 
-              self.plot()
-           
+            ecdf = ECDF(latency)
+            self.x_list = []
+            self.y_list = []
+            self.x_list.append(list(ecdf.x))
+            self.y_list.append(list(ecdf.y))
+            self.plot()
+        else:
+            session_ids = []
+            templat = []
+            temprx = []
+            temptx = []
+
+            self.x_list = []
+            self.y_list = []
+            self.plr_x = []
+            self.plr_y = []
+            try:
+                if self.check1.isChecked() == True:
+                    session_ids.append(int(str(self.compare1.currentText())[
+                                           str(self.compare1.currentText()).index("[") + 1:str(
+                                               self.compare1.currentText()).index("]")]))
+            except  ValueError:
+                print ValueError
+            try:
+                if self.check2.isChecked() == True:
+                    session_ids.append(int(str(self.compare2.currentText())[
+                                           str(self.compare2.currentText()).index("[") + 1:str(
+                                               self.compare2.currentText()).index("]")]))
+            except  ValueError:
+                print ValueError
+            try:
+                if self.check3.isChecked() == True:
+                    session_ids.append(int(str(self.compare3.currentText())[
+                                           str(self.compare3.currentText()).index("[") + 1:str(
+                                               self.compare3.currentText()).index("]")]))
+            except  ValueError:
+                print ValueError
+            try:
+                if self.check4.isChecked() == True:
+                    session_ids.append(int(str(self.compare4.currentText())[
+                                           str(self.compare4.currentText()).index("[") + 1:str(
+                                               self.compare4.currentText()).index("]")]))
+            except  ValueError:
+                print ValueError
+            try:
+                if self.check5.isChecked() == True:
+                    session_ids.append(int(str(self.compare5.currentText())[
+                                           str(self.compare5.currentText()).index("[") + 1:str(
+                                               self.compare5.currentText()).index("]")]))
+            except  ValueError:
+                print ValueError
+
+            for i in range(0, len(session_ids)):
+                templat.append(self.db.getLatencyResult(session_ids[i]))
+                temprx.append(self.db.getRXPackets(session_ids[i]))
+                temptx.append(self.db.getTXPackets(session_ids[i]))
+
+            latency = []
+            for k in range(0, len(templat)):
+                latency = []
+                for i in range(0, len(templat[k])):
+                    for j in range(0, templat[k][i][1]):
+                        latency.append(int(templat[k][i][0] * 10))
+
+                ecdf = ECDF(latency)
+                self.x_list.append(list(ecdf.x))
+                self.y_list.append(list(ecdf.y))
+
+            for k in range(0, len(temprx)):
+                for i in range(0, len(temprx[k])):
+                    temprx[k][i] = 100. - ((100. * float(temprx[k][i])) / float(temptx[k][0]))
+
+                self.plr_x.append(k)
+                self.plr_y.append(float(sum(temprx[k]) / len(temprx[k])))
+
+            self.plot()
+
     def get_burst_count(self, experiment_name):
 
         burst_count = 0
-
-
 
         return burst_count
 
@@ -858,6 +885,7 @@ class MainWindow(QtGui.QMainWindow):
     def LQISend(self):
         ser.write("LQI\n")
         ser.write("{0}\n".format(self.db.returnHex(int(self.LQIRadius_text.text()))))
+
     def TXPowerSend(self):
         ser.write("TXPOWER\n")
 
@@ -876,35 +904,40 @@ class MainWindow(QtGui.QMainWindow):
             temp = temp * -1
         ser.write("{0}\n".format(self.db.returnHex(temp)))
 
+    def FlushResults(self):
+        ser.write("0x0\n")
+
+    def FlushResults(self):
+        ser.write("STARTCIDER\n")
+
     def startRequestResults(self):
         print self.neighList
-       # for i in range(0,len(neighbourList)):
+        # for i in range(0,len(neighbourList)):
         self.requestResults(self.neighList[0])
-        
-    def NextRequestResult(self,lastAddr):
+
+    def NextRequestResult(self, lastAddr):
         try:
-            
-            
+
             self.emit(SIGNAL("stopTimer()"))
-            self.neighList.remove(str(lastAddr))       
-            output.append("next index is: {0}, address is {1}".format(0,self.neighList[0]))
+            self.neighList.remove(str(lastAddr))
+            output.append("next index is: {0}, address is {1}".format(0, self.neighList[0]))
             self.requestResults(self.neighList[0])
         except IndexError:
             print "All results collected"
-            for i in range(0,5):                
-                ser.write("0x0\n")    
+            for i in range(0, 5):
+                ser.write("0x0\n")
                 time.sleep(1)
 
             self.START_button.setEnabled(True)
             self.NeighUpdate_button.setEnabled(True)
             self.PRINT_button.setEnabled(True)
-            
-    def requestResults(self,addr):
-        
+
+    def requestResults(self, addr):
+
         self.emit(SIGNAL("startTimer()"))
         print "request result from: {0}\n".format(addr)
         ser.write("{0}\n".format(addr))
-        
+
     def printList(self):
         output.append("\n==============================")
         output.append("\tNeighbourList")
@@ -920,12 +953,14 @@ class MainWindow(QtGui.QMainWindow):
         self.emit(SIGNAL("neighbourList(PyQt_PyObject)"), self.neighList)
         self.neighConnected_label.setText(
             ("Neighbours Connected: {0}").format(len(self.neighList)))
+
     def experimentFinished(self):
         print "Experiment finished"
         self.db.saveNeighbours()
         time.sleep(2)
         self.startRequestResults()
         self.experiments_combo_update()
+
     def closeSerial(self):
         ser.close()
         self.CONNECT_button.clicked.connect(self.connectSerial)
@@ -978,12 +1013,13 @@ class MainWindow(QtGui.QMainWindow):
         # One cannot name his experiment tables. It would mess up the database
         # organization... and wouldn't make much sens.
         if experiment_name != "tables" and len(self.neighList) != 0:
-            self.db.insertExperiment(newExperimentID,experiment_name,int(time.time()))
-            self.db.insertSettings(0, self.db.getLastExperimentID(),0,numberBursts,int((msgPerBurst * interval) / 1000),msgPerBurst)
+            self.db.insertExperiment(newExperimentID, experiment_name, int(time.time()))
+            self.db.insertSettings(0, self.db.getLastExperimentID(), 0, numberBursts,
+                                   int((msgPerBurst * interval) / 1000), msgPerBurst)
 
             self.experiment_thread.launching(
                 experiment_name, numberBursts, interval, msgPerBurst)
-            
+
             self.START_button.setEnabled(False)
             self.NeighUpdate_button.setEnabled(False)
             self.PRINT_button.setEnabled(False)
@@ -1039,12 +1075,12 @@ class MainWindow(QtGui.QMainWindow):
         self.xmin = []
         self.axes_latency.clear()
         self.axes_plr.clear()
-        for i in range(0,len(self.x_list)):
+        for i in range(0, len(self.x_list)):
             if self.x_list[i] != []:
                 self.xmax.append(max(self.x_list[i]))
-                #self.xmin.append(min(self.x_list[i]))
-                self.y_list[i] = [x*100 for x in self.y_list[i]]
-                self.axes_latency.plot(self.x_list[i], self.y_list[i], linewidth=1)#, label=name_labels[i]
+                # self.xmin.append(min(self.x_list[i]))
+                self.y_list[i] = [x * 100 for x in self.y_list[i]]
+                self.axes_latency.plot(self.x_list[i], self.y_list[i], linewidth=1)  # , label=name_labels[i]
 
         for i in range(len(self.x_list)):
             if self.x_list[i] != []:
@@ -1057,43 +1093,41 @@ class MainWindow(QtGui.QMainWindow):
                     if self.x_list[i][j] >= 240:
                         y_200 = self.y_list[i][j]
                         break
-                if(y_200 == 0):
+                if (y_200 == 0):
                     y_200 = 1
                 self.axes_latency.plot([240, 240], [0.0, 100.0], label="".format(
                     y_200 * 100))
-                
-                                   
-                self.axes_latency.set_title("240ms: {0:.2f} %, 99%: {1}ms".format( y_200,x_99))  
+
+                self.axes_latency.set_title("240ms: {0:.2f} %, 99%: {1}ms".format(y_200, x_99))
                 self.axes_latency.set_xlabel("latency [ms]")
                 self.axes_latency.set_ylabel(r"$F_x(x)$ [%]")
-        if(max(self.xmax) < 200):
+        if (max(self.xmax) < 200):
             self.xmax = 200
         else:
             self.xmax = max(self.xmax)
 
-        self.axes_latency.set_xlim([0,self.xmax])
+        self.axes_latency.set_xlim([0, self.xmax])
 
-        self.axes_latency.legend(loc='lower right')        
+        self.axes_latency.legend(loc='lower right')
         self.canvas_latency.draw()
 
         print self.plr_x
-        for i in range(0,len(self.plr_x)):
+        for i in range(0, len(self.plr_x)):
             print self.plr_x[i]
             print self.plr_y[i]
-            
-            self.axes_plr.bar(self.plr_x[i] + 1,self.plr_y[i], align='center')
-            self.axes_plr.set_title("Packet Loss Rate")  
+
+            self.axes_plr.bar(self.plr_x[i] + 1, self.plr_y[i], align='center')
+            self.axes_plr.set_title("Packet Loss Rate")
             self.axes_plr.set_xlabel("Number Experiment")
             self.axes_plr.set_ylabel("[%]")
-            #self.axes_plr.xticks(self.plr_y[i] + 1, self.plr_y[i])
+            # self.axes_plr.xticks(self.plr_y[i] + 1, self.plr_y[i])
 
-        
         # To add labels on top of the bars to show the precise plr, rects and
         # labels are used
         rects = self.axes_plr.patches
-        
+
         labels = []
-        for i in range(0,len(self.plr_x)):
+        for i in range(0, len(self.plr_x)):
             labels.append("{0:.2f} %".format(self.plr_y[i]))
         print labels
         for rect, label in zip(rects, labels):
@@ -1101,8 +1135,8 @@ class MainWindow(QtGui.QMainWindow):
             print label
             height = rect.get_height()
             self.axes_plr.text(rect.get_x() + rect.get_width() / 2,
-                              height + 2, label, ha='center', va='bottom')
-        self.axes_plr.set_ylim([0,max(self.plr_y)+5])
+                               height + 2, label, ha='center', va='bottom')
+        self.axes_plr.set_ylim([0, max(self.plr_y) + 5])
         plt.show()
         self.canvas_plr.draw()
 
@@ -1144,11 +1178,11 @@ def data_backup(mode):  # Saves the data list in 'mode' mode
             data_file.write(data[i] + "\n")
         data_file.close()
 
+
 # MAIN FUNCTION
 
 
 def main():
-
     try:
         global node_list
         global data
@@ -1166,15 +1200,15 @@ def main():
         app = QtGui.QApplication(sys.argv)
         mainwindow = MainWindow()
 
-
-#        thread.start_new_thread (store,( ))
-        thread.start_new_thread(sys.exit, (app.exec_(), ))
+        #        thread.start_new_thread (store,( ))
+        thread.start_new_thread(sys.exit, (app.exec_(),))
 
     finally:
 
         # When interrutping the programm, the list has to be saved in a file
         print("Closing before leaving!")
         ser.close()
+
 
 if __name__ == '__main__':
     main()
