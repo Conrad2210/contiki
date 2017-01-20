@@ -323,7 +323,23 @@ class  databaseConnection():
                 print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
             except IndexError:
                 print "MySQL Error: %s" % str(e)
-                
+
+    def getDescription(self,session_id):
+        try:
+            cursor = self.dbConnection.cursor()
+            cursor.execute("SELECT description FROM experiments WHERE id={0}".format(session_id))
+            descriptionRes = []
+            for description in cursor:
+                print description
+                descriptionRes.append(str(description[0]))
+            return descriptionRes
+        except mysql.Error, e:
+            try:
+                print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+            except IndexError:
+                print "MySQL Error: %s" % str(e)
+
+
     def getTXPackets(self,session_id):
         try:
             cursor = self.dbConnection.cursor()
@@ -351,8 +367,25 @@ class  databaseConnection():
             except IndexError:
                 print "MySQL Error: %s" % str(e)
 
+    def getRXPacketsForNode(self,session_id,addr):
+        try:
+            cursor = self.dbConnection.cursor()
+            cursor.execute("SELECT count FROM rxpackets WHERE session_id={0} AND nodeID={1}".format(session_id,addr))
+            latencyRes = []
+            for count in cursor:
+                return count[0]
+        except mysql.Error, e:
+            try:
+                print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+            except IndexError:
+                print "MySQL Error: %s" % str(e)
+
     def returnHex(self,text):
         try:
             return hex(text)
         except TypeError, e:
             print e;
+
+# dewi = databaseConnection()
+#
+# print dewi.getDescription(8)

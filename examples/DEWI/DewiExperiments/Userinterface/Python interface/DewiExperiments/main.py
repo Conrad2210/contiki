@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import os
+import csv
 import time
 import numpy as np
 from statsmodels.distributions.empirical_distribution import ECDF
@@ -19,6 +21,9 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 import databaseClassi
+import plotly.plotly as py
+import plotly.tools as tls
+
 
 # configures the serial connections (the parameters differ depending on
 # the device you are connected to)
@@ -363,6 +368,7 @@ class MainWindow(QtGui.QMainWindow):
         self.y_list = []  # y_list is the list of the currently plot y_data for the the latency graph
         self.plr_x = []  # x_list is the list of the currently plot x_data for the the plr graph
         self.plr_y = []  # y_list is the list of the currently plot y_data for the the plr graph
+        self.PlotLegend = []
         delay_queue = []
         # Our figure, canvas and axes necessary to plot
         self.figure_latency = plt.figure()
@@ -453,6 +459,40 @@ class MainWindow(QtGui.QMainWindow):
         self.StartCIDER_button = QtGui.QPushButton('StartCIDER')
         REQUEST_button = QtGui.QPushButton('Request Results')
         self.CONNECT_button = QtGui.QPushButton('Connect')
+
+
+        self.HEATMAP_buttion1 = QtGui.QPushButton('Draw Heatmap 1')
+        self.SelectHeatmap_buttion1 = QtGui.QPushButton('SelectHeatmap 1')
+        self.SelectHeatmap_file1 = QtGui.QLineEdit()
+        self.SelectHeatmap_file1.setEnabled(False)
+        self.HEATMAP_buttion2 = QtGui.QPushButton('Draw Heatmap 2')
+        self.SelectHeatmap_buttion2 = QtGui.QPushButton('SelectHeatmap 2')
+        self.SelectHeatmap_file2 = QtGui.QLineEdit()
+        self.SelectHeatmap_file2.setEnabled(False)
+        self.HEATMAP_buttion3 = QtGui.QPushButton('Draw Heatmap 3')
+        self.SelectHeatmap_buttion3 = QtGui.QPushButton('SelectHeatmap 3')
+        self.SelectHeatmap_file3 = QtGui.QLineEdit()
+        self.SelectHeatmap_file3.setEnabled(False)
+        self.HEATMAP_buttion4 = QtGui.QPushButton('Draw Heatmap 4')
+        self.SelectHeatmap_buttion4 = QtGui.QPushButton('SelectHeatmap 4')
+        self.SelectHeatmap_file4 = QtGui.QLineEdit()
+        self.SelectHeatmap_file4.setEnabled(False)
+        self.HEATMAP_buttion5 = QtGui.QPushButton('Draw Heatmap 5')
+        self.SelectHeatmap_buttion5 = QtGui.QPushButton('SelectHeatmap 5')
+        self.SelectHeatmap_file5 = QtGui.QLineEdit()
+        self.SelectHeatmap_file5.setEnabled(False)
+
+
+        self.HEATMAP_buttion1.clicked.connect(self.drawHeatmap1)
+        self.SelectHeatmap_buttion1.clicked.connect(self.selectHeatmapFile1)
+        self.HEATMAP_buttion2.clicked.connect(self.drawHeatmap2)
+        self.SelectHeatmap_buttion2.clicked.connect(self.selectHeatmapFile2)
+        self.HEATMAP_buttion3.clicked.connect(self.drawHeatmap3)
+        self.SelectHeatmap_buttion3.clicked.connect(self.selectHeatmapFile3)
+        self.HEATMAP_buttion4.clicked.connect(self.drawHeatmap4)
+        self.SelectHeatmap_buttion4.clicked.connect(self.selectHeatmapFile4)
+        self.HEATMAP_buttion5.clicked.connect(self.drawHeatmap5)
+        self.SelectHeatmap_buttion5.clicked.connect(self.selectHeatmapFile5)
 
         self.START_button.clicked.connect(self.START)
         # The buttons are then connected to their method
@@ -570,26 +610,42 @@ class MainWindow(QtGui.QMainWindow):
         test_HBox6.addStretch(1)
         test_HBox6.addWidget(self.check1)
         test_HBox6.addWidget(self.compare1)
+        test_HBox6.addWidget(self.SelectHeatmap_file1)
+        test_HBox6.addWidget(self.SelectHeatmap_buttion1)
+        test_HBox6.addWidget(self.HEATMAP_buttion1)
         test_HBox6.addStretch(1)
 
         test_HBox7.addStretch(1)
         test_HBox7.addWidget(self.check2)
         test_HBox7.addWidget(self.compare2)
+        test_HBox7.addWidget(self.SelectHeatmap_file2)
+        test_HBox7.addWidget(self.SelectHeatmap_buttion2)
+        test_HBox7.addWidget(self.HEATMAP_buttion2)
         test_HBox7.addStretch(1)
 
         test_HBox8.addStretch(1)
         test_HBox8.addWidget(self.check3)
         test_HBox8.addWidget(self.compare3)
+        test_HBox8.addWidget(self.SelectHeatmap_file3)
+        test_HBox8.addWidget(self.SelectHeatmap_buttion3)
+        test_HBox8.addWidget(self.HEATMAP_buttion3)
         test_HBox8.addStretch(1)
 
         test_HBox9.addStretch(1)
         test_HBox9.addWidget(self.check4)
         test_HBox9.addWidget(self.compare4)
+        test_HBox9.addWidget(self.SelectHeatmap_file4)
+        test_HBox9.addWidget(self.SelectHeatmap_buttion4)
+        test_HBox9.addWidget(self.HEATMAP_buttion4)
         test_HBox9.addStretch(1)
 
         test_HBox10.addStretch(1)
         test_HBox10.addWidget(self.check5)
         test_HBox10.addWidget(self.compare5)
+        test_HBox10.addWidget(self.SelectHeatmap_file5)
+        test_HBox10.addWidget(self.SelectHeatmap_buttion5)
+        test_HBox10.addWidget(self.HEATMAP_buttion5)
+
         test_HBox10.addStretch(1)
 
         test_HBox11.addStretch(1)
@@ -751,6 +807,7 @@ class MainWindow(QtGui.QMainWindow):
         if self.addCheckBox.isChecked() == True:
             session_ids = []
             templat = []
+            self.PlotLegend = []
             try:
                 if self.check1.isChecked() == True:
                     session_ids.append(int(self.compare1.currentText()[
@@ -789,8 +846,10 @@ class MainWindow(QtGui.QMainWindow):
 
             for i in range(0, len(session_ids)):
                 templat.append(self.db.getLatencyResult(session_ids[i]))
+                self.PlotLegend.append(self.db.getDescription(session_ids[i]))
 
-            latency = []
+
+
             for k in range(0, len(templat)):
                 for i in range(0, len(templat[k])):
                     for j in range(0, templat[k][i][1]):
@@ -847,11 +906,12 @@ class MainWindow(QtGui.QMainWindow):
                                                self.compare5.currentText()).index("]")]))
             except  ValueError:
                 print ValueError
-
+            self.PlotLegend = []
             for i in range(0, len(session_ids)):
                 templat.append(self.db.getLatencyResult(session_ids[i]))
                 temprx.append(self.db.getRXPackets(session_ids[i]))
                 temptx.append(self.db.getTXPackets(session_ids[i]))
+                self.PlotLegend.append(str(self.db.getDescription(session_ids[i])[0]))
 
             latency = []
             for k in range(0, len(templat)):
@@ -872,6 +932,283 @@ class MainWindow(QtGui.QMainWindow):
                 self.plr_y.append(float(sum(temprx[k]) / len(temprx[k])))
 
             self.plot()
+
+    def drawHeatmap1(self):
+        if(self.SelectHeatmap_file1.text() != "" and self.check1.isChecked() == True):
+            sessionid = int(str(self.compare1.currentText())[
+                                           str(self.compare1.currentText()).index("[") + 1:str(
+                                               self.compare1.currentText()).index("]")])
+
+            if(sessionid > -1):
+                txPackets = self.db.getTXPackets(sessionid)
+                description = self.db.getDescription(sessionid)
+                print txPackets
+                self.topology = []
+                print os.path.join(str(self.SelectHeatmap_file1.text()))
+                csvfile = open(os.path.join(str(self.SelectHeatmap_file1.text())), 'r')
+                print csvfile
+                spamreader = csv.reader(csvfile, delimiter=',')
+                for row in spamreader:
+                    self.topology.append(row)
+                self.topology = list(self.topology)
+                tempResult = self.topology
+                counter1 = 0
+                counter2 = 0
+                for i in range(0,len(self.topology)):
+
+                    counter2 = 0
+                    for k in range(0,len(self.topology[i])):
+                        if self.topology[i][k] != '':
+                            tempResult[i][k] = self.db.getRXPacketsForNode(int(sessionid),self.topology[i][k])
+                            if tempResult[i][k] == None:
+                                tempResult[i][k] = 0
+                            tempResult[i][k] = 100 - ((100/float(txPackets[0])) * float(tempResult[i][k]))
+                        else:
+                            tempResult[i][k] = 0
+
+                fig = plt.figure()
+                ax = fig.add_subplot(111)
+
+                ax.set_title('PLR Heatmap')
+
+                plotly_fig = tls.mpl_to_plotly(fig)
+
+                trace = dict(z=tempResult, type="heatmap", zmin=0, zmax=10)
+
+                plotly_fig['data'] = [trace]
+
+                print plotly_fig
+                plotly_fig['layout']['xaxis1'].update({'autorange': True})
+                plotly_fig['layout']['yaxis1'].update({'autorange': True})
+
+                plot_url = py.plot(plotly_fig, filename=description[0])
+
+
+    def drawHeatmap2(self):
+        if(self.SelectHeatmap_file2.text() != "" and self.check2.isChecked() == True):
+            sessionid = int(str(self.compare2.currentText())[
+                                           str(self.compare2.currentText()).index("[") + 1:str(
+                                               self.compare2.currentText()).index("]")])
+
+            if(sessionid > -1):
+                txPackets = self.db.getTXPackets(sessionid)
+                description = self.db.getDescription(sessionid)
+
+                self.topology = []
+                print os.path.join(str(self.SelectHeatmap_file2.text()))
+                csvfile = open(os.path.join(str(self.SelectHeatmap_file2.text())), 'r')
+                print csvfile
+                spamreader = csv.reader(csvfile, delimiter=',')
+                for row in spamreader:
+                    self.topology.append(row)
+                self.topology = list(self.topology)
+                tempResult = self.topology
+                counter1 = 0
+                counter2 = 0
+                for i in range(0,len(self.topology)):
+
+                    counter2 = 0
+                    for k in range(0,len(self.topology[i])):
+                        if self.topology[i][k] != '':
+                            tempResult[i][k] = self.db.getRXPacketsForNode(int(sessionid),self.topology[i][k])
+                            if tempResult[i][k] == None:
+                                tempResult[i][k] = 0
+                            tempResult[i][k] = 100 - ((100/float(txPackets[0])) * float(tempResult[i][k]))
+                        else:
+                            tempResult[i][k] = 0
+
+                fig = plt.figure()
+                ax = fig.add_subplot(111)
+
+                ax.set_title('PLR Heatmap')
+
+                plotly_fig = tls.mpl_to_plotly(fig)
+
+                trace = dict(z=tempResult, type="heatmap", zmin=0, zmax=10)
+
+                plotly_fig['data'] = [trace]
+
+                print plotly_fig
+                plotly_fig['layout']['xaxis1'].update({'autorange': True})
+                plotly_fig['layout']['yaxis1'].update({'autorange': True})
+
+                plot_url = py.plot(plotly_fig, filename=description[0])
+
+    def drawHeatmap3(self):
+        if(self.SelectHeatmap_file3.text() != "" and self.check3.isChecked() == True):
+            sessionid = int(str(self.compare3.currentText())[
+                                           str(self.compare3.currentText()).index("[") + 1:str(
+                                               self.compare3.currentText()).index("]")])
+
+            if(sessionid > -1):
+                txPackets = self.db.getTXPackets(sessionid)
+                description = self.db.getDescription(sessionid)
+                print txPackets
+                self.topology = []
+                print os.path.join(str(self.SelectHeatmap_file3.text()))
+                csvfile = open(os.path.join(str(self.SelectHeatmap_file3.text())), 'r')
+                print csvfile
+                spamreader = csv.reader(csvfile, delimiter=',')
+                for row in spamreader:
+                    self.topology.append(row)
+                self.topology = list(self.topology)
+                tempResult = self.topology
+                counter1 = 0
+                counter2 = 0
+                for i in range(0,len(self.topology)):
+
+                    counter2 = 0
+                    for k in range(0,len(self.topology[i])):
+                        if self.topology[i][k] != '':
+                            tempResult[i][k] = self.db.getRXPacketsForNode(int(sessionid),self.topology[i][k])
+                            if tempResult[i][k] == None:
+                                tempResult[i][k] = 0
+                            tempResult[i][k] = 100 - ((100/float(txPackets[0])) * float(tempResult[i][k]))
+                        else:
+                            tempResult[i][k] = 0
+
+                fig = plt.figure()
+                ax = fig.add_subplot(111)
+
+                ax.set_title('PLR Heatmap')
+
+                plotly_fig = tls.mpl_to_plotly(fig)
+
+                trace = dict(z=tempResult, type="heatmap", zmin=0, zmax=10)
+
+                plotly_fig['data'] = [trace]
+
+                print plotly_fig
+                plotly_fig['layout']['xaxis1'].update({'autorange': True})
+                plotly_fig['layout']['yaxis1'].update({'autorange': True})
+
+                plot_url = py.plot(plotly_fig, filename=description[0])
+
+    def drawHeatmap4(self):
+        if(self.SelectHeatmap_file4.text() != "" and self.check4.isChecked() == True):
+            sessionid = int(str(self.compare4.currentText())[
+                                           str(self.compare4.currentText()).index("[") + 1:str(
+                                               self.compare4.currentText()).index("]")])
+
+            if(sessionid > -1):
+                txPackets = self.db.getTXPackets(sessionid)
+                description = self.db.getDescription(sessionid)
+                print txPackets
+                self.topology = []
+                print os.path.join(str(self.SelectHeatmap_file4.text()))
+                csvfile = open(os.path.join(str(self.SelectHeatmap_file4.text())), 'r')
+                print csvfile
+                spamreader = csv.reader(csvfile, delimiter=',')
+                for row in spamreader:
+                    self.topology.append(row)
+                self.topology = list(self.topology)
+                tempResult = self.topology
+                counter1 = 0
+                counter2 = 0
+                for i in range(0,len(self.topology)):
+
+                    counter2 = 0
+                    for k in range(0,len(self.topology[i])):
+                        if self.topology[i][k] != '':
+                            tempResult[i][k] = self.db.getRXPacketsForNode(int(sessionid),self.topology[i][k])
+                            if tempResult[i][k] == None:
+                                tempResult[i][k] = 0
+                            tempResult[i][k] = 100 - ((100/float(txPackets[0])) * float(tempResult[i][k]))
+                        else:
+                            tempResult[i][k] = 0
+
+                fig = plt.figure()
+                ax = fig.add_subplot(111)
+
+                ax.set_title('PLR Heatmap')
+
+                plotly_fig = tls.mpl_to_plotly(fig)
+
+                trace = dict(z=tempResult, type="heatmap", zmin=0, zmax=10)
+
+                plotly_fig['data'] = [trace]
+
+                print plotly_fig
+                plotly_fig['layout']['xaxis1'].update({'autorange': True})
+                plotly_fig['layout']['yaxis1'].update({'autorange': True})
+
+                plot_url = py.plot(plotly_fig, filename=description[0])
+
+    def drawHeatmap5(self):
+        if(self.SelectHeatmap_file5.text() != "" and self.check5.isChecked() == True):
+            sessionid = int(str(self.compare5.currentText())[
+                                           str(self.compare5.currentText()).index("[") + 1:str(
+                                               self.compare5.currentText()).index("]")])
+
+            if(sessionid > -1):
+                txPackets = self.db.getTXPackets(sessionid)
+                description = self.db.getDescription(sessionid)
+                print txPackets
+                self.topology = []
+                print os.path.join(str(self.SelectHeatmap_file5.text()))
+                csvfile = open(os.path.join(str(self.SelectHeatmap_file5.text())), 'r')
+                print csvfile
+                spamreader = csv.reader(csvfile, delimiter=',')
+                for row in spamreader:
+                    self.topology.append(row)
+                self.topology = list(self.topology)
+                tempResult = self.topology
+                counter1 = 0
+                counter2 = 0
+                for i in range(0,len(self.topology)):
+
+                    counter2 = 0
+                    for k in range(0,len(self.topology[i])):
+                        if self.topology[i][k] != '':
+                            tempResult[i][k] = self.db.getRXPacketsForNode(int(sessionid),self.topology[i][k])
+                            if tempResult[i][k] == None:
+                                tempResult[i][k] = 0
+                            tempResult[i][k] = 100 - ((100/float(txPackets[0])) * float(tempResult[i][k]))
+                        else:
+                            tempResult[i][k] = 0
+
+                fig = plt.figure()
+                ax = fig.add_subplot(111)
+
+                ax.set_title('PLR Heatmap')
+
+                plotly_fig = tls.mpl_to_plotly(fig)
+
+                trace = dict(z=tempResult, type="heatmap", zmin=0, zmax=10)
+
+                plotly_fig['data'] = [trace]
+
+                print plotly_fig
+                plotly_fig['layout']['xaxis1'].update({'autorange': True})
+                plotly_fig['layout']['yaxis1'].update({'autorange': True})
+
+                plot_url = py.plot(plotly_fig, filename=description[0])
+
+
+    def selectHeatmapFile1(self):
+        fileName = QtGui.QFileDialog.getOpenFileName(self, "Open File","","CSV (*.csv)")
+        self.SelectHeatmap_file1.setText(fileName)
+
+
+    def selectHeatmapFile2(self):
+        fileName = QtGui.QFileDialog.getOpenFileName(self, "Open File","","CSV (*.csv)")
+        self.SelectHeatmap_file2.setText(fileName)
+
+
+    def selectHeatmapFile3(self):
+        fileName = QtGui.QFileDialog.getOpenFileName(self, "Open File","","CSV (*.csv)")
+        self.SelectHeatmap_file3.setText(fileName)
+
+
+    def selectHeatmapFile4(self):
+        fileName = QtGui.QFileDialog.getOpenFileName(self, "Open File","","CSV (*.csv)")
+        self.SelectHeatmap_file4.setText(fileName)
+
+
+    def selectHeatmapFile5(self):
+        fileName = QtGui.QFileDialog.getOpenFileName(self, "Open File","","CSV (*.csv)")
+        self.SelectHeatmap_file5.setText(fileName)
+
 
     def get_burst_count(self, experiment_name):
 
@@ -1083,23 +1420,26 @@ class MainWindow(QtGui.QMainWindow):
                 self.y_list[i] = [x * 100 for x in self.y_list[i]]
                 self.axes_latency.plot(self.x_list[i], self.y_list[i], linewidth=1)  # , label=name_labels[i]
 
+        self.axes_latency.legend(self.PlotLegend,loc=2)
+
         for i in range(len(self.x_list)):
             if self.x_list[i] != []:
-                for j in range(len(self.x_list[i])):
-                    if self.y_list[i][j] >= 99:
-                        y_99 = self.y_list[i][j]
-                        x_99 = self.x_list[i][j]
-                        break
-                for j in range(len(self.x_list[i])):
-                    if self.x_list[i][j] >= 240:
-                        y_200 = self.y_list[i][j]
-                        break
-                if (y_200 == 0):
-                    y_200 = 1
-                self.axes_latency.plot([240, 240], [0.0, 100.0], label="".format(
-                    y_200 * 100))
+                # for j in range(len(self.x_list[i])):
+                #     if self.y_list[i][j] >= 99:
+                #         y_99 = self.y_list[i][j]
+                #         x_99 = self.x_list[i][j]
+                #         break
+                # for j in range(len(self.x_list[i])):
+                #     if self.x_list[i][j] >= 240:
+                #         y_200 = self.y_list[i][j]
+                #         break
+                # if (y_200 == 0):
+                #     y_200 = 1
+                # self.axes_latency.plot([240, 240], [0.0, 100.0], label="".format(
+                #     y_200 * 100))
 
-                self.axes_latency.set_title("240ms: {0:.2f} %, 99%: {1}ms".format(y_200, x_99))
+                #self.axes_latency.set_title("240ms: {0:.2f} %, 99%: {1}ms".format(y_200, x_99))
+                self.axes_latency.set_title("Latency")
                 self.axes_latency.set_xlabel("latency [ms]")
                 self.axes_latency.set_ylabel(r"$F_x(x)$ [%]")
         if (max(self.xmax) < 200):
@@ -1113,14 +1453,16 @@ class MainWindow(QtGui.QMainWindow):
         self.canvas_latency.draw()
 
         print self.plr_x
+        prop_iter = iter(plt.rcParams['axes.prop_cycle'])
         for i in range(0, len(self.plr_x)):
             print self.plr_x[i]
             print self.plr_y[i]
 
-            self.axes_plr.bar(self.plr_x[i] + 1, self.plr_y[i], align='center')
+            self.axes_plr.bar(self.plr_x[i] + 1, self.plr_y[i], align='center',color=next(prop_iter)['color'])
             self.axes_plr.set_title("Packet Loss Rate")
             self.axes_plr.set_xlabel("Number Experiment")
             self.axes_plr.set_ylabel("[%]")
+            self.axes_plr.legend(self.PlotLegend, loc=2)
             # self.axes_plr.xticks(self.plr_y[i] + 1, self.plr_y[i])
 
         # To add labels on top of the bars to show the precise plr, rects and
