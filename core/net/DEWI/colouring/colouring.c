@@ -425,7 +425,7 @@ PROCESS_BEGIN()
 	;
 	if (COLOURING_started == 0) process_exit(&dewi_coluring_process);
 	setActiveProtocol(1);
-	setRandNumberStatus((uint16_t) random_rand());
+	setRandNumberStatus((uint16_t) random_rand() & 0b111);
 	etimer_set(&colouringETimer, COLOURING_interval);
 	while (1)
 	{

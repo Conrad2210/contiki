@@ -38,7 +38,7 @@
 
 #include "contiki.h"
 #include "neighTable.h"
-
+#include "net/DEWI/common/packet_types.h"
 static struct etimer NEIGH_Print;
 #define NEIGH_PRINT       (CLOCK_SECOND * 10)
 
@@ -60,11 +60,13 @@ PROCESS(dewi_neighbourtable_process, "DEWI Neighbour Table PROCESS");
 
 AUTOSTART_PROCESSES();
 uint8_t colours[4];
+uint16_t lastNeighAddr = 0; //used to keep track which neighbour was used alreadt with CH message
 //n1 is exisitng neighbour and n2 is the new data
 void copyNeighbour(struct neighbour *n1, struct neighbour *n2)
 {
 	if (n2->addr.u16 != 0) n1->addr = n2->addr;
 	if (n2->last_rssi != 0) n1->last_rssi = n2->last_rssi;
+	if (n2->last_lqi != 0) n1->last_lqi = n2->last_lqi;
 
 	if (n2->clusterDegree != 0) n1->clusterDegree = n2->clusterDegree;
 
@@ -151,8 +153,7 @@ void getNeighbour(linkaddr_t *addr, struct neighbour *neigh)
 		}
 	}
 
-	if (n != NULL)
-		copyNeighbour(neigh, n);
+	if (n != NULL) copyNeighbour(neigh, n);
 
 }
 int8_t getColourParent(linkaddr_t parent)
@@ -264,7 +265,7 @@ uint8_t calcColour()
 	uint8_t uni = 1;
 	uint8_t isUniqe = 0;
 	uint8_t i = 0;
-
+	uint8_t colourMax = sizeof(colours) / sizeof(uint8_t);
 	struct neighbour *n;
 	n = NULL;
 
@@ -285,7 +286,17 @@ uint8_t calcColour()
 
 			}
 		}
-		if (isUniqe == 1) counter++;
+		if (isUniqe == 1)
+		{
+			counter++;
+			if (counter > colourMax)
+			{
+				colour = colours[random_rand() % colourMax];
+				isUniqe = 0;
+				printf("[Neigh]: no free Colour available, colourMax: %d, colour:%d\n", colourMax,
+						colour);
+			}
+		}
 
 	} while (isUniqe == 1);
 
@@ -495,9 +506,9 @@ void printNeighbour(struct neighbour *n)
 	}
 	else
 	{
-		printf(
+		PRINTF(
 				"Neigh: 0x%x last RSSI: %ddBm last ASN: %x.%lx TxPower: %d dBm is LPD: %d ND: %d CD: %d LPD: %d "
-						"myCH: %d myCS: %d, myChildCH: %d, Parent: 0x%2x Tier: %d CIDERState: %d Utility: %d MsgCount: %d\n",
+				"myCH: %d myCS: %d, myChildCH: %d, Parent: 0x%2x Tier: %d CIDERState: %d Utility: %d MsgCount: %d\n",
 				n->addr.u16, n->last_rssi, n->last_asn.ms1b, n->last_asn.ls4b, n->txPW, n->isLPD,
 				n->nodeDegree, n->clusterDegree, n->lpDegree, n->myCH, n->myCS, n->myChildCH,
 				n->parent, n->tier, n->CIDERState, (uint16_t) (n->utility * 1000.0), n->msgCounter);
@@ -513,6 +524,7 @@ void initNeighbourTable()
 	 have seen thus far. */
 
 	memcpy(colours, CIDER_CONF_OFFSETS, sizeof(CIDER_CONF_OFFSETS));
+	setRSSIRadius(CLUSTER_RADIUS);
 	process_start(&dewi_neighbourtable_process, NULL);
 }
 
@@ -626,7 +638,7 @@ int getNumCluster()
 	int number = 0;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-		if (n->last_rssi >= CLUSTER_RADIUS) number++;
+		if (n->last_rssi >= getRSSIRadius() && n->last_lqi >= getLQIRadius()) number++;
 	}
 
 	return number;
@@ -634,7 +646,6 @@ int getNumCluster()
 void resetMSGCounter()
 {
 	struct neighbour *n;
-	int i = 2;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
 		n->msgCounter = 0;
@@ -644,21 +655,116 @@ void resetMSGCounter()
 void updateNeighListCS(uint16_t *array, int size, linkaddr_t CHaddress)
 {
 	struct neighbour *n;
-	int i = 2;
-	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	struct neighbour *lastNeigh;
+	uint8_t i = 0;
+
+	uint8_t maxNeighbour = (uint8_t) list_length(neighbours_list);
+
+	if (maxNeighbour <= size)
 	{
-		if (((n->last_rssi >= CLUSTER_RADIUS) && (n->CIDERState == 6))
-				|| (linkaddr_cmp(&CHaddress, &n->parent) == 1 && n->myChildCH == 0))
+		for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 		{
-			PRINTF("[NEIGH]: updateNeighListCS, child: 0x%4x\n",n->addr.u16);
-			n->myCS = 1;
-			if (n->myChildCH == 0) n->CIDERState = 7;
-			n->parent = CHaddress;
-			array[i] = n->addr.u16;
-			if (i < size - 1) i++;
+			if (n->last_rssi >= getRSSIRadius() && n->last_lqi >= getLQIRadius())
+			{
+				if (n->CIDERState == CIDER_CS_PING || n->CIDERState <= CIDER_UTILITY_UPDATE)
+				{
+					printf("[NEIGH]:new CS\n"
+							"last RSSI %d, last LQI: %d CLUSTER radius: %d, child: 0x%4x\n",
+							n->last_rssi, n->last_lqi, getRSSIRadius(), n->addr.u16);
+					n->myCS = 1;
+					if (n->myChildCH == 0) n->CIDERState = 7;
+					n->parent = CHaddress;
+					array[i] = n->addr.u16;
+					if (i < size - 1)
+						i++;
+					else return;
+				}
+			}
+			else if (n->myCS == 1)
+			{
+				printf("[NEIGH]: Neigh is already my CS\n"
+						"last RSSI %d, last LQI: %d CLUSTER radius: %d, child: 0x%4x\n",
+						n->last_rssi, n->last_lqi, getRSSIRadius(), n->addr.u16);
+				n->myCS = 1;
+				if (n->myChildCH == 0) n->CIDERState = 7;
+				n->parent = CHaddress;
+				array[i] = n->addr.u16;
+				if (i < size)
+					i++;
+				else return;
+			}
 		}
+
 	}
 
+	else
+	{
+
+		printf("[NEIGH]: numNeighbours %d > size: %d/n", maxNeighbour, size);
+		//first find last neighbour
+		if (lastNeighAddr != 0)
+		{
+			for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+			{
+				if (lastNeighAddr == n->addr.u16)
+				{
+					lastNeigh = n;
+					break;
+				}
+			}
+		}
+		else
+		{
+			lastNeigh = list_head(neighbours_list);
+		}
+
+		uint8_t restartFromBeginning = 0; //for keeping track if end of list was reached;
+		//second start from there in list, repeat until array is full
+		for (n = lastNeigh; n != NULL; n = list_item_next(n))
+		{
+			if (restartFromBeginning)
+			{
+				n = list_head(neighbours_list);
+				restartFromBeginning = 0;
+
+			}
+			if (n->last_rssi >= getRSSIRadius()&& n->last_lqi >= getLQIRadius())
+			{
+				if (n->CIDERState == CIDER_CS_PING || n->CIDERState <= CIDER_UTILITY_UPDATE)
+				{
+					printf("[NEIGH]:new CS\n"
+							" last RSSI %d, CLUSTER radius: %d, child: 0x%4x\n", n->last_rssi,
+							getRSSIRadius(), n->addr.u16);
+					n->myCS = 1;
+					if (n->myChildCH == 0) n->CIDERState = 7;
+					n->parent = CHaddress;
+					array[i] = n->addr.u16;
+					if (i < size - 1)
+						i++;
+					else return;
+				}
+			}
+			else if (n->myCS == 1)
+			{
+				printf("[NEIGH]: Neigh is already my CS\n"
+						"last RSSI %d, CLUSTER radius: %d, child: 0x%4x\n",
+						n->last_rssi, getRSSIRadius(), n->addr.u16);
+				n->myCS = 1;
+				if (n->myChildCH == 0) n->CIDERState = 7;
+				n->parent = CHaddress;
+				array[i] = n->addr.u16;
+				if (i < size)
+					i++;
+				else return;
+			}
+		}
+
+		if (list_item_next(n) == NULL)
+		{
+			n = list_head(neighbours_list);
+			restartFromBeginning = 1;
+		}
+	}
 }
 
 float getAvgRSSI()
@@ -693,6 +799,100 @@ float getHighestUtility()
 	return highestUtility;
 }
 
+void getMinMaxAVGRSSI()
+{
+
+	int8_t minRSSI = 0;
+	int8_t maxRSSI = -120;
+	int avgRSSI = 0;
+	uint8_t minLQI = 255;
+	uint8_t maxLQI = 0;
+	int avgLQI = 0;
+	uint16_t minRSSIAddr = 0;
+	uint16_t maxRSSIAddr = 0;
+	uint16_t minLQIAddr = 0;
+	uint16_t maxLQIAddr = 0;
+	uint8_t num = 0;
+	uint8_t histRSSIarray[7] = { 0 };
+	uint8_t histLQIarray[7] = { 0 };
+	struct neighbour *n;
+
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+		if (n->last_rssi < minRSSI)
+		{
+			minRSSIAddr = n->addr.u16;
+			minRSSI = n->last_rssi;
+		}
+		if (n->last_lqi < minLQI && n->last_lqi != 0)
+		{
+			minLQIAddr = n->addr.u16;
+			minLQI = n->last_lqi;
+		}
+
+		if (n->last_lqi > maxLQI)
+		{
+			maxLQIAddr = n->addr.u16;
+			maxLQI = n->last_lqi;
+		}
+
+		if (n->last_rssi > maxRSSI)
+		{
+			maxRSSIAddr = n->addr.u16;
+			maxRSSI = n->last_rssi;
+		}
+
+		if (n->last_rssi >= -39) histRSSIarray[0] = histRSSIarray[0] + 1;
+		if (n->last_rssi <= -40 && n->last_rssi >= -49) histRSSIarray[1] = histRSSIarray[1] + 1;
+		if (n->last_rssi <= -50 && n->last_rssi >= -59) histRSSIarray[2] = histRSSIarray[2] + 1;
+		if (n->last_rssi <= -60 && n->last_rssi >= -69) histRSSIarray[3] = histRSSIarray[3] + 1;
+		if (n->last_rssi <= -70 && n->last_rssi >= -79) histRSSIarray[4] = histRSSIarray[4] + 1;
+		if (n->last_rssi <= -80 && n->last_rssi >= -89) histRSSIarray[5] = histRSSIarray[5] + 1;
+		if (n->last_rssi <= -90) histRSSIarray[6] = histRSSIarray[6] + 1;
+
+		if (n->last_lqi <= 50) histLQIarray[0] = histLQIarray[0] + 1;
+		if (n->last_lqi > 50 && n->last_lqi <= 70) histLQIarray[1] = histLQIarray[1] + 1;
+		if (n->last_lqi > 70 && n->last_lqi <= 90) histLQIarray[2] = histLQIarray[2] + 1;
+		if (n->last_lqi > 90 && n->last_lqi <= 110) histLQIarray[3] = histLQIarray[3] + 1;
+		if (n->last_lqi > 110 && n->last_lqi <= 130) histLQIarray[4] = histLQIarray[4] + 1;
+		if (n->last_lqi > 130 && n->last_lqi <= 150) histLQIarray[5] = histLQIarray[5] + 1;
+		if (n->last_lqi > 150) histLQIarray[6] = histLQIarray[6] + 1;
+
+		avgRSSI = avgRSSI + n->last_rssi;
+		avgLQI = avgLQI + n->last_lqi;
+		num = num +1;
+	}
+
+	printf(
+			"[Neigh]: Min RSSI: %d, Min Addr: 0x%4x, Max RSSI: %d,Max Addr: 0x%4x,totalRSSI: %d Avg RSSI: %d, num neighbours: %d\n",
+			minRSSI, minRSSIAddr, maxRSSI, maxRSSIAddr,avgRSSI, (int16_t) ((float) avgRSSI / (float) num),
+			(uint8_t) list_length(neighbours_list));
+	printf("0 < RSSI > -39dBm: %d\n", histRSSIarray[0]);
+	printf("-40dBm < RSSI > -49dBm: %d\n", histRSSIarray[1]);
+	printf("-50dBm < RSSI > -59dBm: %d\n", histRSSIarray[2]);
+	printf("-60dBm < RSSI > -69dBm: %d\n", histRSSIarray[3]);
+	printf("-70dBm < RSSI > -79dBm: %d\n", histRSSIarray[4]);
+	printf("-80dBm < RSSI > -89dBm: %d\n", histRSSIarray[5]);
+	printf("-90dBm < RSSI : %d\n", histRSSIarray[6]);
+
+
+	printf(
+			"\n[Neigh]: Min LQI: %d, Min Addr: 0x%4x, Max LQI: %d,Max Addr: 0x%4x,TOTAL LQI: %d, Avg LQI: %d, num neighbours: %d\n",
+			minLQI, minLQIAddr, maxLQI, maxLQIAddr,avgLQI, (uint16_t) ((float) avgLQI / (float) num),
+			(uint8_t) list_length(neighbours_list));
+
+	printf("0 < LQI > 50: %d\n", histLQIarray[0]);
+	printf("51 < LQI > 70: %d\n", histLQIarray[1]);
+	printf("71 < LQI > 90: %d\n", histLQIarray[2]);
+	printf("91 < LQI > 110: %d\n", histLQIarray[3]);
+	printf("111 < LQI > 130: %d\n", histLQIarray[4]);
+	printf("131 < LQI > 150: %d\n", histLQIarray[5]);
+	printf("151 < LQI : %d\n", histLQIarray[6]);
+
+
+
+}
+
 linkaddr_t getCHChildAddress(uint8_t CIDERState)
 {
 	linkaddr_t returnAddr = linkaddr_null;
@@ -715,6 +915,24 @@ linkaddr_t getCHChildAddress(uint8_t CIDERState)
 	return returnAddr;
 }
 
+uint8_t checkForPossibleCS()
+{
+
+	uint8_t msgCount = 0;
+	struct neighbour *n;
+	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+	{
+		if (n->last_rssi >= getRSSIRadius() && n->CIDERState == CIDER_CS_PING)
+		{
+			PRINTF("[NEIGH]: there are still neighbours who could be mine\n");
+			return 0;
+
+		}
+	}
+
+	return 1;
+}
+
 uint8_t checkForPromotion(uint8_t CIDERState)
 {
 
@@ -722,13 +940,13 @@ uint8_t checkForPromotion(uint8_t CIDERState)
 	struct neighbour *n;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-		if (n->CIDERState == CIDERState)
+		if (n->CIDERState == CIDER_CS_PING)
 		{
 			msgCount = msgCount + n->msgCounter;
 
-			if (msgCount >= 20)
+			if (msgCount > (20 * (getTier() + 1)))
 			{
-
+				resetMSGCounter();
 				return 1;
 			}
 
@@ -748,10 +966,8 @@ linkaddr_t getChildCHAddress(uint8_t CIDERState)
 	struct neighbour *n;
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
-		if (n->CIDERState == CIDERState)
+		if (n->CIDERState == CIDER_CS_PING)
 		{
-			msgCount = msgCount + n->msgCounter;
-
 			if (n->utility > highestUtility)
 			{
 				highestUtility = n->utility;
@@ -760,16 +976,23 @@ linkaddr_t getChildCHAddress(uint8_t CIDERState)
 
 		}
 	}
-	if (msgCount >= 5)
+	if (tempAddr.u16 == linkaddr_null.u16)
 	{
+		for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+		{
+			if (n->CIDERState == CIDER_CS && n->myCS == 1)
+			{
+				if (n->utility > highestUtility)
+				{
+					highestUtility = n->utility;
+					tempAddr = n->addr;
+				}
 
-		return tempAddr;
+			}
+		}
 	}
-	else
-	{
-		return linkaddr_null;
+	return tempAddr;
 
-	}
 }
 
 void setChildCH(linkaddr_t child)
@@ -850,7 +1073,7 @@ uint8_t checkNodesUnclustered()
 struct neighbour *n;
 for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 {
-	if (n->CIDERState != 5 /*CH*/&& n->CIDERState != 7/*CS*/)
+	if (n->CIDERState != CIDER_CH && n->CIDERState != CIDER_CS/*CS*/)
 	{
 		return 0;
 	}
@@ -863,7 +1086,20 @@ uint8_t checkChildCH()
 struct neighbour *n;
 for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 {
-	if (n->CIDERState == 5 && linkaddr_cmp(&linkaddr_node_addr, &n->parent) == 1)
+	if (n->CIDERState == CIDER_CH && n->myChildCH == 1)
+	{
+		return 1;
+	}
+}
+
+return 0;
+}
+uint8_t checkCS()
+{
+struct neighbour *n;
+for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+{
+	if (n->CIDERState == CIDER_CS && n->myCS == 1)
 	{
 		return 1;
 	}
@@ -879,6 +1115,22 @@ return ownStatus.tier;
 void setTier(int8_t tempTier)
 {
 ownStatus.tier = tempTier;
+}
+int16_t getRSSIRadius()
+{
+return ownStatus.RSSIradius;
+}
+void setRSSIRadius(int16_t radius)
+{
+ownStatus.RSSIradius = radius;
+}
+uint8_t getLQIRadius()
+{
+return ownStatus.LQIradius;
+}
+void setLQIRadius(uint8_t radius)
+{
+ownStatus.LQIradius = radius;
 }
 
 int8_t getColour()
@@ -1047,7 +1299,7 @@ ownStatus.utility = ut;
 }
 void printNodeStatus(char fromFunction[])
 {
-	PRINTF("\n\n******************************************************\n"
+PRINTF("\n\n******************************************************\n"
 		"\t\tNode Status from %s"
 		"\n******************************************************\n",fromFunction);PRINTF("Active Protocol: %d, CIDERState: %d, COLOURINGState: %d, RLLState: %d,Tier: %d, Colour: %d, isLPD: %d\n"
 		"randNum: %d, SDI: %d, CHDegree: %d, UCDegree: %d, CDegree: %d, dV: %d, sDegree: %d, hSDI: %d\n"
@@ -1060,16 +1312,37 @@ void printNodeStatus(char fromFunction[])
 		,(uint16_t)(ownStatus.utility * 1000));
 }
 
-uint8_t getChildAddresses(linkaddr_t array[]){
-	uint8_t i = 0;
-	struct neighbour *n;
-	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+void printNodeStatusForced()
+{
+printf("\n\n******************************************************\n"
+		"\t\tNode Status from Button pressed"
+		"\n******************************************************\n");
+printf(
+		"Active Protocol: %d, CIDERState: %d, COLOURINGState: %d, RLLState: %d,Tier: %d, Colour: %d, isLPD: %d\n"
+				"randNum: %d, SDI: %d, CHDegree: %d, UCDegree: %d, CDegree: %d, dV: %d, sDegree: %d, hSDI: %d\n"
+				"NeighDegree: %d, clusterDegree: %d, lpDegree: %d, avgRSSI: %d. utility: %d"
+				"LQIRadius: %d, RSSIRadius %d\n\n\n",
+		ownStatus.activeProtocol, ownStatus.CIDERState, ownStatus.COLOURINGState,
+		ownStatus.RLLState, ownStatus.tier, ownStatus.colour, ownStatus.isLPD, ownStatus.randNumber,
+		ownStatus.SDI, ownStatus.CHDegree, ownStatus.UCDegree, ownStatus.CDegree, ownStatus.dV,
+		ownStatus.sDegree, ownStatus.hSDI, (uint16_t) (ownStatus.neighDegree * 1000),
+		(uint16_t) (ownStatus.clusterDegree * 1000), (uint16_t) (ownStatus.lpDegree * 1000),
+		(uint16_t) (ownStatus.avgRSSI * 1000), (uint16_t) (ownStatus.utility * 1000),
+		getLQIRadius(),getRSSIRadius());
+}
+
+uint8_t getChildAddresses(linkaddr_t array[])
+{
+uint8_t i = 0;
+struct neighbour *n;
+for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
+{
+	if ((n->myCS == 1) || (n->myChildCH == 1))
 	{
-		if ((n->myCS == 1)||(n->myChildCH == 1)){
-			array[i]=n->addr;
-			i++;
-		}
+		array[i] = n->addr;
+		i++;
 	}
-	return i;
+}
+return i;
 }
 

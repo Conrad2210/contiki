@@ -70,7 +70,7 @@ struct neighbour
 		/* The ->last_rssi and ->last_lqi fields hold the Received Signal
 		 Strength Indicator (RSSI) and CC2420 Link Quality Indicator (LQI)
 		 values that are received for the incoming broadcast packets. */
-		int16_t last_rssi;
+		int16_t last_rssi,last_lqi;
 
 		int txPW;
 
@@ -116,6 +116,8 @@ struct neighbour
 
 
 struct nodes_status{
+		int16_t RSSIradius;
+		uint8_t LQIradius;
 		uint8_t activeProtocol; //0=CIDER;1=Colouring;2=RLL;
 		uint8_t CIDERState;
 		uint8_t COLOURINGState;
@@ -167,11 +169,15 @@ void printNeighbour(struct neighbour *n);
 void neighbourTable_reset();
 linkaddr_t getCHChildAddress(uint8_t state);
 int checkIfCHinNetwork();
+void getMinMaxAVGRSSI();
+
 void clearTable();
 uint8_t checkForPromotion(uint8_t state);
+uint8_t checkForPossibleCS();
 linkaddr_t getChildCHAddress(uint8_t state);
 uint8_t checkNodesUnclustered();
 uint8_t checkChildCH();
+uint8_t checkCS();
 uint8_t getCHDegree();
 uint8_t getColoredNodes();
 uint8_t getUncoloredNodes();
@@ -186,6 +192,10 @@ int8_t getColourParent(linkaddr_t);
 
 
 void printNodeStatus(char* fromFunction);
+int16_t getRSSIRadius();
+void setRSSIRadius(int16_t radius);
+uint8_t getLQIRadius();
+void setLQIRadius(uint8_t radius);
 int8_t getTier();
 void setTier(int8_t);
 int8_t getColour();
@@ -239,5 +249,5 @@ void calcSDIs();
 
 uint8_t getChildAddresses(linkaddr_t array[]);
 
-
+void printNodeStatusForced();
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_RLL_RLL_H_ */

@@ -57,6 +57,9 @@ enum CIDERsubpackettype
 	CIDER_LP_PING = 12,
 	CIDER_COMPLETE = 100,
 	CIDER_UNCOMPLETE = 101,
+	CIDER_SETRSSIRADIUS = 150,
+	CIDER_SETLQIRADIUS = 151,
+	CIDER_SETTXPOWER = 152,
 	CIDER_UNDEFINED = 200
 };
 enum COLOURINGsubpackttype
@@ -112,6 +115,7 @@ struct CIDER_PACKET
 		struct BasePacket base;
 		enum CIDERsubpackettype subType;
 		uint16_t args[50];
+		uint8_t tier,colour;
 		linkaddr_t parent;
 };
 struct RLL_PACKET

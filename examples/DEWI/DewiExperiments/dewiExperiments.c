@@ -36,6 +36,13 @@
 #include <string.h>
 #include <inttypes.h>
 
+#if APP_LOG_LEVEL >= 1
+#define DEBUG DEBUG_PRINT
+#else /* TSCH_LOG_LEVEL */
+#define DEBUG DEBUG_NONE
+#endif /* TSCH_LOG_LEVEL */
+#include "net/net-debug.h"
+
 #define BYTETOBINARYPATTERN "%d%d%d%d%d%d%d%d"		// to convert byte to binary
 #define BYTETOBINARY(byte)  \
   (byte & 0x80 ? 1 : 0), \
@@ -56,7 +63,7 @@
 #define BUTTON_PRESS_EVENT_INTERVAL (CLOCK_SECOND)
 
 #define NUM_ADDR_ENTRIES 100		//number of child nodes that a master node can have
-#define MAX_RESULTS_ENTRIES 100
+#define MAX_RESULTS_ENTRIES 200
 static struct etimer button_press_reset;
 uint8_t button_press_counter = 0;
 uint8_t lastBRIGHTNESS = 0b00000001;
@@ -66,6 +73,7 @@ uint16_t rxPackets = 0;
 uint8_t lock = 1;
 uint16_t ackAddress;
 uint8_t ackType;
+uint8_t LQIrx = 0,RSSIrx = 0,TxPowerrx, TXPowerNegativ = 0;
 
 linkaddr_t master_addr1; //parent or master address
 char waitForTopologyUpdate;  //is 1 if topology information is ongoing, else 0
@@ -105,12 +113,23 @@ void handleSensorsEvent(process_data_t data)
 
 				button_press_counter = button_press_counter + 1;
 				etimer_set(&button_press_reset, CLOCK_SECOND * 0.5);
+				if (button_press_counter == 10)
+				{
+					CIDER_start();
+				}
+				if (button_press_counter == 3)
+				{
+					printNodeStatusForced();
+				}
+				if (button_press_counter == 2)
+				{
+
+					getMinMaxAVGRSSI();
+
+				}
 
 			}
-			if (button_press_counter == 10)
-			{
-				CIDER_start();
-			}
+
 		}
 		PROCESS_CONTEXT_END(&dewiDemo);
 
@@ -125,13 +144,43 @@ void handleSerialInput(process_data_t data)
 	char t1[2];
 	long i_data;
 	uint32_t R, G, B;
+	if(LQIrx == 1)
+	{
+		uint16_t temp = (uint16_t) strtol(ch_data, NULL, 16);
+		setLQIRadius(temp);
+		sendLQI();
+		LQIrx=0;
+		return;
+	}
+	if(RSSIrx == 1)
+	{
+		uint16_t temp = (int16_t) strtol(ch_data, NULL, 16);
+		setRSSIRadius(temp * -1);
+		sendRSSI();
+		RSSIrx=0;
+		return;
+	}
+	if(TxPowerrx == 1 && strstr(ch_data, "NEGATIV") == NULL){
+		uint16_t temp = (int16_t) strtol(ch_data, NULL, 16);
+		radio_value_t result = (radio_value_t) temp;
+		if(TXPowerNegativ == 1)
+			result = result * -1;
+
+		TXPowerNegativ = 0;
+		radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, result);
+
+		PRINTF("[APP] Set Tx Power to %d, result: %d\n",result,rv);
+		sendTXPower();
+		TxPowerrx=0;
+		return;
+	}
 	if (strstr(ch_data, "Experiment") != NULL)
 	{
 
 //		if(tsch_queue_packet_count(&tsch_broadcast_address) > 0)
 //			tsch_queue_reset();
 
-		printf("[APP]: Experiment received, send message\n");
+		PRINTF("[APP]: Experiment received, send message\n");
 		struct APP_PACKET packet;
 		packet.src = linkaddr_node_addr;
 		packet.dst = tsch_broadcast_address;
@@ -145,8 +194,8 @@ void handleSerialInput(process_data_t data)
 	}
 	else if (strstr(ch_data, "topologyrefresh") != NULL)
 	{
-
-		printf("[APP]: TopologyRefresh received, send message\n");
+		checkQueueStatus();
+		PRINTF("[APP]: TopologyRefresh received, send message\n");
 		struct APP_PACKET packet;
 		packet.src = linkaddr_node_addr;
 		packet.dst = tsch_broadcast_address;
@@ -155,13 +204,42 @@ void handleSerialInput(process_data_t data)
 		lock = 1;
 		sendRLLDataMessage(packet, 0);
 	}
+	else if (strstr(ch_data, "LQI") != NULL){
+
+		checkQueueStatus();
+		PRINTF("[APP]: LQI request\n");
+		LQIrx = 1;
+	}
+	else if (strstr(ch_data, "RSSI") != NULL){
+
+		checkQueueStatus();
+		PRINTF("[APP]: RSSI request\n");
+		RSSIrx = 1;
+	}
+	else if (strstr(ch_data, "TXPOWER") != NULL){
+
+		checkQueueStatus();
+		PRINTF("[APP]: TXPOWER request\n");
+		TxPowerrx = 1;
+	}
+	else if (strstr(ch_data, "NEGATIV") != NULL){
+
+		checkQueueStatus();
+		PRINTF("[APP]: Negativ TXPOWER incoming\n");
+		TXPowerNegativ = 1;
+	}
+	else if (strstr(ch_data, "STARTCIDER") != NULL){
+		checkQueueStatus();
+		CIDER_start();
+	}
 	else if (strstr(ch_data, "0x") != NULL)
 	{
 
+		checkQueueStatus();
 		uint16_t temp = (uint16_t) strtol(ch_data, NULL, 16);
 		if (linkaddr_node_addr.u16 == temp)
 		{
-			printf("RESULTReplyTxPackets:0x%4x,%d\n", linkaddr_node_addr.u16, txPackets);
+			PRINTF("RESULTReplyTxPackets:0x%4x,%d\n", linkaddr_node_addr.u16, txPackets);
 			txPackets = 0;
 
 		}
@@ -171,7 +249,7 @@ void handleSerialInput(process_data_t data)
 		}
 		else
 		{
-			printf("[APP]: APP_RESULTREQUEST received, send message\n");
+			PRINTF("[APP]: APP_RESULTREQUEST received, send message\n");
 			struct APP_PACKET packet;
 			packet.src = linkaddr_node_addr;
 			packet.dst.u16 = temp;
@@ -191,14 +269,14 @@ void applicationDataCallback(struct APP_PACKET *data)
 
 	struct asn_t receivedAt = current_asn;
 	uint16_t latency = ASN_DIFF(receivedAt, data->timeSend);
-	printf("[APP]: MSG received: Type: %d, from: 0x%4x with seqNo: %d\n", data->subType,
+	PRINTF("[APP]: MSG received: Type: %d, from: 0x%4x with seqNo: %d\n", data->subType,
 			data->src.u16, data->seqNo);
 	if (data->subType == APP_EXPERIMENT)
 	{ // received color packet, set LED color and update performance stats
 	  //here save data
 		if (isGateway == 0)
 		{
-			printf("[APP]: Data received: Type: %d, from: 0x%4x with seqNo: %d, latency: %d\n",
+			PRINTF("[APP]: Data received: Type: %d, from: 0x%4x with seqNo: %d, latency: %d\n",
 					data->subType, data->src.u16, data->seqNo, latency * 10);
 			tempresult[tempResultCounter] = latency;
 			tempResultCounter++;
@@ -232,7 +310,7 @@ void applicationDataCallback(struct APP_PACKET *data)
 			uint8_t temp;
 			for (temp = 0; temp < data->count; temp++)
 			{
-				printf("TPReply:0x%4x,0x%4x,%d,%d\n", data->src.u16, data->values[temp],
+				PRINTF("TPReply:0x%4x,0x%4x,%d,%d\n", data->src.u16, data->values[temp],
 						data->timeslot[0], data->timeslot[1]);
 			}
 		}
@@ -240,7 +318,7 @@ void applicationDataCallback(struct APP_PACKET *data)
 	else if (data->subType == APP_RESULTREQUEST)
 	{
 
-		printf("[APP]: APP_RESULTREQUEST received: Type: %d, from: 0x%4x for 0x%4x\n",
+		PRINTF("[APP]: APP_RESULTREQUEST received: Type: %d, from: 0x%4x for 0x%4x\n",
 				data->subType, data->src.u16, data->dst.u16);
 		if (data->dst.u16 == linkaddr_node_addr.u16 && isGateway == 0)
 		{
@@ -260,24 +338,23 @@ void applicationDataCallback(struct APP_PACKET *data)
 		{
 
 			uint8_t temp;
-			printf("[APP]: dataSets received: %d, RxPackets: %d\n", data->remainingData,
+			PRINTF("[APP]: dataSets received: %d, RxPackets: %d\n", data->remainingData,
 					data->count);
 			for (temp = 0; temp < data->temperature; temp++)
 			{
-				printf("RESULTReplyLatency:0x%4x,%d,%d\n", data->src.u16, data->timeslot[temp],
+				PRINTF("RESULTReplyLatency:0x%4x,%d,%d\n", data->src.u16, data->timeslot[temp],
 						data->values[temp]);
 			}
-			if(data->remainingData == 0)
-				printf("RESULTReplyRxPackets:0x%4x,%d\n", data->src.u16, data->count);
+			if (data->remainingData == 0)
+				PRINTF("RESULTReplyRxPackets:0x%4x,%d\n", data->src.u16, data->count);
 
-			printf("[APP]: send Ack to: 0x%4x \n", data->src.u16);
-			printf("[APP]: APP_RESULTREQUEST received, send message\n");
+			PRINTF("[APP]: send Ack to: 0x%4x \n", data->src.u16); PRINTF("[APP]: APP_RESULTREQUEST received, send message\n");
 		}
 	}
 	else if (data->subType == APP_ACK)
 	{
 
-		printf("[APP]: Ack received\n");
+		PRINTF("[APP]: Ack received\n");
 
 		rxPackets = 0;
 		clearResults();
@@ -290,32 +367,34 @@ void packetDeletedFromQueue()
 {
 	if (lock == 0)
 	{
-		printf("[APP]: Packet sent\n");
+		PRINTF("[APP]: Packet sent\n");
 		txPackets++;
 	}
 }
 
 void tsch_dewi_callback_joining_network(void)
 {
-	printf("[APP]: joining network\n");
+	PRINTF("[APP]: joining network\n");
 	setCoord(0);
 	initScheduler();
 	initNeighbourTable();
+	clearResults();
 	leds_off(LEDS_ALL);
 	leds_on(LEDS_GREEN);
 }
 void tsch_dewi_callback_leaving_network(void)
 {
-	printf("[APP]: Leaving network\n");
+	PRINTF("[APP]: Leaving network\n");
 	scheduler_reset();
 	neighbourTable_reset();
 	CIDER_reset();
+	clearResults();
 	leds_off(LEDS_ALL);
 	leds_on(LEDS_RED);
 }
 void tsch_dewi_callback_ka(void)
 {
-	printf("[APP]: Keep Alive sent\n");
+	PRINTF("[APP]: Keep Alive sent\n");
 	leds_off(LEDS_ALL);
 	leds_on(LEDS_YELLOW);
 }
@@ -391,7 +470,7 @@ uint8_t getAllResults(uint8_t timeslot[], uint16_t values[])
 	uint8_t counter = 0;
 	for (newRes = list_head(result_list); newRes != NULL; newRes = list_item_next(newRes))
 	{
-		printf("getAllResults, timeslot: %d, counter: %d\n", newRes->timeslot, newRes->counter);
+		PRINTF("getAllResults, timeslot: %d, counter: %d\n", newRes->timeslot, newRes->counter);
 		timeslot[counter] = newRes->timeslot;
 		values[counter] = newRes->counter;
 		counter++;
@@ -416,7 +495,6 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 		setCoord(0);
 		initScheduler();
 
-		radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, 0);
 		//configure buttons
 		button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
 		BUTTON_PRESS_EVENT_INTERVAL);
@@ -445,12 +523,10 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 			;
 			if (ev == sensors_event)
 			{ // receiving sensor or button event
-				printf("received sensors event\n");
 				handleSensorsEvent(data);
 			}
 			else if (ev == serial_line_event_message)
 			{ // receiving data on serial port
-				printf("received serial event\n");
 				if (isGateway == 0)
 				{
 					// node realizes that it must be a gateway
@@ -462,38 +538,36 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 			}
 			else if (ev == PROCESS_EVENT_TIMER)
 			{ // receiving a process event
-				printf("[APP]: Timer expired\n");
 				if (data == &button_press_reset)
 				{
 					button_press_counter = 0;
 				}
 				else if (data == &processResults_timer)
 				{
-					printf("[APP]: processResults_timer expired, num results: %d\n",
-							tempResultCounter);
-
 					struct resultCounter Result;
 					int i = 0;
 					for (i = 0; i < tempResultCounter; i++)
 					{
-						printf("[APP]: Timeslot: %d\n", tempresult[i]);
+						PRINTF("[APP]: Timeslot: %d\n", tempresult[i]);
 						Result.counter = 0;
 						Result.timeslot = 0;
 						getResult(tempresult[i], &Result);
 						Result.timeslot = tempresult[i];
 						Result.counter++;
-						printf("[APP]: process results, timeslot: %d, counter: %d\n",
+						PRINTF("[APP]: process results, timeslot: %d, counter: %d\n",
 								Result.timeslot, Result.counter);
 						addResult(&Result);
 						tempresult[0];
 					}
 					tempResultCounter = 0;
+					checkQueueStatus();
 
 				}
 				else if (data == &topologyReply_timer)
 				{
 
-					printf("[APP]: send TopologyReply\n");
+					PRINTF("[APP]: send TopologyReply\n");
+					checkQueueStatus();
 					struct APP_PACKET packet;
 					packet.src = linkaddr_node_addr;
 					packet.dst = tsch_broadcast_address;
@@ -503,7 +577,7 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 					uint8_t numChildren = 0; // number of children
 					linkaddr_t children[CONF_MAX_NEIGHBOURS];
 					numChildren = getChildAddresses(children);
-					printf("got topology request, have %d children\r\n", numChildren);
+					PRINTF("got topology request, have %d children\r\n", numChildren);
 
 					if (numChildren < 23)
 					{
@@ -525,7 +599,7 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 						//send more than one packet
 						uint8_t temp = 0, sentPacket = 0, lowerBorder;
 						uint8_t numPackets = (uint8_t) ceilf((float) numChildren / (float) 23);
-						printf("numPackets: %d,numChildren: %d\n", numPackets, numChildren);
+						PRINTF("numPackets: %d,numChildren: %d\n", numPackets, numChildren);
 						for (sentPacket = 0; sentPacket < numPackets; sentPacket++)
 						{
 							uint8_t maxBorder = (sentPacket + 1) * 23;
@@ -558,6 +632,7 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 				}
 				else if (data == &resultReply_timer)
 				{
+					checkQueueStatus();
 					uint16_t values[MAX_RESULTS_ENTRIES] = { 0 };
 					uint8_t timeslot[MAX_RESULTS_ENTRIES] = { 0 };
 					uint8_t numResults = getAllResults(timeslot, values);
@@ -565,9 +640,8 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 					packet.src = linkaddr_node_addr;
 					packet.dst = tsch_broadcast_address;
 					packet.subType = APP_RESULTREPLY;
-					printf("[APP]: send APP_RESULTREPLY with %d results\n", numResults);
-
-					if (numResults < 23)
+					PRINTF("[APP]: send APP_RESULTREPLY with %d results\n", numResults);
+					if (numResults <= 23)
 					{
 						//send one packet
 
@@ -576,13 +650,13 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 						packet.temperature = numResults;
 						for (temp = 0; temp < numResults; temp++)
 						{
-							printf("[APP]: Add Result to packet; timeslot: %d, value: %d\n",
+							PRINTF("[APP]: Add Result to packet; timeslot: %d, value: %d\n",
 									timeslot[temp], values[temp]);
 							packet.values[temp] = values[temp];
 							packet.timeslot[temp] = timeslot[temp];
 						}
 
-						printf("[APP]: #MSG received %d\n", rxPackets);
+						PRINTF("[APP]: #MSG received %d\n", rxPackets);
 						packet.count = rxPackets;
 						lock = 1;
 						sendRLLDataMessage(packet, 0);
@@ -592,7 +666,7 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 						//send more than one packet
 						uint8_t temp = 0, sentPacket = 0, lowerBorder;
 						uint8_t numPackets = (uint8_t) ceilf((float) numResults / (float) 23);
-						printf("numPackets: %d,numChildren: %d\n", numPackets, numResults);
+						PRINTF("numPackets: %d,numChildren: %d\n", numPackets, numResults);
 						for (sentPacket = 0; sentPacket < numPackets; sentPacket++)
 						{
 							uint8_t maxBorder = (sentPacket + 1) * 23;
@@ -611,7 +685,7 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 							for (lowerBorder = 0 + sentPacket * 23; lowerBorder < maxBorder;
 									lowerBorder++)
 							{
-								printf("[APP]: Add Result to packet; timeslot: %d, value: %d\n",
+								PRINTF("[APP]: Add Result to packet; timeslot: %d, value: %d\n",
 										timeslot[temp], values[temp]);
 								packet.values[temp] = values[temp];
 								packet.timeslot[temp] = timeslot[temp];
@@ -632,6 +706,7 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 
 					if (ackType == APP_RESULTREPLY)
 					{
+						checkQueueStatus();
 						uint16_t values[MAX_RESULTS_ENTRIES] = { 0 };
 						uint8_t timeslot[MAX_RESULTS_ENTRIES] = { 0 };
 						uint8_t numResults = getAllResults(timeslot, values);
@@ -639,19 +714,19 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 						packet.src = linkaddr_node_addr;
 						packet.dst = tsch_broadcast_address;
 						packet.subType = APP_RESULTREPLY;
-						printf("[APP]: send APP_RESULTREPLY with %d results\n", numResults);
+						PRINTF("[APP]: send APP_RESULTREPLY with %d results\n", numResults);
 
 						uint8_t temp = 0;
 						packet.remainingData = numResults;
 						for (temp = 0; temp < numResults; temp++)
 						{
-							printf("[APP]: Add Result to packet; timeslot: %d, value: %d\n",
+							PRINTF("[APP]: Add Result to packet; timeslot: %d, value: %d\n",
 									timeslot[temp], values[temp]);
 							packet.values[temp] = values[temp];
 							packet.timeslot[temp] = timeslot[temp];
 						}
 
-						printf("[APP]: #MSG received %d\n", rxPackets);
+						PRINTF("[APP]: #MSG received %d\n", rxPackets);
 						packet.count = rxPackets;
 						lock = 1;
 						sendRLLDataMessage(packet, 0);
@@ -667,7 +742,7 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 			{
 				if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_PRESS_DURATION) == 10)
 				{
-					printf("[APP]: Start Node as Coordinator\n");
+					PRINTF("[APP]: Start Node as Coordinator\n");
 					leds_off(LEDS_ALL);
 					leds_on(LEDS_ALL);
 					setCoord(1);
@@ -675,6 +750,7 @@ PROCESS_THREAD(dewiDemo, ev, data)  // main demonstrator process
 					tsch_set_coordinator(1);
 
 				}
+
 			}
 		}
 	PROCESS_END();
