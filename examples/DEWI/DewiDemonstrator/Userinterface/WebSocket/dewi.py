@@ -31,7 +31,10 @@ class  dewi():
 		connection = self.dbConnection
 		tab1 = self.tab1
 		try:
-			connection.query("INSERT INTO " + str(tab1) + " (addr,a_target,insert_order) SELECT * FROM (SELECT '"+str(addrS)+"', '"+str(addrM)+"', "+str(order)+") AS tmp WHERE NOT EXISTS (SELECT * FROM "+str(tab1)+" WHERE addr = '"+str(addrS)+"');")
+                        if (addrM=="0:0"):
+				connection.query("INSERT INTO " + str(tab1) + " (addr,a_target,insert_order) SELECT * FROM (SELECT '"+str(addrS)+"', '"+str(addrM)+"', "+str(order)+") AS tmp WHERE NOT EXISTS (SELECT * FROM "+str(tab1)+" WHERE addr = '"+str(addrS)+"');")
+			else:
+	                        connection.query("INSERT INTO " + str(tab1) + " (addr,a_target,insert_order) VALUES ('"+str(addrS)+"', '"+str(addrM)+"', "+str(order)+") ON DUPLICATE KEY UPDATE a_target='"+str(addrM)+"';")
 			result = connection.use_result()
 			print "MySQL version: %s" % result
 		except mysql.Error, e:
@@ -63,14 +66,26 @@ class  dewi():
 				print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
 			except IndexError:
 				print "MySQL Error: %s" % str(e)
-				
-	def add_statistics(self,addr, packets, plr, latency):
+
+	def add_colour_stat(self,Caddr, Colour):
 		connection = self.dbConnection
-		plr = plr/1000;
-		latency = latency/1000;
 		try:
-			connection.query("INSERT INTO Dewi_statsTab (addr, packets, plr, latency) VALUES ('"+str(addr)+"',"+str(packets)+","+str(plr)+","+str(latency)+") ON DUPLICATE KEY UPDATE packets = "+str(packets)+", plr = "+str(plr)+", latency = "+str(latency)+";")
+			connection.query("UPDATE Dewi_tab SET colour = '"+str(Colour)+"' WHERE EXISTS (SELECT addr FROM (select '"+str(Caddr)+"') AS tmp WHERE addr = '"+str(Caddr)+"');")
 			result = connection.use_result()
+			print "MySQL version: %s" % result
+		except mysql.Error, e:
+			try:
+				print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
+			except IndexError:
+				print "MySQL Error: %s" % str(e)
+				
+	def add_statistics(self,addr, packets, latency):
+		connection = self.dbConnection
+		latency = latency*10;
+		try:
+			connection.query("INSERT INTO Dewi_statsTab (addr, packets, latency) VALUES ('"+str(addr)+"',"+str(packets)+","+str(latency)+") ON DUPLICATE KEY UPDATE packets = "+str(packets)+", latency = "+str(latency)+";")
+			result = connection.use_result()
+			print "INSERT INTO Dewi_statsTab (addr, packets, latency) VALUES ('"+str(addr)+"',"+str(packets)+","+str(latency)+") ON DUPLICATE KEY UPDATE packets = "+str(packets)+", latency = "+str(latency)
 			print "MySQL version: %s" % result
 		except mysql.Error, e:
 			try:
