@@ -106,8 +106,6 @@
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="core"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="cpu/cc2538"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="dev"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="examples/DEWI/DewiDemonstrator"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="examples/DEWI/simpleDemonstrator"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="examples/cc2538-common"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="examples/cfs-coffee"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="examples/er-rest-example"/>

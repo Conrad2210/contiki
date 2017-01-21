@@ -8,7 +8,7 @@
 #include "rll.h"
 
 #include "/usr/arm-none-eabi/include/sys/_stdint.h"
-#include "../../../../examples/DEWI/project-conf.h"
+#include "../../../../examples/DEWI/APP/project-conf.h"
 #include "../../../sys/cc.h"
 #include "../../../sys/clock.h"
 #include "../../../sys/mt.h"
