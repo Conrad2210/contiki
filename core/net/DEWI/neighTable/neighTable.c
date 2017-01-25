@@ -58,7 +58,6 @@ LIST(neighbours_list);
 
 PROCESS(dewi_neighbourtable_process, "DEWI Neighbour Table PROCESS");
 
-AUTOSTART_PROCESSES();
 uint8_t colours[4];
 uint16_t lastNeighAddr = 0; //used to keep track which neighbour was used alreadt with CH message
 //n1 is exisitng neighbour and n2 is the new data
@@ -293,7 +292,7 @@ uint8_t calcColour()
 			{
 				colour = colours[random_rand() % colourMax];
 				isUniqe = 0;
-				printf("[Neigh]: no free Colour available, colourMax: %d, colour:%d\n", colourMax,
+				PRINTF("[Neigh]: no free Colour available, colourMax: %d, colour:%d\n", colourMax,
 						colour);
 			}
 		}
@@ -668,7 +667,7 @@ void updateNeighListCS(uint16_t *array, int size, linkaddr_t CHaddress)
 			{
 				if (n->CIDERState == CIDER_CS_PING || n->CIDERState <= CIDER_UTILITY_UPDATE)
 				{
-					printf("[NEIGH]:new CS\n"
+					PRINTF("[NEIGH]:new CS\n"
 							"last RSSI %d, last LQI: %d CLUSTER radius: %d, child: 0x%4x\n",
 							n->last_rssi, n->last_lqi, getRSSIRadius(), n->addr.u16);
 					n->myCS = 1;
@@ -682,7 +681,7 @@ void updateNeighListCS(uint16_t *array, int size, linkaddr_t CHaddress)
 			}
 			else if (n->myCS == 1)
 			{
-				printf("[NEIGH]: Neigh is already my CS\n"
+				PRINTF("[NEIGH]: Neigh is already my CS\n"
 						"last RSSI %d, last LQI: %d CLUSTER radius: %d, child: 0x%4x\n",
 						n->last_rssi, n->last_lqi, getRSSIRadius(), n->addr.u16);
 				n->myCS = 1;
@@ -700,7 +699,7 @@ void updateNeighListCS(uint16_t *array, int size, linkaddr_t CHaddress)
 	else
 	{
 
-		printf("[NEIGH]: numNeighbours %d > size: %d/n", maxNeighbour, size);
+		PRINTF("[NEIGH]: numNeighbours %d > size: %d/n", maxNeighbour, size);
 		//first find last neighbour
 		if (lastNeighAddr != 0)
 		{
@@ -732,7 +731,7 @@ void updateNeighListCS(uint16_t *array, int size, linkaddr_t CHaddress)
 			{
 				if (n->CIDERState == CIDER_CS_PING || n->CIDERState <= CIDER_UTILITY_UPDATE)
 				{
-					printf("[NEIGH]:new CS\n"
+					PRINTF("[NEIGH]:new CS\n"
 							" last RSSI %d, CLUSTER radius: %d, child: 0x%4x\n", n->last_rssi,
 							getRSSIRadius(), n->addr.u16);
 					n->myCS = 1;
@@ -746,7 +745,7 @@ void updateNeighListCS(uint16_t *array, int size, linkaddr_t CHaddress)
 			}
 			else if (n->myCS == 1)
 			{
-				printf("[NEIGH]: Neigh is already my CS\n"
+				PRINTF("[NEIGH]: Neigh is already my CS\n"
 						"last RSSI %d, CLUSTER radius: %d, child: 0x%4x\n",
 						n->last_rssi, getRSSIRadius(), n->addr.u16);
 				n->myCS = 1;
@@ -1051,6 +1050,7 @@ PROCESS_THREAD(dewi_neighbourtable_process, ev, data)
 	PROCESS_END();
 
 }
+
 void clearTable()
 {
 while (list_head(neighbours_list) != NULL)

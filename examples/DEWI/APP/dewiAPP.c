@@ -106,7 +106,7 @@ struct resultCounter
 };
 MEMB(result_memb, struct resultCounter, MAX_RESULTS_ENTRIES);
 LIST(result_list);
-uint8_t experimentActive = 0;
+uint8_t experimentActive = 1;
 uint8_t tempresult[50] = { 0 };
 uint8_t tempResultCounter = 0;
 
@@ -422,6 +422,21 @@ void handleSerialInput(process_data_t data)
 
 			lock = 1;
 			sendRLLDataMessage(packet, 0);
+
+			if (getCIDERState() == CIDER_CH)
+			{
+
+				uint8_t numChildren = 0; // number of children
+				linkaddr_t children[CONF_MAX_NEIGHBOURS];
+				numChildren = getChildAddresses(children);
+				uint8_t temp;
+				for (temp = 0; temp < numChildren; temp++)
+				{
+					PRINTF("TPReply:0x%4x,0x%4x,%d,%d\n", linkaddr_node_addr.u16, children[temp],
+							getTier(), getColour());
+				}
+
+			}
 		}
 		else if (strstr(ch_data, "LQI") != NULL)
 		{
@@ -645,95 +660,96 @@ void handleProcessEvent( data)
 			waitForTopologyUpdate--;
 		}
 
-		if ((sendSensorDataCountdown <= 0) && (getActiveProtocol() == 2))
-		{ // sensor data counter expired
-		  // obtain temperature and battery values and send them
-			int temperature, battery;
-			temperature = cc2538_temp_sensor.value(
-			CC2538_SENSORS_VALUE_TYPE_CONVERTED) / 1000;
-			battery = vdd3_sensor.value(
-			CC2538_SENSORS_VALUE_TYPE_CONVERTED);
-
-			struct APP_PACKET temp;
-			temp.subType = APP_SENSORDATA;
-			temp.temperature = (uint8_t) temperature;
-			temp.battery = (uint8_t) battery;
-			temp.timeSend = current_asn;
-			temp.dst = tsch_broadcast_address;
-			temp.src = linkaddr_node_addr;
-			temp.seqNo = seqNo++;
-			// add performance stats to packet
-			int i = 0;
-			struct performanceStatEntry *e = NULL;
-			for (e = list_head(perfStat_list); e != NULL; e = e->next)
-			{ //add performance stats to packet
-				temp.timeslot[i] = e->latency;
-				temp.values[i] = e->packetCounter;
-				if (i == 22)
-				{
-					// packet full, send it and create a new one
-					temp.remainingData = 1;
-					sendRLLDataMessage(temp, 0);
-					i = 0;
-					temp.seqNo = seqNo++;
-
-				}
-				else
-				{
-					temp.remainingData = 0;
-					i++;
-				}
-
-				//if this is the gateway, send the performance data on the serial port
-				if (isGateway)
-				{
-					printf("node(%04x) Stats: Packets = '%d', Latency = '%d'\r\n",
-							linkaddr_node_addr.u16, e->packetCounter, e->latency);
-				}
-			}
-			while (i < 23)
-			{
-				// fill remaining temp.values with 0 so that we don't accidentially parse undefined values on the other end
-				temp.values[i] = 0;
-				i++;
-			}
-			sendRLLDataMessage(temp, 0);
-
-			if (isGateway)
-			{
-				// if this is the gateway, send data on serial port as well
-				printf("node(%04x) Temperature = '%dC' \r\n", linkaddr_node_addr.u16, temperature);
-				sendBatteryStatusByserialP(battery, linkaddr_node_addr);
-			}
-			sendSensorDataCountdown = 5 + linkaddr_node_addr.u16 % 15; // do this every xth loop, x being between 5 and 14
-		}
-		else
-		{
-			sendSensorDataCountdown--;
-		}
+//		if ((sendSensorDataCountdown <= 0) && (getActiveProtocol() == 2))
+//		{ // sensor data counter expired
+//		  // obtain temperature and battery values and send them
+//			int temperature, battery;
+//			temperature = cc2538_temp_sensor.value(
+//			CC2538_SENSORS_VALUE_TYPE_CONVERTED) / 1000;
+//			battery = vdd3_sensor.value(
+//			CC2538_SENSORS_VALUE_TYPE_CONVERTED);
+//
+//			struct APP_PACKET temp;
+//			temp.subType = APP_SENSORDATA;
+//			temp.temperature = (uint8_t) temperature;
+//			temp.battery = (uint8_t) battery;
+//			temp.timeSend = current_asn;
+//			temp.dst = tsch_broadcast_address;
+//			temp.src = linkaddr_node_addr;
+//			temp.seqNo = seqNo++;
+//			// add performance stats to packet
+//			int i = 0;
+//			struct performanceStatEntry *e = NULL;
+//			for (e = list_head(perfStat_list); e != NULL; e = e->next)
+//			{ //add performance stats to packet
+//				temp.timeslot[i] = e->latency;
+//				temp.values[i] = e->packetCounter;
+//				if (i == 22)
+//				{
+//					// packet full, send it and create a new one
+//					temp.remainingData = 1;
+//					sendRLLDataMessage(temp, 0);
+//					i = 0;
+//					temp.seqNo = seqNo++;
+//
+//				}
+//				else
+//				{
+//					temp.remainingData = 0;
+//					i++;
+//				}
+//
+//				//if this is the gateway, send the performance data on the serial port
+//				if (isGateway)
+//				{
+//					printf("node(%04x) Stats: Packets = '%d', Latency = '%d'\r\n",
+//							linkaddr_node_addr.u16, e->packetCounter, e->latency);
+//				}
+//			}
+//			while (i < 23)
+//			{
+//				// fill remaining temp.values with 0 so that we don't accidentially parse undefined values on the other end
+//				temp.values[i] = 0;
+//				i++;
+//			}
+//			sendRLLDataMessage(temp, 0);
+//
+//			if (isGateway)
+//			{
+//				// if this is the gateway, send data on serial port as well
+//				printf("node(%04x) Temperature = '%dC' \r\n", linkaddr_node_addr.u16, temperature);
+//				sendBatteryStatusByserialP(battery, linkaddr_node_addr);
+//			}
+//			sendSensorDataCountdown = 5 + linkaddr_node_addr.u16 % 15; // do this every xth loop, x being between 5 and 14
+//		}
+//		else
+//		{
+//			sendSensorDataCountdown--;
+//		}
 	}
 
 }
 
 void handleTopologyRequest()
 {
-	if (getCIDERState()==5){
+	if (getCIDERState() == 5)
+	{
 		uint8_t numChildren = 0; // number of children
 		linkaddr_t children[CONF_MAX_NEIGHBOURS];
 		numChildren = getChildAddresses(children);
 		printf("got topology request, have %d children\r\n", numChildren);
 
-		int i,j;
-		for (i = 0; i <= numChildren/20; i++)
+		int i, j;
+		for (i = 0; i <= numChildren / 20; i++)
 		{ // put information about max. 20 children in packet, send multiple packets if needed
 			struct APP_PACKET temp;
 			temp.subType = APP_TOPOLOGYREPLY;
-			temp.values[0] = (uint16_t) ((i==numChildren/20)?numChildren%20:20);
+			temp.values[0] = (uint16_t) ((i == numChildren / 20) ? numChildren % 20 : 20);
 			temp.values[1] = linkaddr_node_addr.u16;
 			temp.values[2] = (uint16_t) getColour();
-			for (j = 0; j < ((i==numChildren/20)?numChildren%20:20); j++)
+			for (j = 0; j < ((i == numChildren / 20) ? numChildren % 20 : 20); j++)
 			{
-				temp.values[j+3] = children[i*10+j].u16;
+				temp.values[j + 3] = children[i * 10 + j].u16;
 			}
 			temp.timeSend = current_asn;
 			temp.dst = tsch_broadcast_address;
@@ -1110,7 +1126,7 @@ PROCESS_THREAD(dewiStart, ev, data)  // main demonstrator process
 					if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL)
 							== BUTTON_SENSOR_PRESSED_LEVEL)
 					{
-						experimentActive = 1;
+						experimentActive = 0;
 
 					}
 
@@ -1137,7 +1153,8 @@ PROCESS_THREAD(dewiStart, ev, data)  // main demonstrator process
 					}
 					process_exit(&dewiStart);
 				}
-				else if(data = &LED_toggle_timer){
+				else if (data = &LED_toggle_timer)
+				{
 					leds_toggle(LEDS_ALL);
 					etimer_set(&LED_toggle_timer, 0.2 * CLOCK_SECOND);
 				}
@@ -1162,6 +1179,19 @@ PROCESS_BEGIN()
 
 	//initialize serial line
 	serial_line_init();
+
+	//initialize I2C
+	i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN,
+	I2C_SCL_FAST_BUS_SPEED);
+	i2c_single_send(0x39, 0b00000000);
+
+	//set led brightness to inital brightness
+	i2c_single_send(0x39, (LED_BRIGHTNESS | lastBRIGHTNESS));
+
+	//set LED to white
+	i2c_single_send(0x39, (LED_RED | 0b11111));
+	i2c_single_send(0x39, (LED_GREEN | 0b11111));
+	i2c_single_send(0x39, (LED_BLUE | 0b11111));
 
 	//initialize process event timer
 	static struct etimer et;
@@ -1239,8 +1269,8 @@ PROCESS_BEGIN()
 				linkaddr_t children[CONF_MAX_NEIGHBOURS];
 				numChildren = getChildAddresses(children);
 				PRINTF("got topology request, have %d children\r\n", numChildren);
-
-				if (numChildren < 23)
+				uint8_t numPackets = (uint8_t) ceilf((float) numChildren / (float) 23);
+				if (numPackets == 1)
 				{
 					//send one packet
 
@@ -1286,6 +1316,8 @@ PROCESS_BEGIN()
 						packet.count = temp;
 						lock = 1;
 						sendRLLDataMessage(packet, 0);
+						clock_delay_usec(50000);
+
 					}
 
 				}
@@ -1302,7 +1334,8 @@ PROCESS_BEGIN()
 				packet.dst = tsch_broadcast_address;
 				packet.subType = APP_RESULTREPLY;
 				PRINTF("[APP]: send APP_RESULTREPLY with %d results\n", numResults);
-				if (numResults <= 23)
+				uint8_t numPackets = (uint8_t) ceilf((float) numResults / (float) 23);
+				if (numPackets == 1)
 				{
 					//send one packet
 
@@ -1326,7 +1359,6 @@ PROCESS_BEGIN()
 				{
 					//send more than one packet
 					uint8_t temp = 0, sentPacket = 0, lowerBorder;
-					uint8_t numPackets = (uint8_t) ceilf((float) numResults / (float) 23);
 					PRINTF("numPackets: %d,numChildren: %d\n", numPackets, numResults);
 					for (sentPacket = 0; sentPacket < numPackets; sentPacket++)
 					{
@@ -1357,6 +1389,7 @@ PROCESS_BEGIN()
 						packet.count = rxPackets;
 						lock = 1;
 						sendRLLDataMessage(packet, 0);
+						clock_delay_usec(50000);
 					}
 
 				}
@@ -1425,7 +1458,7 @@ initNeighbourTable();
 setCoord(0);
 initScheduler();
 PRINTF("[APP]: Started Demonstartor APP\n");
-radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, 0);
+radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, 7);
 //configure buttons
 button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
 BUTTON_PRESS_EVENT_INTERVAL);
@@ -1439,9 +1472,9 @@ i2c_single_send(0x39, 0b00000000);
 i2c_single_send(0x39, (LED_BRIGHTNESS | lastBRIGHTNESS));
 
 //set LED to white
-i2c_single_send(0x39,(LED_RED | 0b11111));
-i2c_single_send(0x39,(LED_GREEN | 0b11111));
-i2c_single_send(0x39,(LED_BLUE | 0b11111));
+i2c_single_send(0x39, (LED_RED | 0b11111));
+i2c_single_send(0x39, (LED_GREEN | 0b11111));
+i2c_single_send(0x39, (LED_BLUE | 0b11111));
 
 //initialize serial line
 serial_line_init();

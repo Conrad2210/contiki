@@ -285,7 +285,8 @@ void updateState()
 
 				PRINTF("[CIDER]: CIDER intervall = %d\n", ciderInterval/CLOCK_SECOND);
 			}
-			if (getTier() == 0 || sendCounter < 5) startSendTimer();
+//			if (getTier() == 0 || sendCounter < 5)
+			startSendTimer();
 			break;
 
 		case CIDER_CS:

@@ -85,6 +85,7 @@ static void thread_child(struct RLL_PACKET *data);
 static void thread_app(struct APP_PACKET *data);
 static void thread_send(struct APP_PACKET *data);
 static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from);
+void checkQueue();
 /***************************************/
 /***************************************/
 /*			Channel Variables		   */
@@ -107,6 +108,13 @@ PROCESS(dewi_rll_process, "DEWI Coluring PROCESS");
 /*	     Function definitions		   */
 /***************************************/
 /***************************************/
+
+void checkQueue(){
+	int packetsInQueue = tsch_queue_packet_count(&tsch_broadcast_address);
+
+	if(packetsInQueue > 0)
+		tsch_queue_flush_nbr_queue(tsch_queue_get_nbr(&tsch_broadcast_address));
+}
 
 void RLL_RxTimeslot(int timeslot){
 	RLL_receiveTimeslot = timeslot;
@@ -678,7 +686,7 @@ static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from
 			}
 			else
 			{
-				//tsch_queue_reset();
+				checkQueue();
 				if (RLL_CIDERState == 5)
 				{
 
