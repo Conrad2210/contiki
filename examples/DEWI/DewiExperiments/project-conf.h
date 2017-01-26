@@ -66,24 +66,27 @@
 //CIDER FeatureScale config
 
 #define CONF_ND_min 1.0;
-#define CONF_ND_max 5.0;
+#define CONF_ND_max 50.0;
 #define CONF_CD_min 1.0;
-#define CONF_CD_max 5.0;
+#define CONF_CD_max 50.0;
 #define CONF_LP_min 1.0;
-#define CONF_LP_max 5.0;
-#define CONF_RSSI_min -94.0;
+#define CONF_LP_max 50.0;
+#define CONF_RSSI_min -96.0;
 #define CONF_RSSI_max -30.0;
-#define CLUSTER_RADIUS -50
+#define CLUSTER_RADIUS -72
 
-#define CIDER_LOG_LEVEL 0
+#define CIDER_LOG_LEVEL 1
 #define NEIGHBOURTABLE_LOG_LEVEL 0
 #define TSCH_LOG_LEVEL 0
-#define COLOURING_LOG_LEVEL 0
+#define COLOURING_LOG_LEVEL 1
 #define SCHEDULER_LOG_LEVEL 0
 #define RLL_LOG_LEVEL 1
+#define APP_LOG_LEVEL 1
 
 
 #define APPDATACALLBACK applicationDataCallback
+#define TSCHDELETEPACKET packetDeletedFromQueue
+#define RLLRXTIMESLOT RLL_RxTimeslot
 
 #ifndef LPDEVICE
 #define LPDEVICE 0
@@ -133,6 +136,8 @@
 #define NETSTACK_CONF_RDC     nordc_driver
 #undef NETSTACK_CONF_FRAMER
 #define NETSTACK_CONF_FRAMER  framer_802154
+
+#define NETSTACK_CONF_RADIO           cc2538_rf_driver
 
 /* IEEE802.15.4 frame version */
 #undef FRAME802154_CONF_VERSION

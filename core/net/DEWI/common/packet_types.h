@@ -57,6 +57,9 @@ enum CIDERsubpackettype
 	CIDER_LP_PING = 12,
 	CIDER_COMPLETE = 100,
 	CIDER_UNCOMPLETE = 101,
+	CIDER_SETRSSIRADIUS = 150,
+	CIDER_SETLQIRADIUS = 151,
+	CIDER_SETTXPOWER = 152,
 	CIDER_UNDEFINED = 200
 };
 enum COLOURINGsubpackttype
@@ -75,7 +78,7 @@ enum RLLsubpackettype
 };
 enum APPsubpackettype
 {
-	APP_RESET, APP_COLOR, APP_BRIGHTNESS, APP_SENSORDATA, APP_TOPOLOGYREQUEST, APP_TOPOLOGYREPLY, APP_STATSRESET, APP_MASTERMSG, APP_CHILDMSG
+	APP_RESET, APP_COLOR, APP_BRIGHTNESS, APP_SENSORDATA, APP_TOPOLOGYREQUEST, APP_TOPOLOGYREPLY, APP_STATSRESET,APP_EXPERIMENT,APP_RESULTREQUEST,APP_RESULTREPLY, APP_ACK
 };
 
 struct BasePacket
@@ -104,19 +107,22 @@ struct APP_PACKET
 		uint8_t remainingData;
 		uint8_t battery;
 		uint8_t temperature;
+		uint16_t count;
 };
 
 struct CIDER_PACKET
 {
 		struct BasePacket base;
 		enum CIDERsubpackettype subType;
-		uint16_t args[45];
+		uint16_t args[50];
+		uint8_t tier,colour;
 		linkaddr_t parent;
 };
 struct RLL_PACKET
 {
 		struct BasePacket base;
 		enum RLLsubpackettype subType;
+		linkaddr_t initalSRC;
 		struct APP_PACKET appData;
 		uint16_t seqNo;
 

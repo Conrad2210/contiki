@@ -61,6 +61,10 @@ uint8_t CIDER_getLPD();
 int CIDER_getIsActive();
 int CIDER_notify();
 void CIDER_reset();
+void sendRSSI();
+void sendLQI();
+void sendTXPower();
+void checkQueueStatus();
 
 void CIDER_start();
 

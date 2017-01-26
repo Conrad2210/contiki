@@ -57,11 +57,12 @@
 #include <stdio.h>
 #include <stdint.h>
 
-void sendRLLDataMessage(struct APP_PACKET dataPacket);
+void sendRLLDataMessage(struct APP_PACKET dataPacket, uint8_t lock);
 void RLL_init();
 void RLL_start();
 void RLL_notify();
 void RLL_reset();
+void RLL_RxTimeslot(int timeslot);
 
 
 #endif /* DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_RLL_RLL_H_ */
