@@ -51,7 +51,7 @@
 //#include "dev/sys-ctrl.h"
 #include "net/rime/netflood.h"
 #include "net/netstack.h"
-#include "net/DEWI/common/packet_types.h"
+#include "../common/packet_types.h"
 
 
 #include <stdio.h>

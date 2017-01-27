@@ -38,93 +38,106 @@
 
 #ifndef DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_COMMON_PACKET_TYPES_H_
 #define DEWI_NIMBUS_CONTIKI_CORE_NET_DEWI_COMMON_PACKET_TYPES_H_
+
 #include "mac/tsch/tsch-asn.h"
+
 enum packettype
 {
-	SCHEDULE_UPDATE, CIDER, RLL, COLOURING, APP
+    SCHEDULE_UPDATE, CIDER, RLL, COLOURING, APP
 };
 enum CIDERsubpackettype
 {
-	CIDER_PING = 1,
-	CIDER_NEIGHBOUR_UPDATE = 2,
-	CIDER_UTILITY_UPDATE = 3,
-	CIDER_CH_COMPETITION = 4,
-	CIDER_CH = 5,
-	CIDER_CS_PING = 6,
-	CIDER_CS = 7,
-	CIDER_CH_PROMOTE = 10,
-	CIDER_CH_PROMOTE_ACK = 11,
-	CIDER_LP_PING = 12,
-	CIDER_COMPLETE = 100,
-	CIDER_UNCOMPLETE = 101,
-	CIDER_SETRSSIRADIUS = 150,
-	CIDER_SETLQIRADIUS = 151,
-	CIDER_SETTXPOWER = 152,
-	CIDER_UNDEFINED = 200
+    CIDER_PING = 1,
+    CIDER_NEIGHBOUR_UPDATE = 2,
+    CIDER_UTILITY_UPDATE = 3,
+    CIDER_CH_COMPETITION = 4,
+    CIDER_CH = 5,
+    CIDER_CS_PING = 6,
+    CIDER_CS = 7,
+    CIDER_CH_PROMOTE = 10,
+    CIDER_CH_PROMOTE_ACK = 11,
+    CIDER_LP_PING = 12,
+    CIDER_COMPLETE = 100,
+    CIDER_UNCOMPLETE = 101,
+    CIDER_SETRSSIRADIUS = 150,
+    CIDER_SETLQIRADIUS = 151,
+    CIDER_SETTXPOWER = 152,
+    CIDER_UNDEFINED = 200
 };
 enum COLOURINGsubpackttype
 {
-	COLOUR_UPDATE = 1,
-	COLOUR_RELEASE = 2,
-	COLOUR_WAIT_COMPLETE = 100,
-	COLOUR_COMPLETE = 101,
-	COLOUR_UNCOMPLETE = 102,
-	COLOUR_FINISHED = 103
+    COLOUR_UPDATE = 1,
+    COLOUR_RELEASE = 2,
+    COLOUR_WAIT_COMPLETE = 100,
+    COLOUR_COMPLETE = 101,
+    COLOUR_UNCOMPLETE = 102,
+    COLOUR_FINISHED = 103
 };
 
 enum RLLsubpackettype
 {
-	RLL_PING, RLL_DATA
+    RLL_PING, RLL_DATA
 };
 enum APPsubpackettype
 {
-	APP_RESET, APP_COLOR, APP_BRIGHTNESS, APP_SENSORDATA, APP_TOPOLOGYREQUEST, APP_TOPOLOGYREPLY, APP_STATSRESET,APP_EXPERIMENT,APP_RESULTREQUEST,APP_RESULTREPLY, APP_ACK
+    APP_RESET,
+    APP_COLOR,
+    APP_BRIGHTNESS,
+    APP_SENSORDATA,
+    APP_TOPOLOGYREQUEST,
+    APP_TOPOLOGYREPLY,
+    APP_STATSRESET,
+    APP_EXPERIMENT,
+    APP_RESULTREQUEST,
+    APP_RESULTREPLY,
+    APP_ACK
 };
 
 struct BasePacket
 {
-		linkaddr_t src;
-		linkaddr_t dst;
-		enum packettype type;
+    linkaddr_t src;
+    linkaddr_t dst;
+    enum packettype type;
 };
 
 struct COLOURING_PACKET
 {
-		struct BasePacket base;
-		enum COLOURINGsubpackttype subType;
-		uint16_t args[5];
+    struct BasePacket base;
+    enum COLOURINGsubpackttype subType;
+    uint16_t args[5];
 };
 
 struct APP_PACKET
 {
-		enum APPsubpackettype subType;
-		linkaddr_t src;
-		linkaddr_t dst;
-		uint16_t seqNo;
-		struct asn_t timeSend;
-		uint8_t timeslot[23];
-		uint16_t values[23];
-		uint8_t remainingData;
-		uint8_t battery;
-		uint8_t temperature;
-		uint16_t count;
+    enum APPsubpackettype subType;
+    linkaddr_t src;
+    linkaddr_t dst;
+    uint16_t seqNo;
+    struct asn_t timeSend;
+    uint8_t timeslot[23];
+    uint16_t values[23];
+    uint8_t remainingData;
+    uint8_t battery;
+    uint8_t temperature;
+    uint16_t count;
 };
 
 struct CIDER_PACKET
 {
-		struct BasePacket base;
-		enum CIDERsubpackettype subType;
-		uint16_t args[50];
-		uint8_t tier,colour;
-		linkaddr_t parent;
+    struct BasePacket base;
+    enum CIDERsubpackettype subType;
+    uint16_t args[50];
+    uint8_t tier, colour;
+    linkaddr_t parent;
 };
 struct RLL_PACKET
 {
-		struct BasePacket base;
-		enum RLLsubpackettype subType;
-		linkaddr_t initalSRC;
-		struct APP_PACKET appData;
-		uint16_t seqNo;
+    struct BasePacket base;
+    enum RLLsubpackettype subType;
+    linkaddr_t initalSRC;
+    struct APP_PACKET appData;
+    uint16_t seqNo;
+    uint8_t priority;
 
 };
 

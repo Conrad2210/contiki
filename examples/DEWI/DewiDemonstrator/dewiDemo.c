@@ -5,18 +5,18 @@
  *      Author: root
  */
 
-#include "contiki.h"
+#include "../../../core/contiki.h"
 #include "cpu.h"
-#include "lib/list.h"
-#include "lib/memb.h"
-#include "dev/leds.h"
+#include "../../../core/lib/list.h"
+#include "../../../core/lib/memb.h"
+#include "../../../core/dev/leds.h"
 #include "dev/uart.h"
 #include "dev/adc-zoul.h"
 #include "dev/watchdog.h"
 #include "dev/zoul-sensors.h"
-#include "dev/button-sensor.h"
-#include "dev/serial-line.h"
-#include "sys/stimer.h"
+#include "../../../core/dev/button-sensor.h"
+#include "../../../core/dev/serial-line.h"
+#include "../../../core/sys/stimer.h"
 #include "../../../core/net/mac/tsch/tsch.h"
 
 #include "../../../core/net/DEWI/scheduler/scheduler.h"

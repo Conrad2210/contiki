@@ -361,6 +361,8 @@ void handleSerialInput(process_data_t data)
 	char t1[2];
 	long i_data;
 	uint32_t R, G, B;
+
+    PRINTF("[APP] Incoming data %s: %d\n",ch_data);
 	if (experimentActive == 1)
 	{
 		if (LQIrx == 1)
@@ -1102,13 +1104,17 @@ PROCESS_THREAD(dewiStart, ev, data)  // main demonstrator process
 {
 	PROCESS_BEGIN()
 		;
-		//configure buttons
-		button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
-		BUTTON_PRESS_EVENT_INTERVAL);
+
 		//initialize process event timer
 		static struct etimer waitTimer;
 		static struct etimer LED_toggle_timer;
-		serial_line_init();
+
+        //configure buttons
+        button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
+        BUTTON_PRESS_EVENT_INTERVAL);
+
+        //initialize serial line
+        serial_line_init();
 		etimer_set(&LED_toggle_timer, 0.2 * CLOCK_SECOND);
 		etimer_set(&waitTimer, 5 * CLOCK_SECOND); //event timer, every 3 seconds , there is a event
 
@@ -1173,25 +1179,7 @@ PROCESS_BEGIN()
 	initScheduler();
 	PRINTF("[APP]: Started Experiment APP\n");
 
-	//configure buttons
-	button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
-	BUTTON_PRESS_EVENT_INTERVAL);
 
-	//initialize serial line
-	serial_line_init();
-
-	//initialize I2C
-	i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN,
-	I2C_SCL_FAST_BUS_SPEED);
-	i2c_single_send(0x39, 0b00000000);
-
-	//set led brightness to inital brightness
-	i2c_single_send(0x39, (LED_BRIGHTNESS | lastBRIGHTNESS));
-
-	//set LED to white
-	i2c_single_send(0x39, (LED_RED | 0b11111));
-	i2c_single_send(0x39, (LED_GREEN | 0b11111));
-	i2c_single_send(0x39, (LED_BLUE | 0b11111));
 
 	//initialize process event timer
 	static struct etimer et;
@@ -1225,6 +1213,8 @@ PROCESS_BEGIN()
 				isGateway = 1;
 
 			}
+
+            printf("received serial event\n");
 			handleSerialInput(data);
 		}
 		else if (ev == PROCESS_EVENT_TIMER)
@@ -1459,9 +1449,7 @@ setCoord(0);
 initScheduler();
 PRINTF("[APP]: Started Demonstartor APP\n");
 radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, 7);
-//configure buttons
-button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
-BUTTON_PRESS_EVENT_INTERVAL);
+
 
 //initialize I2C
 i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN,
@@ -1476,8 +1464,6 @@ i2c_single_send(0x39, (LED_RED | 0b11111));
 i2c_single_send(0x39, (LED_GREEN | 0b11111));
 i2c_single_send(0x39, (LED_BLUE | 0b11111));
 
-//initialize serial line
-serial_line_init();
 
 //initialize process event timer
 static struct etimer et;
