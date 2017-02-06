@@ -85,6 +85,7 @@ uint8_t lock = 1;
 char waitForTopologyUpdate;  //is 1 if topology information is ongoing, else 0
 char isGateway; // is 1 if this node is a gateway, else 0
 linkaddr_t master_addr1; //parent or master address
+const linkaddr_t myLinkAddr;
 
 ///////////////////////////////
 ////////////////////////////////
@@ -95,7 +96,7 @@ uint16_t txPackets = 0;
 uint16_t rxPackets = 0;
 uint16_t ackAddress;
 uint8_t ackType;
-uint8_t LQIrx = 0, RSSIrx = 0, TxPowerrx, TXPowerNegativ = 0;
+uint8_t LQIrx = 0, RSSIrx = 0, TxPowerrx = 0, TXPowerNegativ = 0;
 struct resultCounter
 { //structure for each child node that the master or parent node has
 	/* The ->next pointer is needed since we are placing these on a
@@ -161,10 +162,10 @@ void updatePerformanceStats(uint8_t latency);
 void sendBatteryStatusByserialP(int b_data, linkaddr_t addr);
 void handleSensorsEvent(process_data_t data);
 void handleSerialInput(process_data_t data);
-void handleProcessEvent( data);
+void handleProcessEvent();
 void handleTopologyRequest();
 void handleTopologyReply(struct APP_PACKET *data);
-
+void clearResults();
 uint8_t addResult(struct resultCounter *res);
 void getResult(uint8_t timeslot, struct resultCounter *res);
 uint8_t getAllResults(uint8_t timeslot[], uint16_t values[]);
@@ -362,7 +363,7 @@ void handleSerialInput(process_data_t data)
 	long i_data;
 	uint32_t R, G, B;
 
-    PRINTF("[APP] Incoming data %s: %d\n",ch_data);
+    PRINTF("[APP] Incoming data %s\n",ch_data);
 	if (experimentActive == 1)
 	{
 		if (LQIrx == 1)
@@ -431,10 +432,10 @@ void handleSerialInput(process_data_t data)
 				uint8_t numChildren = 0; // number of children
 				linkaddr_t children[CONF_MAX_NEIGHBOURS];
 				numChildren = getChildAddresses(children);
-				uint8_t temp;
+				int temp = 0;
 				for (temp = 0; temp < numChildren; temp++)
 				{
-					PRINTF("TPReply:0x%4x,0x%4x,%d,%d\n", linkaddr_node_addr.u16, children[temp],
+					PRINTF("TPReply:0x%4x,0x%4x,%d,%d\n", linkaddr_node_addr.u16, children[temp].u16,
 							getTier(), getColour());
 				}
 
@@ -478,9 +479,10 @@ void handleSerialInput(process_data_t data)
 
 			checkQueueStatus();
 			uint16_t temp = (uint16_t) strtol(ch_data, NULL, 16);
-			if (linkaddr_node_addr.u16 == temp)
+            PRINTF("[APP]: Dest addr: 0x%4x, myAddr: 0x%4x, my LinkAddress: 0x%4x\n",temp,linkaddr_node_addr.u16,myLinkAddr.u16);
+			if (myLinkAddr.u16 == temp)
 			{
-				PRINTF("RESULTReplyTxPackets:0x%4x,%d\n", linkaddr_node_addr.u16, txPackets);
+				PRINTF("RESULTReplyTxPackets:0x%4x,%d\n", myLinkAddr.u16, txPackets);
 				txPackets = 0;
 
 			}
@@ -527,7 +529,7 @@ void handleSerialInput(process_data_t data)
 				numChildren = getChildAddresses(children);
 				printf("got topology request, have %d children\r\n", numChildren);
 
-				int i;
+				int i = 0;
 				// go through the list of children
 				for (i = 0; i < numChildren; i++)
 				{
@@ -619,7 +621,7 @@ void handleSerialInput(process_data_t data)
 
 }
 
-void handleProcessEvent( data)
+void handleProcessEvent()
 {
 	if (experimentActive == 0)
 	{
@@ -741,7 +743,7 @@ void handleTopologyRequest()
 		numChildren = getChildAddresses(children);
 		printf("got topology request, have %d children\r\n", numChildren);
 
-		int i, j;
+		int i = 0, j = 0;
 		for (i = 0; i <= numChildren / 20; i++)
 		{ // put information about max. 20 children in packet, send multiple packets if needed
 			struct APP_PACKET temp;
@@ -768,7 +770,7 @@ void handleTopologyRequest()
 void handleTopologyReply(struct APP_PACKET *data)
 {
 	int numEntries = data->values[0]; // extract the amount of child addresses in this packet
-	int i;
+	int i = 0;
 	// go through the contents of the packet
 	for (i = 0; i < numEntries; i++)
 	{
@@ -847,7 +849,7 @@ void applicationDataCallback(struct APP_PACKET *data)
 			if (isGateway == 1)
 			{
 
-				uint8_t temp;
+				int temp = 0;
 				for (temp = 0; temp < data->count; temp++)
 				{
 					PRINTF("TPReply:0x%4x,0x%4x,%d,%d\n", data->src.u16, data->values[temp],
@@ -877,7 +879,7 @@ void applicationDataCallback(struct APP_PACKET *data)
 			if (isGateway == 1)
 			{
 
-				uint8_t temp;
+				int temp = 0;
 				PRINTF("[APP]: dataSets received: %d, RxPackets: %d\n", data->remainingData,
 						data->count);
 				for (temp = 0; temp < data->temperature; temp++)
@@ -1081,7 +1083,7 @@ uint8_t addResult(struct resultCounter *res)
 uint8_t getAllResults(uint8_t timeslot[], uint16_t values[])
 {
 	struct resultCounter *newRes;
-	uint8_t counter = 0;
+	int counter = 0;
 	for (newRes = list_head(result_list); newRes != NULL; newRes = list_item_next(newRes))
 	{
 		PRINTF("getAllResults, timeslot: %d, counter: %d\n", newRes->timeslot, newRes->counter);
@@ -1105,6 +1107,7 @@ PROCESS_THREAD(dewiStart, ev, data)  // main demonstrator process
 	PROCESS_BEGIN()
 		;
 
+    linkaddr_copy(&myLinkAddr, &linkaddr_node_addr);
 		//initialize process event timer
 		static struct etimer waitTimer;
 		static struct etimer LED_toggle_timer;
@@ -1159,7 +1162,7 @@ PROCESS_THREAD(dewiStart, ev, data)  // main demonstrator process
 					}
 					process_exit(&dewiStart);
 				}
-				else if (data = &LED_toggle_timer)
+				else if (data == &LED_toggle_timer)
 				{
 					leds_toggle(LEDS_ALL);
 					etimer_set(&LED_toggle_timer, 0.2 * CLOCK_SECOND);
@@ -1264,7 +1267,7 @@ PROCESS_BEGIN()
 				{
 					//send one packet
 
-					uint8_t temp = 0;
+					int temp = 0;
 					for (temp = 0; temp < numChildren; temp++)
 					{
 						packet.values[temp] = children[temp].u16;
@@ -1278,12 +1281,12 @@ PROCESS_BEGIN()
 				else
 				{
 					//send more than one packet
-					uint8_t temp = 0, sentPacket = 0, lowerBorder;
-					uint8_t numPackets = (uint8_t) ceilf((float) numChildren / (float) 23);
+					int temp = 0, sentPacket = 0, lowerBorder;
+					int numPackets = (int) ceilf((float) numChildren / (float) 23);
 					PRINTF("numPackets: %d,numChildren: %d\n", numPackets, numChildren);
 					for (sentPacket = 0; sentPacket < numPackets; sentPacket++)
 					{
-						uint8_t maxBorder = (sentPacket + 1) * 23;
+						int maxBorder = (sentPacket + 1) * 23;
 						if (maxBorder > numChildren)
 						{
 							maxBorder = numChildren;
@@ -1329,7 +1332,7 @@ PROCESS_BEGIN()
 				{
 					//send one packet
 
-					uint8_t temp = 0;
+					int temp = 0;
 					packet.remainingData = 0;
 					packet.temperature = numResults;
 					for (temp = 0; temp < numResults; temp++)
@@ -1348,11 +1351,11 @@ PROCESS_BEGIN()
 				else
 				{
 					//send more than one packet
-					uint8_t temp = 0, sentPacket = 0, lowerBorder;
+					int temp = 0, sentPacket = 0, lowerBorder;
 					PRINTF("numPackets: %d,numChildren: %d\n", numPackets, numResults);
 					for (sentPacket = 0; sentPacket < numPackets; sentPacket++)
 					{
-						uint8_t maxBorder = (sentPacket + 1) * 23;
+						int maxBorder = (sentPacket + 1) * 23;
 						if (maxBorder > numResults)
 						{
 							maxBorder = numResults;

@@ -814,6 +814,8 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 			else
 			{
 				PRINTF("[CIDER]: CH_PROMOTE not meant for me \n");
+				if(getCIDERState() == CIDER_CH)
+					resetMSGCounter();
 			}
 
 			break;
