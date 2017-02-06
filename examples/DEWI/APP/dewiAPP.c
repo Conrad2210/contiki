@@ -850,6 +850,7 @@ void applicationDataCallback(struct APP_PACKET *data)
 			{
 
 				int temp = 0;
+				PRINTF("[APP]: number received results: %u\n",data->count);
 				for (temp = 0; temp < data->count; temp++)
 				{
 					PRINTF("TPReply:0x%4x,0x%4x,%d,%d\n", data->src.u16, data->values[temp],

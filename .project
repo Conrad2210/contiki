@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>DEWIDemo</name>
+	<name>DEWI</name>
 	<comment></comment>
 	<projects>
 	</projects>
 	<buildSpec>
-		<buildCommand>
-			<name>org.python.pydev.PyDevBuilder</name>
-			<arguments>
-			</arguments>
-		</buildCommand>
 		<buildCommand>
 			<name>org.eclipse.cdt.managedbuilder.core.genmakebuilder</name>
 			<triggers>clean,full,incremental,</triggers>
@@ -27,6 +22,47 @@
 		<nature>org.eclipse.cdt.core.cnature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
-		<nature>org.python.pydev.pythonNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>.cproject</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/DEWI-Nimbus-Contiki/.cproject</locationURI>
+		</link>
+		<link>
+			<name>.gitattributes</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/DEWI-Nimbus-Contiki/.gitattributes</locationURI>
+		</link>
+		<link>
+			<name>.gitignore</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/DEWI-Nimbus-Contiki/.gitignore</locationURI>
+		</link>
+		<link>
+			<name>.gitmodules</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/DEWI-Nimbus-Contiki/.gitmodules</locationURI>
+		</link>
+		<link>
+			<name>.project</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/DEWI-Nimbus-Contiki/.project</locationURI>
+		</link>
+		<link>
+			<name>.pydevproject</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/DEWI-Nimbus-Contiki/.pydevproject</locationURI>
+		</link>
+		<link>
+			<name>.travis.yml</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/DEWI-Nimbus-Contiki/.travis.yml</locationURI>
+		</link>
+		<link>
+			<name>DEWI-Nimbus-Contiki</name>
+			<type>2</type>
+			<location>/home/user/DEWI-Nimbus-Contiki</location>
+		</link>
+	</linkedResources>
 </projectDescription>

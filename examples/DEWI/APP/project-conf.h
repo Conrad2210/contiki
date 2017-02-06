@@ -80,7 +80,7 @@
 #define TSCH_LOG_LEVEL 0
 #define COLOURING_LOG_LEVEL 1
 #define SCHEDULER_LOG_LEVEL 0
-#define RLL_LOG_LEVEL 1
+#define RLL_LOG_LEVEL 2
 #define APP_LOG_LEVEL 1
 
 

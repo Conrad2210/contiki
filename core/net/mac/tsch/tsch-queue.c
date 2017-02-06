@@ -174,11 +174,17 @@ int tsch_queue_update_time_source(const linkaddr_t *new_addr)
 						TSCH_LOG_ID_FROM_LINKADDR(old_time_src ? &old_time_src->addr : NULL),
 						TSCH_LOG_ID_FROM_LINKADDR(new_time_src ? &new_time_src->addr : NULL));
 
-				/* Update time source */
-				if (new_time_src != NULL)
-				{
-					new_time_src->is_time_source = 1;
-				}
+        /* Update time source */
+        if(new_time_src != NULL) {
+          new_time_src->is_time_source = 1;
+          /* (Re)set keep-alive timeout */
+          tsch_set_ka_timeout(TSCH_KEEPALIVE_TIMEOUT);
+          /* Start sending keepalives */
+          tsch_schedule_keepalive();
+        } else {
+          /* Stop sending keepalives */
+          tsch_set_ka_timeout(0);
+        }
 
 				if (old_time_src != NULL)
 				{
