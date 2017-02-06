@@ -1454,6 +1454,7 @@ radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, 7);
 //initialize I2C
 i2c_init(I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN,
 I2C_SCL_FAST_BUS_SPEED);
+
 i2c_single_send(0x39, 0b00000000);
 
 //set led brightness to inital brightness

@@ -48,12 +48,12 @@
 #include "lib/random.h"
 #include "net/queuebuf.h"
 #include "net/mac/rdc.h"
-#include "tsch.h"
-#include "tsch-private.h"
-#include "tsch-queue.h"
-#include "tsch-schedule.h"
-#include "tsch-slot-operation.h"
-#include "tsch-log.h"
+#include "net/mac/tsch/tsch.h"
+#include "net/mac/tsch/tsch-private.h"
+#include "net/mac/tsch/tsch-queue.h"
+#include "net/mac/tsch/tsch-schedule.h"
+#include "net/mac/tsch/tsch-slot-operation.h"
+#include "net/mac/tsch/tsch-log.h"
 #include <string.h>
 
 #if TSCH_LOG_LEVEL >= 1
@@ -62,6 +62,7 @@
 #define DEBUG DEBUG_NONE
 #endif /* TSCH_LOG_LEVEL */
 #include "net/net-debug.h"
+#include "../../../lib/memb.h"
 
 /* Check if TSCH_QUEUE_NUM_PER_NEIGHBOR is power of two */
 #if (TSCH_QUEUE_NUM_PER_NEIGHBOR & (TSCH_QUEUE_NUM_PER_NEIGHBOR - 1)) != 0
@@ -244,15 +245,15 @@ struct tsch_packet *tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t
 	uint8_t ready = 0;
 	int16_t put_index = -1;
 	struct tsch_packet *p = NULL;
-//	ready = tsch_is_locked();
-	//while (tsch_is_locked() == 1);
-//	{
-//		clock_delay_usec(500);
-//		if (waitCounter < 5)
-//			ready = tsch_is_locked();
-//		else ready = 0;
-//		waitCounter++;
-//	}
+    ready = tsch_is_locked();
+	while (ready == 1)
+	{
+		clock_delay_usec(500);
+		if (waitCounter < 5)
+			ready = tsch_is_locked();
+		else ready = 0;
+		waitCounter++;
+	}
 	if (!tsch_is_locked())
 	{
 		n = tsch_queue_add_nbr(addr);
