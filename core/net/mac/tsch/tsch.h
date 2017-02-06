@@ -183,6 +183,6 @@ int tsch_get_coordinator();
 /* Set the pan as secured or not */
 void tsch_set_pan_secured(int enable);
 /* returns the current asn*/
-struct asn_t tsch_get_current_asn();
+struct tsch_asn_t tsch_get_current_asn();
 
 #endif /* __TSCH_H__ */

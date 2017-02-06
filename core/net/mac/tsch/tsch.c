@@ -190,8 +190,8 @@ tsch_set_eb_period(uint32_t period)
   tsch_current_eb_period = MIN(period, TSCH_MAX_EB_PERIOD);
 }
 
-struct asn_t tsch_get_current_asn(){
-		return current_asn;
+struct tsch_asn_t tsch_get_current_asn(){
+		return tsch_current_asn;
 }
 
 /*---------------------------------------------------------------------------*/

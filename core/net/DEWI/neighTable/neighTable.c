@@ -372,7 +372,7 @@ uint8_t checkIfReadyForNextState(int currentState)
 		/* We break out of the loop if the address of the neighbor matches
 		 the address of the neighbor from which we received this
 		 broadcast message. */
-		if (ASN_DIFF(tsch_get_current_asn(),n->last_asn) < 0x1F4) // ASN difference less than 5s; 0x1f4 = 500; 500 * 10ms = 5000ms == 5s
+		if (TSCH_ASN_DIFF(tsch_get_current_asn(),n->last_asn) < 0x1F4) // ASN difference less than 5s; 0x1f4 = 500; 500 * 10ms = 5000ms == 5s
 		{
 			if (getActiveProtocol() == 0)
 			{
@@ -555,7 +555,7 @@ void initNeighbour(struct neighbour *n)
 	n->UCDegree = 0;
 	n->CDegree = 0;
 	n->sDegree = 0;
-	ASN_INIT(n->last_asn, 0, 0);
+	TSCH_ASN_INIT(n->last_asn, 0, 0);
 
 }
 

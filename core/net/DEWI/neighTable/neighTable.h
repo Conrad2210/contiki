@@ -88,7 +88,7 @@ struct neighbour
 		/* RLL related values, cluster state, indication if parent or cs, is low power device (LPD)*/
 
 		/* last active ASN */
-		struct asn_t last_asn;
+		struct tsch_asn_t last_asn;
 
 		/* Each broadcast packet contains a sequence number (seqno). The
 		 ->last_seqno field holds the last sequenuce number we saw from

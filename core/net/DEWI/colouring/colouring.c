@@ -276,7 +276,7 @@ void COLOURING_startSendTimer()
 	/**************************************/
 	/**************************************/
 
-	struct tsch_link *temp = tsch_schedule_get_next_active_link(&current_asn, 0,
+	struct tsch_link *temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0,
 	NULL);
 	struct tsch_slotframe *tempSF = tsch_schedule_get_slotframe_by_handle(temp->slotframe_handle);
 	uint16_t tsr = (tempSF->size.val - temp->timeslot); //remaining timeslots in this sf duration

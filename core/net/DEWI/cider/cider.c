@@ -156,7 +156,7 @@ void startSendTimer()
 	/**************************************/
 	/**************************************/
 
-	struct tsch_link *temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+	struct tsch_link *temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0, NULL);
 	struct tsch_slotframe *tempSF = tsch_schedule_get_slotframe_by_handle(temp->slotframe_handle);
 	uint16_t tsr = (tempSF->size.val - temp->timeslot); //remaining timeslots in this sf duration
 	uint16_t tsd = (linkaddr_node_addr.u16 & 0b0000111111111111) / 10;
@@ -843,7 +843,7 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 				if (checkChildCH() == 0 && checkCS() == 0)
 				{
 					PRINTF("[CIDER]:I have to demote myself, no CS nor CH's \n");
-					struct tsch_link *temp = tsch_schedule_get_next_active_link(&current_asn, 0,
+					struct tsch_link *temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0,
 					NULL);
 					struct CIDER_PACKET CIDERPacket;
 					CIDERPacket.base.dst = tsch_broadcast_address;
@@ -890,7 +890,7 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 						if (clusteringUnComplete == 0)
 						{
 							struct tsch_link *temp = tsch_schedule_get_next_active_link(
-									&current_asn, 0,
+									&tsch_current_asn, 0,
 									NULL);
 							struct CIDER_PACKET CIDERPacket;
 							CIDERPacket.base.dst = tsch_broadcast_address;
@@ -919,7 +919,7 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 				if (clusteringUnComplete == 0 && linkaddr_cmp(&linkaddr_null, &parent) != 1
 						&& linkaddr_cmp(&linkaddr_node_addr, &parent) != 1)
 				{
-					struct tsch_link *temp = tsch_schedule_get_next_active_link(&current_asn, 0,
+					struct tsch_link *temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0,
 					NULL);
 					struct CIDER_PACKET CIDERPacket;
 					CIDERPacket.base.dst = tsch_broadcast_address;
@@ -1241,7 +1241,7 @@ void CIDER_reset()
 
 void callbackCompleteTimer()
 {
-	struct tsch_link *temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+	struct tsch_link *temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0, NULL);
 	struct CIDER_PACKET CIDERPacket;
 	CIDERPacket.base.dst = tsch_broadcast_address;
 	CIDERPacket.base.src = linkaddr_node_addr;
@@ -1269,7 +1269,7 @@ void callbackCompleteWaitTimer()
 
 void callbackCompetitionTimer()
 {
-	struct tsch_link *temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+	struct tsch_link *temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0, NULL);
 	struct CIDER_PACKET CIDERPacket;
 
 	CIDERPacket.base.dst = tsch_broadcast_address;

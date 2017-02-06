@@ -334,7 +334,7 @@ void handleSensorsEvent(process_data_t data)
 						struct APP_PACKET temp;
 						temp.subType = APP_BRIGHTNESS;
 						temp.values[0] = (uint16_t) brightness;
-						temp.timeSend = current_asn;
+						temp.timeSend = tsch_current_asn;
 						temp.dst = tsch_broadcast_address;
 						temp.src = linkaddr_node_addr;
 						temp.seqNo = seqNo++;
@@ -406,7 +406,7 @@ void handleSerialInput(process_data_t data)
 			struct APP_PACKET packet;
 			packet.src = linkaddr_node_addr;
 			packet.dst = tsch_broadcast_address;
-			packet.timeSend = current_asn;
+			packet.timeSend = tsch_current_asn;
 			packet.seqNo = seqNo++;
 			packet.subType = APP_EXPERIMENT;
 
@@ -512,7 +512,7 @@ void handleSerialInput(process_data_t data)
 			// poll topology data from network
 			struct APP_PACKET temp;
 			temp.subType = APP_TOPOLOGYREQUEST;
-			temp.timeSend = current_asn;
+			temp.timeSend = tsch_current_asn;
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
@@ -566,7 +566,7 @@ void handleSerialInput(process_data_t data)
 		  // broadcast statistics reset to network
 			struct APP_PACKET temp;
 			temp.subType = APP_STATSRESET;
-			temp.timeSend = current_asn;
+			temp.timeSend = tsch_current_asn;
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
@@ -585,7 +585,7 @@ void handleSerialInput(process_data_t data)
 			struct APP_PACKET temp;
 			temp.subType = APP_BRIGHTNESS;
 			temp.values[0] = (uint16_t) lastBRIGHTNESS;
-			temp.timeSend = current_asn;
+			temp.timeSend = tsch_current_asn;
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
@@ -609,7 +609,7 @@ void handleSerialInput(process_data_t data)
 			temp.values[0] = R;
 			temp.values[1] = G;
 			temp.values[2] = B;
-			temp.timeSend = current_asn;
+			temp.timeSend = tsch_current_asn;
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
@@ -644,7 +644,7 @@ void handleProcessEvent()
 				// poll topology data from network
 				struct APP_PACKET temp;
 				temp.subType = APP_TOPOLOGYREQUEST;
-				temp.timeSend = current_asn;
+				temp.timeSend = tsch_current_asn;
 				temp.dst = tsch_broadcast_address;
 				temp.src = linkaddr_node_addr;
 				temp.seqNo = seqNo++;
@@ -677,7 +677,7 @@ void handleProcessEvent()
 //			temp.subType = APP_SENSORDATA;
 //			temp.temperature = (uint8_t) temperature;
 //			temp.battery = (uint8_t) battery;
-//			temp.timeSend = current_asn;
+//			temp.timeSend = tsch_current_asn;
 //			temp.dst = tsch_broadcast_address;
 //			temp.src = linkaddr_node_addr;
 //			temp.seqNo = seqNo++;
@@ -755,7 +755,7 @@ void handleTopologyRequest()
 			{
 				temp.values[j + 3] = children[i * 10 + j].u16;
 			}
-			temp.timeSend = current_asn;
+			temp.timeSend = tsch_current_asn;
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
@@ -809,8 +809,8 @@ void applicationDataCallback(struct APP_PACKET *data)
 {
 	if (experimentActive == 1)
 	{
-		struct asn_t receivedAt = current_asn;
-		uint16_t latency = ASN_DIFF(receivedAt, data->timeSend);
+		struct tsch_asn_t receivedAt = tsch_current_asn;
+		uint16_t latency = TSCH_ASN_DIFF(receivedAt, data->timeSend);
 		PRINTF("[APP]: MSG received: Type: %d, from: 0x%4x with seqNo: %d\n", data->subType,
 				data->src.u16, data->seqNo);
 		if (data->subType == APP_EXPERIMENT)
@@ -910,8 +910,8 @@ void applicationDataCallback(struct APP_PACKET *data)
 				|| (linkaddr_cmp(&data->dst, &tsch_broadcast_address) == 1
 						&& linkaddr_cmp(&data->src, &linkaddr_node_addr) != 1))
 		{
-			struct asn_t receivedAt = current_asn;
-			uint8_t latency = ASN_DIFF(receivedAt, data->timeSend); // latency in number of time slots
+			struct tsch_asn_t receivedAt = tsch_current_asn;
+			uint8_t latency = TSCH_ASN_DIFF(receivedAt, data->timeSend); // latency in number of time slots
 			printf("[APP]: Data received: Type: %d, from: 0x%4x with seqNo: %d, latency: %d\n",
 					data->subType, data->src.u16, data->seqNo, latency * 10);
 
@@ -1518,7 +1518,7 @@ while (1)
 			isGateway = 1;
 			struct APP_PACKET temp;
 			temp.subType = APP_STATSRESET;
-			temp.timeSend = current_asn;
+			temp.timeSend = tsch_current_asn;
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;

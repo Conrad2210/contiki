@@ -113,7 +113,7 @@ struct APP_PACKET
     linkaddr_t src;
     linkaddr_t dst;
     uint16_t seqNo;
-    struct asn_t timeSend;
+    struct tsch_asn_t timeSend;
     uint8_t timeslot[23];
     uint16_t values[23];
     uint8_t remainingData;

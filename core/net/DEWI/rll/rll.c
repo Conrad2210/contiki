@@ -197,13 +197,13 @@ void RLL_notify()
 //        lastRxSeqNo = RLLSeqNo - 1;
 //        ANNOTATE("[APP]: try to send msg\n");
 //        if (RLL_CIDERState == 7) {
-//            struct tsch_link *temp = tsch_schedule_get_next_active_link(&current_asn, &timeslotOffset, NULL);
+//            struct tsch_link *temp = tsch_schedule_get_next_active_link(&tsch_current_asn, &timeslotOffset, NULL);
 //            uint8_t timeslot = 0;
 //            uint8_t baseTimeslot = 0;
 //            uint8_t currentTimeslot = 0;
 //            uint8_t currentCalcTimeslot = 0;
 //            uint8_t tx1 = 1;
-//            temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+//            temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0, NULL);
 //            currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 ////						if (currentCalcTimeslot == tx1)
 ////						{
@@ -222,12 +222,12 @@ void RLL_notify()
 //
 //            if (timeslot > 50) timeslot = tx1;
 //            PRINTF("[RLL]:Send to Parent \%2=0 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",
-//                   baseTimeslot, currentTimeslot, timeslot, current_asn.ms1b, current_asn.ls4b);
+//                   baseTimeslot, currentTimeslot, timeslot, tsch_current_asn.ms1b, tsch_current_asn.ls4b);
 //
 //            if (lastTimeslotSend != timeslot) {
 //                lastTimeslotSend = timeslot;
 //                PRINTF("[RLL]:Send to Parent \%2=1 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",
-//                       baseTimeslot, currentTimeslot, timeslot, current_asn.ms1b, current_asn.ls4b);
+//                       baseTimeslot, currentTimeslot, timeslot, tsch_current_asn.ms1b, tsch_current_asn.ls4b);
 //
 //                packetbuf_copyfrom(&RLLPacket, sizeof(struct RLL_PACKET));
 //                packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
@@ -247,7 +247,7 @@ void RLL_notify()
 //                if (RLLTier % 2 == 0) {
 //                    tx1 = 2;
 //                    tx2 = 6;
-//                    temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+//                    temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0, NULL);
 //                    currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 //                    if (currentCalcTimeslot == tx1) {
 //                        timeslot = temp->timeslot;
@@ -272,7 +272,7 @@ void RLL_notify()
 //                } else {
 //                    tx1 = 4;
 //                    tx2 = 8;
-//                    temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+//                    temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0, NULL);
 //                    currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 //                    if (currentCalcTimeslot == tx1) {
 //                        timeslot = temp->timeslot;
@@ -305,7 +305,7 @@ void RLL_notify()
 //                if (RLLTier % 2 == 0) {
 //                    tx1 = 5;
 //                    tx2 = 9;
-//                    temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+//                    temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0, NULL);
 //                    currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 //                    if (currentCalcTimeslot == tx1) {
 //                        timeslot = temp->timeslot;
@@ -328,7 +328,7 @@ void RLL_notify()
 //                        if (timeslot > 50) timeslot = tx1;
 //                    }
 //                } else {
-//                    temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+//                    temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0, NULL);
 //                    currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 //                    tx1 = 3;
 //                    tx2 = 7;
@@ -359,7 +359,7 @@ void RLL_notify()
 //                broadcast_send(&rll_broadcast);
 //            }
 //            if (RLLNumCS != 0) {
-//                temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+//                temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0, NULL);
 //                currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 //
 //                if (currentCalcTimeslot != 0) {
@@ -409,7 +409,7 @@ static void sendToParent(struct RLL_PACKET *data)
 	{
 		if (RLLTier % 2 == 0)
 		{
-			temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+			temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0, NULL);
 			tx1 = 2;
 			tx2 = 6;
 
@@ -427,12 +427,12 @@ static void sendToParent(struct RLL_PACKET *data)
 			if (timeslot > 50)
 				timeslot = tx1;
 			PRINTF("[RLL]:Send to Parent \%2=0 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",
-					baseTimeslot, currentTimeslot, timeslot, current_asn.ms1b, current_asn.ls4b);
+					baseTimeslot, currentTimeslot, timeslot, tsch_current_asn.ms1b, tsch_current_asn.ls4b);
 		} else
 		{
 			tx1 = 4;
 			tx2 = 8;
-			temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+			temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0, NULL);
 			currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 
 			baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
@@ -448,7 +448,7 @@ static void sendToParent(struct RLL_PACKET *data)
 				timeslot = tx1;
 
 			PRINTF("[RLL]:Send to Parent \%2=1 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",
-					baseTimeslot, currentTimeslot, timeslot, current_asn.ms1b, current_asn.ls4b);
+					baseTimeslot, currentTimeslot, timeslot, tsch_current_asn.ms1b, tsch_current_asn.ls4b);
 		}
 
 		packetbuf_copyfrom(&RLLParentPacket, sizeof(struct RLL_PACKET));
@@ -478,7 +478,7 @@ static void sendToChildCH(struct RLL_PACKET *data)
 	{
 		tx1 = 5;
 		tx2 = 9;
-		temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+		temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0, NULL);
 		currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 
 		baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
@@ -494,12 +494,12 @@ static void sendToChildCH(struct RLL_PACKET *data)
 			timeslot = tx1;
 
 		PRINTF("[RLL]:Send to Parent \%2=0 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",
-				baseTimeslot, currentTimeslot, timeslot, current_asn.ms1b, current_asn.ls4b);
+				baseTimeslot, currentTimeslot, timeslot, tsch_current_asn.ms1b, tsch_current_asn.ls4b);
 	} else
 	{
 
 		currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
-		temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+		temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0, NULL);
 		tx1 = 3;
 		tx2 = 7;
 
@@ -515,7 +515,7 @@ static void sendToChildCH(struct RLL_PACKET *data)
 		if (timeslot > 50)
 			timeslot = tx1;
 		PRINTF("[RLL]:Send to Parent \%2=1 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",
-				baseTimeslot, currentTimeslot, timeslot, current_asn.ms1b, current_asn.ls4b);
+				baseTimeslot, currentTimeslot, timeslot, tsch_current_asn.ms1b, tsch_current_asn.ls4b);
 	}
 	packetbuf_copyfrom(&RLLChildPacket, sizeof(struct RLL_PACKET));
 	packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
@@ -538,8 +538,8 @@ static void sendToCS(struct RLL_PACKET *data)
 	RLLCSPacket.subType = data->subType;
 	RLLCSPacket.priority = data->priority;
 
-	PRINTF("[RLL]: forward to CS at: asn-%x.%lx\n", current_asn.ms1b, current_asn.ls4b);ANNOTATE("[RLL]: currentCalcTimeslot: %d, timeslot: %d\n", currentCalcTimeslot, temp->timeslot);
-	temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+	PRINTF("[RLL]: forward to CS at: asn-%x.%lx\n", tsch_current_asn.ms1b, tsch_current_asn.ls4b);ANNOTATE("[RLL]: currentCalcTimeslot: %d, timeslot: %d\n", currentCalcTimeslot, temp->timeslot);
+	temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0, NULL);
 	currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 
 	if (currentCalcTimeslot != 0)
@@ -558,7 +558,7 @@ static void sendToCS(struct RLL_PACKET *data)
 		baseTimeslot = 0;
 		currentTimeslot = 0;
 	}PRINTF("[RLL]:Send to CS base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",
-			baseTimeslot, currentTimeslot, timeslot, current_asn.ms1b, current_asn.ls4b);
+			baseTimeslot, currentTimeslot, timeslot, tsch_current_asn.ms1b, tsch_current_asn.ls4b);
 	packetbuf_copyfrom(&RLLCSPacket, sizeof(struct RLL_PACKET));
 	packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
 	packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, timeslot);
@@ -606,8 +606,8 @@ static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from
 
 					lastRxSeqNo = tempPacket->seqNo;
 
-					ANNOTATE("[RLL]: received RLL Data MSG at: asn-%x.%lx, forward direction: %d\n", current_asn.ms1b,
-							current_asn.ls4b, direction);
+					ANNOTATE("[RLL]: received RLL Data MSG at: asn-%x.%lx, forward direction: %d\n", tsch_current_asn.ms1b,
+							tsch_current_asn.ls4b, direction);
 					if ((direction == -1 || direction == 0) && getTier() != 0)
 					{
 						sendToParent(tempPacket);
@@ -648,7 +648,7 @@ void sendRLLDataMessage(struct APP_PACKET dataPacket, uint8_t lock)
 {
 	RLL_lock = lock;
 	ANNOTATE("[RLL]: sendRLLDataMessage, RLL_Started: %d, msg received from APP at: asn-%x.%lx\n", RLL_started,
-			current_asn.ms1b, current_asn.ls4b);
+			tsch_current_asn.ms1b, tsch_current_asn.ls4b);
 	if (RLL_started == 1)
 	{
 
@@ -666,13 +666,13 @@ void sendRLLDataMessage(struct APP_PACKET dataPacket, uint8_t lock)
 		ANNOTATE("[APP]: try to send msg\n");
 		if (RLL_CIDERState == 7)
 		{
-			struct tsch_link *temp; // = tsch_schedule_get_next_active_link(&current_asn, &timeslotOffset, NULL);
+			struct tsch_link *temp; // = tsch_schedule_get_next_active_link(&tsch_current_asn, &timeslotOffset, NULL);
 			uint8_t timeslot = 0;
 			uint8_t baseTimeslot = 0;
 			uint8_t currentTimeslot = 0;
 			uint8_t currentCalcTimeslot = 0;
 			uint8_t tx1 = 1;
-			temp = tsch_schedule_get_next_active_link(&current_asn, &timeslotOffset, NULL);
+			temp = tsch_schedule_get_next_active_link(&tsch_current_asn, &timeslotOffset, NULL);
 			currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 
 			baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
@@ -682,13 +682,13 @@ void sendRLLDataMessage(struct APP_PACKET dataPacket, uint8_t lock)
 			if (timeslot > 50)
 				timeslot = tx1;
 			PRINTF("[RLL]:Send to Parent \%2=0 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",
-					baseTimeslot, currentTimeslot, timeslot, current_asn.ms1b, current_asn.ls4b);
+					baseTimeslot, currentTimeslot, timeslot, tsch_current_asn.ms1b, tsch_current_asn.ls4b);
 
 			if (lastTimeslotSend != timeslot)
 			{
 				lastTimeslotSend = timeslot;
 				PRINTF("[RLL]:Send to Parent \%2=1 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",
-						baseTimeslot, currentTimeslot, timeslot, current_asn.ms1b, current_asn.ls4b);
+						baseTimeslot, currentTimeslot, timeslot, tsch_current_asn.ms1b, tsch_current_asn.ls4b);
 
 				packetbuf_copyfrom(&RLLSendPacket, sizeof(struct RLL_PACKET));
 				packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
@@ -711,7 +711,7 @@ void sendRLLDataMessage(struct APP_PACKET dataPacket, uint8_t lock)
 				{
 					tx1 = 2;
 					tx2 = 6;
-					temp = tsch_schedule_get_next_active_link(&current_asn, 0,
+					temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0,
 					NULL);
 					currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 
@@ -731,7 +731,7 @@ void sendRLLDataMessage(struct APP_PACKET dataPacket, uint8_t lock)
 				{
 					tx1 = 4;
 					tx2 = 8;
-					temp = tsch_schedule_get_next_active_link(&current_asn, 0,
+					temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0,
 					NULL);
 					currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 
@@ -760,7 +760,7 @@ void sendRLLDataMessage(struct APP_PACKET dataPacket, uint8_t lock)
 				{
 					tx1 = 5;
 					tx2 = 9;
-					temp = tsch_schedule_get_next_active_link(&current_asn, 0,
+					temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0,
 					NULL);
 					currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 
@@ -778,7 +778,7 @@ void sendRLLDataMessage(struct APP_PACKET dataPacket, uint8_t lock)
 
 				} else
 				{
-					temp = tsch_schedule_get_next_active_link(&current_asn, 0,
+					temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0,
 					NULL);
 					currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 					tx1 = 3;
@@ -804,7 +804,7 @@ void sendRLLDataMessage(struct APP_PACKET dataPacket, uint8_t lock)
 			}
 			if (RLLNumCS != 0)
 			{
-				temp = tsch_schedule_get_next_active_link(&current_asn, 0,
+				temp = tsch_schedule_get_next_active_link(&tsch_current_asn, 0,
 				NULL);
 				currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
 
