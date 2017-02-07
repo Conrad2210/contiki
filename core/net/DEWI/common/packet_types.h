@@ -125,6 +125,7 @@ struct RLL_PACKET
 		linkaddr_t initalSRC;
 		struct APP_PACKET appData;
 		uint16_t seqNo;
+		uint8_t priority;
 
 };
 

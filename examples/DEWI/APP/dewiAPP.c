@@ -69,7 +69,7 @@
 #define BUTTON_PRESS_EVENT_INTERVAL (CLOCK_SECOND)
 
 #define NUM_ADDR_ENTRIES 100		//number of child nodes that a master node can have
-#define MAX_RESULTS_ENTRIES 200
+#define MAX_RESULTS_ENTRIES 100
 
 /***************************************/
 /***************************************/
@@ -106,7 +106,7 @@ struct resultCounter
 };
 MEMB(result_memb, struct resultCounter, MAX_RESULTS_ENTRIES);
 LIST(result_list);
-uint8_t experimentActive = 0;
+uint8_t experimentActive = 1;
 uint8_t tempresult[50] = { 0 };
 uint8_t tempResultCounter = 0;
 
@@ -115,7 +115,6 @@ uint8_t tempResultCounter = 0;
 //Demonstrator specific variables
 /////////////////////////////
 ////////////////////////////
-char ledToggle;
 char ledToggle;
 
 // instead of having different timers, use counters to trigger actions at multiples of process event timer
@@ -168,6 +167,7 @@ void handleTopologyReply(struct APP_PACKET *data);
 uint8_t addResult(struct resultCounter *res);
 void getResult(uint8_t timeslot, struct resultCounter *res);
 uint8_t getAllResults(uint8_t timeslot[], uint16_t values[]);
+void clearResults();
 void sendACK(linkaddr_t addr);
 
 PROCESS(dewiExperiment, "DEWI Experiment, using CIDER and RLL");	//main process
@@ -602,7 +602,7 @@ void handleSerialInput(process_data_t data)
 
 }
 
-void handleProcessEvent( data)
+void handleProcessEvent()
 {
 	if (experimentActive == 0)
 	{
@@ -830,6 +830,7 @@ void applicationDataCallback(struct APP_PACKET *data)
 			{
 
 				uint8_t temp;
+				PRINTF("[APP]: number received results: %u\n",data->count);
 				for (temp = 0; temp < data->count; temp++)
 				{
 					PRINTF("TPReply:0x%4x,0x%4x,%d,%d\n", data->src.u16, data->values[temp],
@@ -870,17 +871,14 @@ void applicationDataCallback(struct APP_PACKET *data)
 				if (data->remainingData == 0)
 					PRINTF("RESULTReplyRxPackets:0x%4x,%d\n", data->src.u16, data->count);
 
-				PRINTF("[APP]: send Ack to: 0x%4x \n", data->src.u16);PRINTF("[APP]: APP_RESULTREQUEST received, send message\n");
+
 			}
 		}
 		else if (data->subType == APP_ACK)
 		{
-
 			PRINTF("[APP]: Ack received\n");
-
 			rxPackets = 0;
 			clearResults();
-
 		}
 	}
 	else
@@ -1110,7 +1108,7 @@ PROCESS_THREAD(dewiStart, ev, data)  // main demonstrator process
 					if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL)
 							== BUTTON_SENSOR_PRESSED_LEVEL)
 					{
-						experimentActive = 1;
+						experimentActive = 0;
 
 					}
 
@@ -1137,7 +1135,7 @@ PROCESS_THREAD(dewiStart, ev, data)  // main demonstrator process
 					}
 					process_exit(&dewiStart);
 				}
-				else if(data = &LED_toggle_timer){
+				else if(data == &LED_toggle_timer){
 					leds_toggle(LEDS_ALL);
 					etimer_set(&LED_toggle_timer, 0.2 * CLOCK_SECOND);
 				}
@@ -1239,27 +1237,27 @@ PROCESS_BEGIN()
 				linkaddr_t children[CONF_MAX_NEIGHBOURS];
 				numChildren = getChildAddresses(children);
 				PRINTF("got topology request, have %d children\r\n", numChildren);
+				uint8_t numPackets = (uint8_t) ceilf((float) numChildren / (float) 23);
 
-				if (numChildren < 23)
-				{
-					//send one packet
+				if (numPackets == 1)
+								{
+									//send one packet
 
-					uint8_t temp = 0;
-					for (temp = 0; temp < numChildren; temp++)
-					{
-						packet.values[temp] = children[temp].u16;
-					}
-					packet.count = numChildren;
-					packet.remainingData = 0;
-					//packet.
-					lock = 1;
-					sendRLLDataMessage(packet, 0);
-				}
+									int temp = 0;
+									for (temp = 0; temp < numChildren; temp++)
+									{
+										packet.values[temp] = children[temp].u16;
+									}
+									packet.count = numChildren;
+									packet.remainingData = 0;
+									//packet.
+									lock = 1;
+									sendRLLDataMessage(packet, 0);
+								}
 				else
 				{
 					//send more than one packet
-					uint8_t temp = 0, sentPacket = 0, lowerBorder;
-					uint8_t numPackets = (uint8_t) ceilf((float) numChildren / (float) 23);
+					int temp = 0, sentPacket = 0, lowerBorder;
 					PRINTF("numPackets: %d,numChildren: %d\n", numPackets, numChildren);
 					for (sentPacket = 0; sentPacket < numPackets; sentPacket++)
 					{
@@ -1286,6 +1284,7 @@ PROCESS_BEGIN()
 						packet.count = temp;
 						lock = 1;
 						sendRLLDataMessage(packet, 0);
+						//clock_delay_usec(50000);
 					}
 
 				}
@@ -1302,11 +1301,12 @@ PROCESS_BEGIN()
 				packet.dst = tsch_broadcast_address;
 				packet.subType = APP_RESULTREPLY;
 				PRINTF("[APP]: send APP_RESULTREPLY with %d results\n", numResults);
-				if (numResults <= 23)
-				{
+				uint8_t numPackets = (uint8_t) ceilf((float) numResults / (float) 23);
+				if (numPackets == 1)
+								{
 					//send one packet
 
-					uint8_t temp = 0;
+					int temp = 0;
 					packet.remainingData = 0;
 					packet.temperature = numResults;
 					for (temp = 0; temp < numResults; temp++)
@@ -1326,7 +1326,6 @@ PROCESS_BEGIN()
 				{
 					//send more than one packet
 					uint8_t temp = 0, sentPacket = 0, lowerBorder;
-					uint8_t numPackets = (uint8_t) ceilf((float) numResults / (float) 23);
 					PRINTF("numPackets: %d,numChildren: %d\n", numPackets, numResults);
 					for (sentPacket = 0; sentPacket < numPackets; sentPacket++)
 					{
@@ -1357,47 +1356,48 @@ PROCESS_BEGIN()
 						packet.count = rxPackets;
 						lock = 1;
 						sendRLLDataMessage(packet, 0);
+//						clock_delay_usec(50000);
 					}
 
 				}
 
 			}
-			else if (data == &ackTimer)
-			{
-
-				if (ackType == APP_RESULTREPLY)
-				{
-					checkQueueStatus();
-					uint16_t values[MAX_RESULTS_ENTRIES] = { 0 };
-					uint8_t timeslot[MAX_RESULTS_ENTRIES] = { 0 };
-					uint8_t numResults = getAllResults(timeslot, values);
-					struct APP_PACKET packet;
-					packet.src = linkaddr_node_addr;
-					packet.dst = tsch_broadcast_address;
-					packet.subType = APP_RESULTREPLY;
-					PRINTF("[APP]: send APP_RESULTREPLY with %d results\n", numResults);
-
-					uint8_t temp = 0;
-					packet.remainingData = numResults;
-					for (temp = 0; temp < numResults; temp++)
-					{
-						PRINTF("[APP]: Add Result to packet; timeslot: %d, value: %d\n",
-								timeslot[temp], values[temp]);
-						packet.values[temp] = values[temp];
-						packet.timeslot[temp] = timeslot[temp];
-					}
-
-					PRINTF("[APP]: #MSG received %d\n", rxPackets);
-					packet.count = rxPackets;
-					lock = 1;
-					sendRLLDataMessage(packet, 0);
-
-					ackType = APP_RESULTREPLY;
-					etimer_set(&ackTimer, CLOCK_SECOND * 5);
-
-				}
-
-			}
+//			else if (data == &ackTimer)
+//			{
+//
+//				if (ackType == APP_RESULTREPLY)
+//				{
+//					checkQueueStatus();
+//					uint16_t values[MAX_RESULTS_ENTRIES] = { 0 };
+//					uint8_t timeslot[MAX_RESULTS_ENTRIES] = { 0 };
+//					uint8_t numResults = getAllResults(timeslot, values);
+//					struct APP_PACKET packet;
+//					packet.src = linkaddr_node_addr;
+//					packet.dst = tsch_broadcast_address;
+//					packet.subType = APP_RESULTREPLY;
+//					PRINTF("[APP]: send APP_RESULTREPLY with %d results\n", numResults);
+//
+//					uint8_t temp = 0;
+//					packet.remainingData = numResults;
+//					for (temp = 0; temp < numResults; temp++)
+//					{
+//						PRINTF("[APP]: Add Result to packet; timeslot: %d, value: %d\n",
+//								timeslot[temp], values[temp]);
+//						packet.values[temp] = values[temp];
+//						packet.timeslot[temp] = timeslot[temp];
+//					}
+//
+//					PRINTF("[APP]: #MSG received %d\n", rxPackets);
+//					packet.count = rxPackets;
+//					lock = 1;
+//					sendRLLDataMessage(packet, 0);
+//
+//					ackType = APP_RESULTREPLY;
+//					etimer_set(&ackTimer, CLOCK_SECOND * 5);
+//
+//				}
+//
+//			}
 		}
 		else if (ev == button_press_duration_exceeded)
 		{

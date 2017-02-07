@@ -192,8 +192,7 @@ void updateState()
 					PRINTF("[CIDER]: Change State to: LP_PING \n");
 					currentState = CIDER_LP_PING;
 					printNodeStatus("updateState");
-				}
-				else
+				} else
 				{
 					PRINTF("[CIDER]: Change State to: NEIGHBOUR_UPDATE \n");
 					currentState = CIDER_NEIGHBOUR_UPDATE;
@@ -231,8 +230,7 @@ void updateState()
 					PRINTF("[CIDER]: Change State to: CH_COMPETITION \n");
 					currentState = CIDER_CH_COMPETITION;
 					printNodeStatus("updateState");
-				}
-				else
+				} else
 				{
 					PRINTF("[CIDER]: Change State to: CS_PING \n");
 					currentState = CIDER_CS_PING;
@@ -246,10 +244,8 @@ void updateState()
 		case CIDER_CH_COMPETITION:
 			PRINTF("[CIDER]: Current State: CH_COMPETITION \n");
 			updateStatusLED();
-			if (ctimer_expired(&cider_competitionWait_timer) == 1
-					&& ctimer_expired(&cider_competition_timer) == 1)
-				ctimer_set(&cider_competitionWait_timer, CLOCK_SECOND * 10,
-						callbackCompetitionWaitTimer, NULL);
+			if (ctimer_expired(&cider_competitionWait_timer) == 1 && ctimer_expired(&cider_competition_timer) == 1)
+				ctimer_set(&cider_competitionWait_timer, CLOCK_SECOND * 10, callbackCompetitionWaitTimer, NULL);
 			startSendTimer();
 			break;
 
@@ -258,23 +254,19 @@ void updateState()
 			updateStatusLED();
 			if (clusteringComplete == 0)
 			{
-				if (getTier() == 0)
-				{
 					if (checkNodesUnclustered() == 1)
 					{
 						if (checkChildCH() == 1)
 						{
 							ctimer_set(&completeTimer, CLOCK_SECOND * 5, callbackCompleteTimer,
 							NULL);
-						}
-						else
+						} else
 						{
-							ctimer_set(&completeWaitTimer, CLOCK_SECOND * 10,
-									callbackCompleteWaitTimer,
-									NULL);
+							ctimer_set(&completeWaitTimer, CLOCK_SECOND * 10, callbackCompleteWaitTimer,
+							NULL);
 						}
 					}
-				}
+
 			}
 
 			if (sendCounter > 5)
@@ -285,7 +277,8 @@ void updateState()
 
 				PRINTF("[CIDER]: CIDER intervall = %d\n", ciderInterval/CLOCK_SECOND);
 			}
-			if (getTier() == 0 || sendCounter < 5) startSendTimer();
+			if (getTier() == 0 || sendCounter < 5)
+				startSendTimer();
 			break;
 
 		case CIDER_CS:
@@ -293,7 +286,8 @@ void updateState()
 			updateStatusLED();
 			if (sendCounter <= 5)
 				startSendTimer();
-			else ciderInterval = CLOCK_SECOND * 10;
+			else
+				ciderInterval = CLOCK_SECOND * 10;
 
 			break;
 		case CIDER_CS_PING:
@@ -309,7 +303,8 @@ void updateState()
 				}
 			}
 			updateStatusLED();
-			if (sendCounter > 2) ciderInterval = CLOCK_SECOND * 4;
+			if (sendCounter > 2)
+				ciderInterval = CLOCK_SECOND * 4;
 			startSendTimer();
 			break;
 
@@ -402,8 +397,7 @@ void sendTXPower()
 	{
 		CIDERPacket.args[1] = 1;
 		CIDERPacket.args[0] = (uint16_t) temp * -1;
-	}
-	else
+	} else
 	{
 		CIDERPacket.args[1] = 0;
 		CIDERPacket.args[0] = (uint16_t) temp;
@@ -419,11 +413,12 @@ void sendTXPower()
 
 }
 
-void checkQueueStatus(){
+void checkQueueStatus()
+{
 
 	int packetsInQueue = tsch_queue_packet_count(&tsch_broadcast_address);
 
-	if(packetsInQueue > 3)
+	if (packetsInQueue > 3)
 		tsch_queue_reset();
 }
 
@@ -433,7 +428,6 @@ void callbackSendTimer()
 	//if (getActiveProtocol() == 0) tsch_queue_reset();
 
 	checkQueueStatus(); //checks queue status, flushes queue if needed;
-
 
 	struct CIDER_PACKET CIDERPacket;
 
@@ -546,8 +540,7 @@ void callbackSendTimer()
 	{
 		packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
 		packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, 0);
-	}
-	else
+	} else
 	{
 		packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
 		packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, delayTimeslot);
@@ -559,8 +552,7 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 {
 
 	struct CIDER_PACKET *temp = packetbuf_dataptr();
-	if (CIDER_started == 0 && temp->subType != CIDER_SETRSSIRADIUS
-			&& temp->subType != CIDER_SETLQIRADIUS && temp->subType != CIDER_SETTXPOWER)
+	if (CIDER_started == 0 && temp->subType != CIDER_SETRSSIRADIUS && temp->subType != CIDER_SETLQIRADIUS && temp->subType != CIDER_SETTXPOWER)
 	{
 		CIDER_start();
 	}
@@ -595,8 +587,7 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 				radio_value_t test = (radio_value_t) temp->args[0];
 				radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, test * -1);
 				PRINTF("[APP] Set Tx Power to %d, result: %d\n",test * -1,rv);
-			}
-			else
+			} else
 			{
 				radio_value_t test = (radio_value_t) temp->args[0];
 
@@ -671,7 +662,7 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 				PRINTF("[CIDER]: Delay Competition message by %d s \n", delayTime);
 				ctimer_stop(&cider_competitionWait_timer);
 				ctimer_stop(&cider_competition_timer);
-				ctimer_set(&cider_competition_timer, delayTime, callbackCompetitionTimer, NULL);
+				ctimer_set(&cider_competition_timer, CLOCK_SECOND * delayTime, callbackCompetitionTimer, NULL);
 			}
 
 			n.addr = temp->base.src;
@@ -719,15 +710,13 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 				{
 					CHMSGCounter.counter++;
 					CHMSGCounter.src = temp->base.src;
-				}
-				else
+				} else
 				{
 					CHMSGCounter.counter = 1;
 					CHMSGCounter.src = temp->base.src;
 				}
 			}
-			if (currentState == CIDER_CS_PING && isCH == 1 && n.myCH == 0
-					&& CHMSGCounter.counter > 2)
+			if (currentState == CIDER_CS_PING && isCH == 1 && n.myCH == 0 && CHMSGCounter.counter > 2)
 			{
 				ctimer_stop(&cider_competition_timer);
 				n.myCH = 1;
@@ -744,7 +733,8 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 			{
 
 				PRINTF("[CIDER]: CH message received from 0x%4x, my Parent \n", from->u16);
-				if (currentState == CIDER_CS) setColour(temp->colour);
+				if (currentState == CIDER_CS)
+					setColour(temp->colour);
 				if (currentState == CIDER_CH && sendCounter >= 2 && getTier() != 0)
 					callbackSendTimer();
 //			ctimer_stop(&ka_timer);
@@ -777,8 +767,7 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 					currentState = CIDER_CH_PROMOTE;
 					sendCounter = 0;
 				}
-			}
-			else
+			} else
 			{
 				resetMSGCounter();
 			}
@@ -809,10 +798,11 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 					n.tier = temp->args[0];
 					newNeigh = addNeighbour(&n);
 				}
-			}
-			else
+			} else
 			{
 				PRINTF("[CIDER]: CH_PROMOTE not meant for me \n");
+				if (getCIDERState() == CIDER_CH)
+					resetMSGCounter();
 			}
 
 			break;
@@ -871,24 +861,20 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 						if (checkChildCH() == 1)
 						{
 							ctimer_stop(&completeWaitTimer);
-							ctimer_set(&completeWaitTimer, CLOCK_SECOND * 5,
-									callbackCompleteWaitTimer,
-									NULL);
-						}
-						else
+							ctimer_set(&completeWaitTimer, CLOCK_SECOND * 5, callbackCompleteWaitTimer,
+							NULL);
+						} else
 						{
 							clusteringComplete = 1;
 						}
-					}
-					else
+					} else
 					{
 						ctimer_stop(&completeWaitTimer);
 
 						if (clusteringUnComplete == 0)
 						{
-							struct tsch_link *temp = tsch_schedule_get_next_active_link(
-									&current_asn, 0,
-									NULL);
+							struct tsch_link *temp = tsch_schedule_get_next_active_link(&current_asn, 0,
+							NULL);
 							struct CIDER_PACKET CIDERPacket;
 							CIDERPacket.base.dst = tsch_broadcast_address;
 							CIDERPacket.base.src = linkaddr_node_addr;
@@ -913,8 +899,7 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 				PRINTF("[CIDER]: CIDER_UNCOMPLETE received from 0x%4x \n", from->u16);
 				ctimer_stop(&completeWaitTimer);
 				ctimer_stop(&completeTimer);
-				if (clusteringUnComplete == 0 && linkaddr_cmp(&linkaddr_null, &parent) != 1
-						&& linkaddr_cmp(&linkaddr_node_addr, &parent) != 1)
+				if (clusteringUnComplete == 0 && linkaddr_cmp(&linkaddr_null, &parent) != 1 && linkaddr_cmp(&linkaddr_node_addr, &parent) != 1)
 				{
 					struct tsch_link *temp = tsch_schedule_get_next_active_link(&current_asn, 0,
 					NULL);
@@ -942,25 +927,15 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 int CIDER_notify()
 {
 	printf("[CIDER]: CIDER_notify\n");
-//todo: Implement check if RLL;
-//if (CIDER_getIsActive() == 1)
-//{
-//setActiveProtocol(0);
 	PRINTF("[CIDER]: Start Cider \n");
 	process_start(&dewi_cider_process, NULL);
-
-//}
-
 	return 1;
 }
 
 void CIDER_start()
 {
 	CIDER_started = 1;
-	PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
-		;
-		//ebPeriod = CLOCK_SECOND * (random_rand() % (15 + 1 - 5) + 5);
-		//printf("[CIDER]: EB Period: %d\n", ebPeriod);
+	PROCESS_CONTEXT_BEGIN(&dewi_cider_process);
 		printf("[CIDER]: cider start\n");
 		etimer_set(&cider_timer, ciderInterval);
 		PROCESS_CONTEXT_END(&dewi_cider_process);
@@ -986,8 +961,7 @@ void CIDER_createSchedule()
 	if (CIDER_getIsActive() == 1)
 	{
 
-	}
-	else
+	} else
 	{
 		clearSchedule();
 	}
@@ -1011,16 +985,12 @@ void calcUtility()
 	{
 
 		setAVGRSSI(featureScale((float) getAVGRSSI(), CIDER_RSSI_min, CIDER_RSSI_max));
-		setUtility(
-				(CIDER_M1 * (float) getNeighDegree()
-						+ (CIDER_M2 + CIDER_M3) * (float) getClusDegree() + CIDER_M4 * getAVGRSSI()));
-	}
-	else
+		setUtility((CIDER_M1 * (float) getNeighDegree() + (CIDER_M2 + CIDER_M3) * (float) getClusDegree() + CIDER_M4 * getAVGRSSI()));
+	} else
 	{
 		setLPDegree(featureScale((float) getLPDegree(), CIDER_LP_min, CIDER_LP_max));
 		setUtility(
-				(CIDER_M1 * (float) getNeighDegree() + CIDER_M2 * (float) getClusDegree()
-						+ CIDER_M3 * (float) getLPDegree() + CIDER_M4 * getAVGRSSI()));
+				(CIDER_M1 * (float) getNeighDegree() + CIDER_M2 * (float) getClusDegree() + CIDER_M3 * (float) getLPDegree() + CIDER_M4 * getAVGRSSI()));
 	}
 }
 
@@ -1039,7 +1009,8 @@ uint8_t compareUtilities()
 	float highestNeighbourUtility = (float) getHighestUtility();
 	if (getUtility() >= highestNeighbourUtility)
 		return 1;
-	else return 0;
+	else
+		return 0;
 }
 
 linkaddr_t checkForCSPingMember()
@@ -1052,7 +1023,8 @@ uint8_t checkCHinRange()
 {
 	if (checkIfCHinNetwork(CIDER_CH) == 1 || checkIfCHinNetwork(CIDER_CH_COMPETITION) == 1)
 		return 1;
-	else return 0;
+	else
+		return 0;
 }
 
 uint8_t getTxPower8bit(int tx)
@@ -1222,7 +1194,8 @@ void CIDER_reset()
 	csPingCounter = 0;
 	ciderInterval = (CLOCK_SECOND * 0.5);
 	ciderKAInterval = (CLOCK_SECOND * 30);
-	if (tsch_get_coordinator() == 0) tsch_set_eb_period(0);
+	if (tsch_get_coordinator() == 0)
+		tsch_set_eb_period(0);
 	etimer_stop(&cider_timer);
 	ctimer_stop(&cider_competition_timer);
 	ctimer_stop(&send_timer);
@@ -1296,8 +1269,8 @@ void callbackCompetitionWaitTimer()
 	currentState = CIDER_CH;
 	sendCounter = 0;
 	printNodeStatus("callbackCompetitionWaitTimer");
-	if (getTier() == -1) setTier(0);
-//if (getCoord() == 0) tsch_set_eb_period(ebPeriod);
+	if (getTier() == -1)
+		setTier(0);
 
 }
 
@@ -1319,7 +1292,8 @@ void callbackKATimer()
 	ciderInterval = (CLOCK_SECOND * 0.5);
 	ciderKAInterval = (CLOCK_SECOND * 30);
 
-	if (tsch_get_coordinator() == 0) tsch_set_eb_period(0);
+	if (tsch_get_coordinator() == 0)
+		tsch_set_eb_period(0);
 	etimer_stop(&cider_timer);
 	ctimer_stop(&cider_competition_timer);
 	ctimer_stop(&send_timer);
@@ -1363,8 +1337,7 @@ PROCESS_THREAD(dewi_cider_process, ev, data)
 					{
 						updateState();
 						etimer_set(&cider_timer, ciderInterval);
-					}
-					else
+					} else
 					{
 						etimer_set(&cider_timer, ciderInterval);
 					}
