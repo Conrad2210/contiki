@@ -122,7 +122,7 @@ void RLL_RxTimeslot(int timeslot)
 }
 void RLL_init()
 {
-	RLLSeqNo = random_rand();
+	RLLSeqNo = 0;
 	process_start(&dewi_rll_init_process, NULL);
 }
 
@@ -531,28 +531,16 @@ static void thread_send(struct APP_PACKET *data)
 
 static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from)
 {
-	if (RLL_receiveTimeslot < 0)
-	{
-		RLL_receiveTimeslot = TSCH_SCHEDULE_CONF_MAX_LINKS + RLL_receiveTimeslot;
-	}
-	uint8_t tempTimeslot = RLL_receiveTimeslot - ((uint16_t) RLL_receiveTimeslot / 10) * 10;
-	ANNOTATE("[RLL]: Message received in Timeslot: %d, official timeslot: %d\n", tempTimeslot,RLL_receiveTimeslot);
+
 
 	struct RLL_PACKET *tempPacket = packetbuf_dataptr();
 
-	int8_t direction = -2;
 
-	if (tempTimeslot == 1)
-		direction = 0;
-	else if (tempTimeslot == 3 || tempTimeslot == 7 || tempTimeslot == 5 || tempTimeslot == 9)
-		direction = 1;
-	else if (tempTimeslot == 4 || tempTimeslot == 8 || tempTimeslot == 2 || tempTimeslot == 6)
-		direction = -1;
 
 	switch (tempPacket->subType)
 	{
 		case RLL_DATA:
-			if (tempPacket->seqNo == lastRxSeqNo)
+			if (tempPacket->seqNo <= lastRxSeqNo && tempPacket->priority == 1)
 			{
 				ANNOTATE("[RLL]: Packet received, but outdated. Current SeqNo: %d, received SeqNo: %d\n",lastRxSeqNo,tempPacket->seqNo);
 
@@ -561,13 +549,27 @@ static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from
 				ANNOTATE("[RLL]: Packet originates to me, do nothing\n",RLLSeqNo,tempPacket->seqNo);
 			} else
 			{
+				if (RLL_receiveTimeslot < 0)
+				{
+					RLL_receiveTimeslot = TSCH_SCHEDULE_CONF_MAX_LINKS + RLL_receiveTimeslot;
+				}
+				uint8_t tempTimeslot = RLL_receiveTimeslot - ((uint16_t) RLL_receiveTimeslot / 10) * 10;
+				ANNOTATE("[RLL]: Message received in Timeslot: %d, official timeslot: %d\n", tempTimeslot,RLL_receiveTimeslot);
+				int8_t direction = -2;
+
+				if (tempTimeslot == 1)
+					direction = 0;
+				else if (tempTimeslot == 3 || tempTimeslot == 7 || tempTimeslot == 5 || tempTimeslot == 9)
+					direction = 1;
+				else if (tempTimeslot == 4 || tempTimeslot == 8 || tempTimeslot == 2 || tempTimeslot == 6)
+					direction = -1;
 				//tsch_queue_reset();
 				if (tempPacket->priority == 1)
 					checkQueue();
 
 				if (RLL_CIDERState == 5)
 				{
-
+					PRINTF("[RLL]: Thread States: parent: %d, child: %d, CS: %d\n",parent_thread.state,child_thread.state,cs_thread.state);
 					lastRxSeqNo = tempPacket->seqNo;
 
 					ANNOTATE("[RLL]: received RLL Data MSG at: asn-%x.%lx, forward direction: %d\n",current_asn.ms1b,current_asn.ls4b,direction);
@@ -582,8 +584,11 @@ static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from
 						RLLParentPacket.subType = tempPacket->subType;
 
 						mt_exec(&parent_thread);
+						clock_delay_usec(100);
 
 					}
+
+					PRINTF("[RLL]: Thread States: parent: %d, child: %d, CS: %d\n",parent_thread.state,child_thread.state,cs_thread.state);
 					if ((direction == -1 && RLLNumChildCH > 1) || (direction >= 0 && RLLNumChildCH != 0))
 					{
 //				ANNOTATE("[RLL]: Received from: %d, forward to ChildCH at: asn-%x.%lx\n",direction,current_asn.ms1b,current_asn.ls4b);
@@ -595,8 +600,11 @@ static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from
 						RLLChildPacket.subType = tempPacket->subType;
 
 						mt_exec(&child_thread);
+						clock_delay_usec(100);
 
 					}
+
+					PRINTF("[RLL]: Thread States: parent: %d, child: %d, CS: %d\n",parent_thread.state,child_thread.state,cs_thread.state);
 					if (((direction == -1 || direction == 1) && RLLNumCS != 0) || (direction == 0 && RLLNumCS > 1))
 					{
 						RLLCSPacket.base.src = linkaddr_node_addr;
@@ -607,7 +615,9 @@ static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from
 						RLLCSPacket.subType = tempPacket->subType;
 
 						mt_exec(&cs_thread);
+						clock_delay_usec(100);
 					}
+					PRINTF("[RLL]: Thread States: parent: %d, child: %d, CS: %d\n",parent_thread.state,child_thread.state,cs_thread.state);
 
 				}
 				//ANNOTATE("[RLL]: Data packet type: %d\n",tempPacket->appData.subType);

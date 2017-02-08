@@ -248,7 +248,7 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
 	ready = tsch_is_locked();
 	while (ready == 1)
 	{
-		clock_delay_usec(500);
+		clock_delay_usec(1000);
 		if (waitCounter < 5)
 			ready = tsch_is_locked();
 		else ready = 0;

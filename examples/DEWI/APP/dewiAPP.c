@@ -81,6 +81,7 @@
 uint8_t button_press_counter = 0;
 uint8_t lastBRIGHTNESS = 0b00000001;
 uint16_t seqNo = 1;
+uint16_t lastSeqNo = 1;
 uint8_t lock = 1;
 char waitForTopologyUpdate;  //is 1 if topology information is ongoing, else 0
 char isGateway; // is 1 if this node is a gateway, else 0
@@ -160,7 +161,7 @@ void updatePerformanceStats(uint8_t latency);
 void sendBatteryStatusByserialP(int b_data, linkaddr_t addr);
 void handleSensorsEvent(process_data_t data);
 void handleSerialInput(process_data_t data);
-void handleProcessEvent( data);
+void handleProcessEvent();
 void handleTopologyRequest();
 void handleTopologyReply(struct APP_PACKET *data);
 
@@ -798,6 +799,8 @@ void applicationDataCallback(struct APP_PACKET *data)
 		  //here save data
 			if (isGateway == 0)
 			{
+				if(data->seqNo >= lastSeqNo)
+				{
 				PRINTF("[APP]: Data received: Type: %d, from: 0x%4x with seqNo: %d, latency: %d\n",
 						data->subType, data->src.u16, data->seqNo, latency * 10);
 				tempresult[tempResultCounter] = latency;
@@ -809,6 +812,7 @@ void applicationDataCallback(struct APP_PACKET *data)
 					etimer_set(&processResults_timer,
 					CLOCK_SECOND);
 					PROCESS_CONTEXT_END(&dewiExperiment);
+				}
 			}
 
 		}
@@ -1284,7 +1288,7 @@ PROCESS_BEGIN()
 						packet.count = temp;
 						lock = 1;
 						sendRLLDataMessage(packet, 0);
-						//clock_delay_usec(50000);
+						clock_delay_usec(50000);
 					}
 
 				}
@@ -1356,7 +1360,7 @@ PROCESS_BEGIN()
 						packet.count = rxPackets;
 						lock = 1;
 						sendRLLDataMessage(packet, 0);
-//						clock_delay_usec(50000);
+						clock_delay_usec(50000);
 					}
 
 				}
