@@ -126,6 +126,7 @@ struct RLL_PACKET
 		struct APP_PACKET appData;
 		uint16_t seqNo;
 		uint8_t priority;
+		int8_t direction;
 
 };
 
