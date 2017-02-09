@@ -423,10 +423,22 @@ class MainWindow(QtGui.QMainWindow):
         interval_label = QtGui.QLabel()
         interval_label.setText("Interarrivaltime [ms]:")
         self.interval_combo = QtGui.QComboBox()
-        self.interval_combo.addItem("50")
         self.interval_combo.addItem("100")
+        self.interval_combo.addItem("110")
+        self.interval_combo.addItem("120")
+        self.interval_combo.addItem("130")
+        self.interval_combo.addItem("140")
+        self.interval_combo.addItem("150")
+        self.interval_combo.addItem("160")
+        self.interval_combo.addItem("170")
+        self.interval_combo.addItem("180")
+        self.interval_combo.addItem("190")
         self.interval_combo.addItem("200")
-        self.interval_combo.addItem("300")
+        self.interval_combo.addItem("210")
+        self.interval_combo.addItem("220")
+        self.interval_combo.addItem("230")
+        self.interval_combo.addItem("240")
+        self.interval_combo.addItem("250")
 
         self.serialPorts_combo = QtGui.QComboBox()
 
@@ -446,6 +458,8 @@ class MainWindow(QtGui.QMainWindow):
         self.check5 = QtGui.QCheckBox("5:")
 
         self.START_button = QtGui.QPushButton('~  START  ~')
+        self.NEXT_button = QtGui.QPushButton('Next Result')
+        self.lastAddr = ""
         STOP_button = QtGui.QPushButton('~  STOP  ~')
         PLOT_button = QtGui.QPushButton('PLOT')
 
@@ -506,7 +520,8 @@ class MainWindow(QtGui.QMainWindow):
         REQUEST_button.clicked.connect(self.startRequestResults)
         self.CONNECT_button.clicked.connect(self.connectSerial)
         self.FlushResults_button.clicked.connect(self.FlushResults)
-        self.FlushResults_button.clicked.connect(self.StartCIDER)
+        self.StartCIDER_button.clicked.connect(self.StartCIDER)
+        self.NEXT_button.clicked.connect(self.SkipResult)
 
         # Since the mainwindow is a MainWindow, it need a QWidget as a Central
         # Widget
@@ -602,6 +617,7 @@ class MainWindow(QtGui.QMainWindow):
         test_HBox4.addStretch(1)
         test_HBox4.addWidget(self.START_button)
         test_HBox4.addWidget(STOP_button)
+        test_HBox4.addWidget(self.NEXT_button)
         test_HBox4.addStretch(1)
 
         test_HBox5.addWidget(self.canvas_latency)
@@ -729,8 +745,15 @@ class MainWindow(QtGui.QMainWindow):
     # This method update the ser_out text when receiveng a signal from the
     # out_thread
     def output_update(self, str):
+        #print str
         self.ser_out.append(str)
         str = str.replace(' ', '')
+        if len("[QUEUE]:") < len(str):
+            if "[QUEUE]:" in str:
+                print str
+            if "TSCH-queue:!" in str:
+                print str
+
         if len("TPReply:") < len(str):
             if "TPReply:" in str:
                 print str
@@ -1253,12 +1276,17 @@ class MainWindow(QtGui.QMainWindow):
         # for i in range(0,len(neighbourList)):
         self.requestResults(self.neighList[0])
 
+    def SkipResult(self):
+        self.NextRequestResult(self.lastAddr)
+
     def NextRequestResult(self, lastAddr):
         try:
 
             self.emit(SIGNAL("stopTimer()"))
             self.neighList.remove(str(lastAddr))
             output.append("next index is: {0}, address is {1}".format(0, self.neighList[0]))
+            print "{0} results left".format(len(self.neighList))
+            self.lastAddr = self.neighList[0];
             self.requestResults(self.neighList[0])
         except IndexError:
             print "All results collected"

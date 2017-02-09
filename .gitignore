@@ -135,3 +135,4 @@ LOG_OPENOCD
 .idea/workspace.xml
 CMakeLists.txt
 cmake-build-debug/CMakeFiles/clion-log.txt
+examples/DEWI/DewiExperiments/Userinterface/.idea/workspace.xml
