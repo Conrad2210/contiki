@@ -111,10 +111,10 @@ class  databaseConnection():
                 print "MySQL Error: %s" % str(e)
   
     
-    def insertSettings(self,id, session_id, txPower, numberBursts, burstDuration,MSGPerBurst):        
+    def insertSettings(self,id, session_id, txPower, numberBursts, burstDuration,MSGPerBurst,RSSIRadius):
         try:
             cursor = self.dbConnection.cursor()
-            cursor.execute(("INSERT INTO settings(id, session_id, txPower, numberBursts, burstDuration,MSGPerBurst) VALUES ({0},{1},{2},{3},{4},{5})").format(id, session_id, txPower, numberBursts, burstDuration,MSGPerBurst))
+            cursor.execute(("INSERT INTO settings(id, session_id, txPower, numberBursts, burstDuration,MSGPerBurst,RSSIRadius) VALUES ({0},{1},{2},{3},{4},{5},{6})").format(id, session_id, txPower, numberBursts, burstDuration,MSGPerBurst,RSSIRadius))
             self.dbConnection.commit()
         except mysql.Error, e:
             try:
@@ -294,14 +294,14 @@ class  databaseConnection():
             for description in cursor:
                 descriptionRes.append(str(description[0]))
             settingsRes = []
-            cursor.execute("SELECT session_id,numberBursts,burstDuration,MSGPerBurst FROM settings") 
-            for session_id,numberBursts,burstDuration,MSGPerBurst in cursor:
-                settingsRes.append((session_id,numberBursts,burstDuration,MSGPerBurst))   
+            cursor.execute("SELECT session_id,numberBursts,burstDuration,MSGPerBurst, TXPower, RSSIRadius FROM settings")
+            for session_id,numberBursts,burstDuration,MSGPerBurst,TXPower, RSSIRadius in cursor:
+                settingsRes.append((session_id,numberBursts,burstDuration,MSGPerBurst,TXPower, RSSIRadius))
 
   
             completeRes = []
             for i in range(0,len(settingsRes)):
-                completeRes.append((descriptionRes[i],settingsRes[i][0],settingsRes[i][1],settingsRes[i][2],settingsRes[i][3]))
+                completeRes.append((descriptionRes[i],settingsRes[i][0],settingsRes[i][1],settingsRes[i][2],settingsRes[i][3],settingsRes[i][4],settingsRes[i][5]))
                 
             return completeRes
         except mysql.Error, e:
