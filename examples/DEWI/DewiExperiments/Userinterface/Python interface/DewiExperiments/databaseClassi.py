@@ -289,19 +289,19 @@ class  databaseConnection():
     def getExperiments(self):
         try:
             cursor = self.dbConnection.cursor()
-            cursor.execute("SELECT description FROM experiments")
+            cursor.execute("SELECT description, date_time FROM experiments")
             descriptionRes = []
-            for description in cursor:
-                descriptionRes.append(str(description[0]))
+            for description, date_time in cursor:
+                descriptionRes.append((str(description),str(date_time)))
             settingsRes = []
             cursor.execute("SELECT session_id,numberBursts,burstDuration,MSGPerBurst, TXPower, RSSIRadius FROM settings")
             for session_id,numberBursts,burstDuration,MSGPerBurst,TXPower, RSSIRadius in cursor:
                 settingsRes.append((session_id,numberBursts,burstDuration,MSGPerBurst,TXPower, RSSIRadius))
 
-  
+
             completeRes = []
             for i in range(0,len(settingsRes)):
-                completeRes.append((descriptionRes[i],settingsRes[i][0],settingsRes[i][1],settingsRes[i][2],settingsRes[i][3],settingsRes[i][4],settingsRes[i][5]))
+                completeRes.append((descriptionRes[i][0],settingsRes[i][0],settingsRes[i][1],settingsRes[i][2],settingsRes[i][3],settingsRes[i][4],settingsRes[i][5],descriptionRes[i][1]))
                 
             return completeRes
         except mysql.Error, e:
@@ -388,4 +388,4 @@ class  databaseConnection():
 
 # dewi = databaseConnection()
 #
-# print dewi.getDescription(8)
+# print dewi.getExperiments()

@@ -790,28 +790,28 @@ class MainWindow(QtGui.QMainWindow):
         self.compare3.clear()
         self.compare4.clear()
         self.compare5.clear()
-        self.compare1.addItem(str("[session_id]: description, #Bursts, duration, #msg, TXPower, RSSIRadius"))
-        self.compare2.addItem(str("[session_id]: description, #Bursts, duration, #msg, TXPower, RSSIRadius"))
-        self.compare3.addItem(str("[session_id]: description, #Bursts, duration, #msg, TXPower, RSSIRadius"))
-        self.compare4.addItem(str("[session_id]: description, #Bursts, duration, #msg, TXPower, RSSIRadius"))
-        self.compare5.addItem(str("[session_id]: description, #Bursts, duration, #msg, TXPower, RSSIRadius"))
+        self.compare1.addItem(str("[session_id]: description, #Bursts, duration, #msg, TXPower, RSSIRadius, Date"))
+        self.compare2.addItem(str("[session_id]: description, #Bursts, duration, #msg, TXPower, RSSIRadius, Date"))
+        self.compare3.addItem(str("[session_id]: description, #Bursts, duration, #msg, TXPower, RSSIRadius, Date"))
+        self.compare4.addItem(str("[session_id]: description, #Bursts, duration, #msg, TXPower, RSSIRadius, Date"))
+        self.compare5.addItem(str("[session_id]: description, #Bursts, duration, #msg, TXPower, RSSIRadius, Date"))
         experiment_list = self.db.getExperiments()
         for i in range(0, len(experiment_list)):
             self.compare1.addItem(str(
-                "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
-                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6])))
+                "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB, {7}".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
+                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6], QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy"))))
             self.compare2.addItem(str(
                 "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
-                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6])))
+                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6],QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy"))))
             self.compare3.addItem(str(
                 "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
-                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6])))
+                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6],QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy"))))
             self.compare4.addItem(str(
                 "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
-                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6])))
+                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6],QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy"))))
             self.compare5.addItem(str(
                 "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
-                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6])))
+                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6],QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy"))))
 
 
             #        cursor = db.cursor()
