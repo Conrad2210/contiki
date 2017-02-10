@@ -8,9 +8,9 @@ class  databaseConnection():
     db = 'dewi_experiments';                 
     def __init__(self):
         try:
-            self.dbConnection = mysql.connect(host='localhost',user='root',db='dewi_experiments',buffered=True)
+            self.dbConnection = mysql.connect(host='157.190.53.108',user='root',password="root",db='dewi_experiments',buffered=True)
         except mysql.Error, e:
-            self.dbConnection = mysql.connect(host='localhost',user='root',buffered=True)
+            self.dbConnection = mysql.connect(host='157.190.53.108',user='root',password="root",buffered=True)
             cursor = self.dbConnection.cursor()
             cursor.execute("CREATE DATABASE dewi_experiments DEFAULT CHARACTER SET 'utf8'")     
             self.dbConnection.database = 'dewi_experiments'
