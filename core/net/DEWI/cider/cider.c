@@ -254,18 +254,18 @@ void updateState()
 			updateStatusLED();
 			if (clusteringComplete == 0)
 			{
-					if (checkNodesUnclustered() == 1)
+				if (checkNodesUnclustered() == 1)
+				{
+					if (checkChildCH() == 1)
 					{
-						if (checkChildCH() == 1)
-						{
-							ctimer_set(&completeTimer, CLOCK_SECOND * 5, callbackCompleteTimer,
-							NULL);
-						} else
-						{
-							ctimer_set(&completeWaitTimer, CLOCK_SECOND * 10, callbackCompleteWaitTimer,
-							NULL);
-						}
+						ctimer_set(&completeTimer, CLOCK_SECOND * 5, callbackCompleteTimer,
+						NULL);
+					} else
+					{
+						ctimer_set(&completeWaitTimer, CLOCK_SECOND * 10, callbackCompleteWaitTimer,
+						NULL);
 					}
+				}
 
 			}
 
@@ -609,6 +609,9 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 			n.last_asn = tsch_get_current_asn();
 			n.txPW = getTxPowerInt(temp->args[0]);
 			n.isLPD = temp->args[1];
+			n.myCS = 0;
+			n.myCH = 0;
+			n.myChildCH = 0;
 			n.CIDERState = CIDER_PING;
 			newNeigh = addNeighbour(&n);
 			break;
@@ -621,6 +624,9 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 			n.nodeDegree = temp->args[0];
 			n.lpDegree = temp->args[1];
 			n.clusterDegree = temp->args[2];
+			n.myCS = 0;
+			n.myCH = 0;
+			n.myChildCH = 0;
 			n.CIDERState = CIDER_NEIGHBOUR_UPDATE;
 			newNeigh = addNeighbour(&n);
 			break;
@@ -631,6 +637,9 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 			n.last_lqi = tempLQI;
 			n.last_asn = tsch_get_current_asn();
 			n.utility = (float) temp->args[0] / 1000.0;
+			n.myCS = 0;
+			n.myCH = 0;
+			n.myChildCH = 0;
 			n.CIDERState = CIDER_UTILITY_UPDATE;
 			newNeigh = addNeighbour(&n);
 			break;
@@ -670,6 +679,9 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 			n.last_lqi = tempLQI;
 			n.last_asn = tsch_get_current_asn();
 			n.utility = (float) temp->args[0] / 1000.0;
+			n.myCS = 0;
+			n.myCH = 0;
+			n.myChildCH = 0;
 			n.CIDERState = CIDER_CH_COMPETITION;
 			newNeigh = addNeighbour(&n);
 			break;
@@ -801,7 +813,7 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 			} else
 			{
 				PRINTF("[CIDER]: CH_PROMOTE not meant for me \n");
-				if (getCIDERState() == CIDER_CH)
+
 					resetMSGCounter();
 			}
 
@@ -819,6 +831,8 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 			{
 				n.myChildCH = 1;
 			}
+
+				resetMSGCounter();
 
 			newNeigh = addNeighbour(&n);
 			break;
@@ -935,10 +949,11 @@ int CIDER_notify()
 void CIDER_start()
 {
 	CIDER_started = 1;
-	PROCESS_CONTEXT_BEGIN(&dewi_cider_process);
-		printf("[CIDER]: cider start\n");
-		etimer_set(&cider_timer, ciderInterval);
-		PROCESS_CONTEXT_END(&dewi_cider_process);
+	PROCESS_CONTEXT_BEGIN(&dewi_cider_process)
+	;
+	printf("[CIDER]: cider start\n");
+	etimer_set(&cider_timer, ciderInterval);
+	PROCESS_CONTEXT_END(&dewi_cider_process);
 
 }
 

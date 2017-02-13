@@ -293,7 +293,7 @@ uint8_t calcColour()
 			{
 				colour = colours[random_rand() % colourMax];
 				isUniqe = 0;
-				printf("[Neigh]: no free Colour available, colourMax: %d, colour:%d\n", colourMax,
+				PRINTF("[Neigh]: no free Colour available, colourMax: %d, colour:%d\n", colourMax,
 						colour);
 			}
 		}
@@ -668,7 +668,7 @@ void updateNeighListCS(uint16_t *array, int size, linkaddr_t CHaddress)
 			{
 				if (n->CIDERState == CIDER_CS_PING || n->CIDERState <= CIDER_UTILITY_UPDATE)
 				{
-					printf("[NEIGH]:new CS\n"
+					PRINTF("[NEIGH]:new CS\n"
 							"last RSSI %d, last LQI: %d CLUSTER radius: %d, child: 0x%4x\n",
 							n->last_rssi, n->last_lqi, getRSSIRadius(), n->addr.u16);
 					n->myCS = 1;
@@ -682,7 +682,7 @@ void updateNeighListCS(uint16_t *array, int size, linkaddr_t CHaddress)
 			}
 			else if (n->myCS == 1)
 			{
-				printf("[NEIGH]: Neigh is already my CS\n"
+				PRINTF("[NEIGH]: Neigh is already my CS\n"
 						"last RSSI %d, last LQI: %d CLUSTER radius: %d, child: 0x%4x\n",
 						n->last_rssi, n->last_lqi, getRSSIRadius(), n->addr.u16);
 				n->myCS = 1;
@@ -700,7 +700,7 @@ void updateNeighListCS(uint16_t *array, int size, linkaddr_t CHaddress)
 	else
 	{
 
-		printf("[NEIGH]: numNeighbours %d > size: %d/n", maxNeighbour, size);
+		PRINTF("[NEIGH]: numNeighbours %d > size: %d/n", maxNeighbour, size);
 		//first find last neighbour
 		if (lastNeighAddr != 0)
 		{
@@ -732,7 +732,7 @@ void updateNeighListCS(uint16_t *array, int size, linkaddr_t CHaddress)
 			{
 				if (n->CIDERState == CIDER_CS_PING || n->CIDERState <= CIDER_UTILITY_UPDATE)
 				{
-					printf("[NEIGH]:new CS\n"
+					PRINTF("[NEIGH]:new CS\n"
 							" last RSSI %d, CLUSTER radius: %d, child: 0x%4x\n", n->last_rssi,
 							getRSSIRadius(), n->addr.u16);
 					n->myCS = 1;
@@ -746,7 +746,7 @@ void updateNeighListCS(uint16_t *array, int size, linkaddr_t CHaddress)
 			}
 			else if (n->myCS == 1)
 			{
-				printf("[NEIGH]: Neigh is already my CS\n"
+				PRINTF("[NEIGH]: Neigh is already my CS\n"
 						"last RSSI %d, CLUSTER radius: %d, child: 0x%4x\n",
 						n->last_rssi, getRSSIRadius(), n->addr.u16);
 				n->myCS = 1;
@@ -938,13 +938,14 @@ uint8_t checkForPromotion(uint8_t CIDERState)
 
 	uint8_t msgCount = 0;
 	struct neighbour *n;
+	int tempCount = 20 * (getTier() + 1);
 	for (n = list_head(neighbours_list); n != NULL; n = list_item_next(n))
 	{
 		if (n->CIDERState == CIDER_CS_PING)
 		{
 			msgCount = msgCount + n->msgCounter;
 
-			if (msgCount > (20 * (getTier() + 1)))
+			if (msgCount > tempCount)
 			{
 				resetMSGCounter();
 				return 1;

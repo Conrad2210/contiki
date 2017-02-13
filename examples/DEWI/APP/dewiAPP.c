@@ -68,7 +68,7 @@
 #define LED_BRIGHTNESS 0b00100000
 #define BUTTON_PRESS_EVENT_INTERVAL (CLOCK_SECOND)
 
-#define NUM_ADDR_ENTRIES 100		//number of child nodes that a master node can have
+#define NUM_ADDR_ENTRIES 50		//number of child nodes that a master node can have
 #define MAX_RESULTS_ENTRIES 100
 
 /***************************************/

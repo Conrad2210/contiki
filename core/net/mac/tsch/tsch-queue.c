@@ -90,6 +90,7 @@ tsch_queue_add_nbr(const linkaddr_t *addr)
 		if (tsch_get_lock())
 		{
 			/* Allocate a neighbor */
+
 			n = memb_alloc(&neighbor_memb);
 			if (n != NULL)
 			{
@@ -241,19 +242,8 @@ struct tsch_packet *
 tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
 {
 	struct tsch_neighbor *n = NULL;
-	uint8_t waitCounter = 0;
-	uint8_t ready = 0;
 	int16_t put_index = -1;
 	struct tsch_packet *p = NULL;
-	ready = tsch_is_locked();
-	while (ready == 1)
-	{
-		clock_delay_usec(1000);
-		if (waitCounter < 5)
-			ready = tsch_is_locked();
-		else ready = 0;
-		waitCounter++;
-	}
 	if (!tsch_is_locked())
 	{
 		n = tsch_queue_add_nbr(addr);
@@ -262,14 +252,21 @@ tsch_queue_add_packet(const linkaddr_t *addr, mac_callback_t sent, void *ptr)
 			put_index = ringbufindex_peek_put(&n->tx_ringbuf);
 			if (put_index != -1)
 			{
+
+				//PRINTF("[QUEUE]: packet_memb numFree before adding: %d\n",memb_numfree(&packet_memb));
 				p = memb_alloc(&packet_memb);
+				//PRINTF("[QUEUE]: packet_memb numFree after adding: %d\n",memb_numfree(&packet_memb));
 				if (p != NULL)
 				{
 					/* Enqueue packet */
 #ifdef TSCH_CALLBACK_PACKET_READY
 					TSCH_CALLBACK_PACKET_READY();
 #endif
+
+					//PRINTF("[QUEUE]: queuebuf_numfree before adding: %d\n",queuebuf_numfree());
 					p->qb = queuebuf_new_from_packetbuf();
+
+					//PRINTF("[QUEUE]: queuebuf_numfree after adding: %d\n",queuebuf_numfree());
 					if (p->qb != NULL)
 					{
 						p->sent = sent;
@@ -349,6 +346,7 @@ void tsch_queue_reset(void)
 		struct tsch_neighbor *n = list_head(neighbor_list);
 		while (n != NULL)
 		{
+
 			struct tsch_neighbor *next_n = list_item_next(n);
 			/* Flush queue */
 			tsch_queue_flush_nbr_queue(n);
@@ -356,6 +354,11 @@ void tsch_queue_reset(void)
 			tsch_queue_backoff_reset(n);
 			n = next_n;
 		}
+
+
+//		//re-initialise the buffers
+//		memb_init(&packet_memb);
+//		queuebuf_init();
 	}
 }
 /*---------------------------------------------------------------------------*/

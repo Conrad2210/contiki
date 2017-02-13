@@ -63,6 +63,12 @@ struct APP_PACKET RLLAppPacket;
 struct APP_PACKET RLLSendPacket;
 uint8_t lastTimeslotSend = 0;
 int RLL_receiveTimeslot = 0;
+
+struct forwardType
+{
+	int timeslot;
+	int direction;
+};
 /***************************************/
 /***************************************/
 /*			    Timers		 		   */
@@ -171,169 +177,423 @@ void RLL_notify()
 
 }
 
+int compareMyType(const int * a, const int * b)
+{
+	if (*(int*) a < *(int*) b)
+		return -1;
+	if (*(int*) a == *(int*) b)
+		return 0;
+	if (*(int*) a > *(int*) b)
+		return 1;
+}
 static void thread_forward(struct RLL_PACKET *data)
 {
 
 	struct tsch_link *temp;
-	uint8_t timeslot = 0;
+	int8_t timeslot = 0;
 	uint8_t baseTimeslot = 0;
 	uint8_t currentTimeslot = 0;
 	uint8_t currentCalcTimeslot;
 	int8_t tx1 = -1, tx2 = -1;
+	struct forwardType sendSlots[3];
+	int8_t direction = -2;
+	int8_t i = 0;
 	while (1)
 	{
-
-		int8_t direction = -2;
-
+		for (i = 0; i < 3; i++)
+		{
+			sendSlots[i].timeslot = -1;
+			sendSlots[i].direction = -2;
+		}
+		direction = -2;
+		timeslot = -1;
+		PRINTF("[RLL]: Packet received with direction %d\n",data->direction);
 		if (data->direction == 0)
 			direction = 0;
 		else if (data->direction == 1)
 			direction = 1;
 		else if (data->direction == -1)
 			direction = -1;
-		//tsch_queue_reset();
-		if (data->priority == 1)
-			checkQueue();
 
 		lastRxSeqNo = data->seqNo;
 
 		data->base.src = linkaddr_node_addr;
-		ANNOTATE("[RLL]: received RLL Data MSG at: asn-%x.%lx, forward direction: %d\n",current_asn.ms1b,current_asn.ls4b,direction);
-		if ((direction == -1 || direction == 0) && getTier() != 0)
+
+		switch (direction)
 		{
-
-			data->direction = -1;
-
-			if (RLLTier != 0)
-			{
-				//ANNOTATE("[RLL]: Received from: %d, forward to Parent at: asn-%x.%lx\n",direction,current_asn.ms1b,current_asn.ls4b);
-				if (RLLTier % 2 == 0)
+			case 1:
+				/*
+				 * Case 1: Forward to CS and ChildCH if >0			 *
+				 */
+				if (getNumChildCH() > 0)
 				{
-					temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
-					tx1 = 2;
-					tx2 = 6;
+					timeslot = -1;
+					if (RLLTier % 2 == 0)
+					{
+						tx1 = 5;
+						tx2 = 9;
+						temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+						currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
+						baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
+						currentTimeslot = temp->timeslot - baseTimeslot;
+						if (currentTimeslot < tx1)
+							timeslot = baseTimeslot + tx1;
+						else if (currentTimeslot < tx2)
+							timeslot = baseTimeslot + tx2;
+						else
+							timeslot = baseTimeslot + 10 + tx1;
 
-					currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
-					baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
-					currentTimeslot = temp->timeslot - baseTimeslot;
-					if (currentTimeslot < tx1)
-						timeslot = baseTimeslot + tx1;
-					else if (currentTimeslot < tx2)
-						timeslot = baseTimeslot + tx2;
-					else
-						timeslot = baseTimeslot + 10 + tx1;
+						if (timeslot > 50)
+							timeslot = tx1;
+					} else
+					{
 
-					if (timeslot > 50)
-						timeslot = tx1;
+						currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
+						temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+						tx1 = 3;
+						tx2 = 7;
 
-					PRINTF("[RLL]:Send to Parent \%2=0 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
-				} else
-				{
-					tx1 = 4;
-					tx2 = 8;
-					temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
-					currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
-					baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
-					currentTimeslot = temp->timeslot - baseTimeslot;
-					if (currentTimeslot < tx1)
-						timeslot = baseTimeslot + tx1;
-					else if (currentTimeslot < tx2)
-						timeslot = baseTimeslot + tx2;
-					else
-						timeslot = baseTimeslot + 10 + tx1;
+						baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
+						currentTimeslot = temp->timeslot - baseTimeslot;
+						if (currentTimeslot < tx1)
+							timeslot = baseTimeslot + tx1;
+						else if (currentTimeslot < tx2)
+							timeslot = baseTimeslot + tx2;
+						else
+							timeslot = baseTimeslot + 10 + tx1;
 
-					if (timeslot > 50)
-						timeslot = tx1;
-					//				}
-					PRINTF("[RLL]:Send to Parent \%2=1 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
+						if (timeslot > 50)
+							timeslot = tx1;
+
+					}PRINTF("[RLL]:Send to Child CH \%2=0 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
+
+					sendSlots[1].timeslot = timeslot;
+					sendSlots[1].direction = 1;
 				}
 
+				if (getNumCS() > 0)
+				{
+					timeslot = -1;
+					temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+					currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
+
+					if (currentCalcTimeslot != 0)
+					{
+						baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
+						currentTimeslot = temp->timeslot - baseTimeslot;
+						timeslot = baseTimeslot + 10;
+						if (timeslot == temp->timeslot)
+							timeslot = timeslot + 10;
+
+						if (timeslot > 50)
+							timeslot = 10;
+					} else if (currentCalcTimeslot == 0 && temp->timeslot == 0)
+					{
+						timeslot = 10;
+						baseTimeslot = 0;
+						currentTimeslot = 0;
+					}PRINTF("[RLL]:Send to CS base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
+
+					sendSlots[2].timeslot = timeslot;
+					sendSlots[2].direction = 1;
+				}
+				break;
+			case 0:
+				/*
+				 * Case 0: Forward to CS if >1, to ChildCH and Parent	 *
+				 */
+				if (getTier() != 0)
+				{
+					/*
+					 * Forward to parent
+					 */
+					timeslot = -1;
+					if (RLLTier % 2 == 0)
+					{
+						temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+						tx1 = 2;
+						tx2 = 6;
+
+						currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
+						baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
+						currentTimeslot = temp->timeslot - baseTimeslot;
+						if (currentTimeslot < tx1)
+							timeslot = baseTimeslot + tx1;
+						else if (currentTimeslot < tx2)
+							timeslot = baseTimeslot + tx2;
+						else
+							timeslot = baseTimeslot + 10 + tx1;
+
+						if (timeslot > 50)
+							timeslot = tx1;
+
+					} else
+					{
+						tx1 = 4;
+						tx2 = 8;
+						temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+						currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
+						baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
+						currentTimeslot = temp->timeslot - baseTimeslot;
+						if (currentTimeslot < tx1)
+							timeslot = baseTimeslot + tx1;
+						else if (currentTimeslot < tx2)
+							timeslot = baseTimeslot + tx2;
+						else
+							timeslot = baseTimeslot + 10 + tx1;
+
+						if (timeslot > 50)
+							timeslot = tx1;
+						//				}
+					}PRINTF("[RLL]:Send to Parent \%2=1 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
+
+					sendSlots[0].timeslot = timeslot;
+					sendSlots[0].direction = -1;
+				}
+
+				if (getNumChildCH() > 0)
+				{
+					/*
+					 * Forward to Child CH
+					 */
+					timeslot = -1;
+					if (RLLTier % 2 == 0)
+					{
+						tx1 = 5;
+						tx2 = 9;
+						temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+						currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
+						baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
+						currentTimeslot = temp->timeslot - baseTimeslot;
+						if (currentTimeslot < tx1)
+							timeslot = baseTimeslot + tx1;
+						else if (currentTimeslot < tx2)
+							timeslot = baseTimeslot + tx2;
+						else
+							timeslot = baseTimeslot + 10 + tx1;
+
+						if (timeslot > 50)
+							timeslot = tx1;
+					} else
+					{
+
+						currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
+						temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+						tx1 = 3;
+						tx2 = 7;
+
+						baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
+						currentTimeslot = temp->timeslot - baseTimeslot;
+						if (currentTimeslot < tx1)
+							timeslot = baseTimeslot + tx1;
+						else if (currentTimeslot < tx2)
+							timeslot = baseTimeslot + tx2;
+						else
+							timeslot = baseTimeslot + 10 + tx1;
+
+						if (timeslot > 50)
+							timeslot = tx1;
+
+					}PRINTF("[RLL]:Send to Child CH \%2=0 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
+
+					sendSlots[1].timeslot = timeslot;
+					sendSlots[1].direction = 1;
+				}
+
+				if (getNumCS() > 1)
+				{
+					/*
+					 * Forward to CS
+					 */
+					timeslot = -1;
+					temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+					currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
+
+					if (currentCalcTimeslot != 0)
+					{
+						baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
+						currentTimeslot = temp->timeslot - baseTimeslot;
+						timeslot = baseTimeslot + 10;
+						if (timeslot == temp->timeslot)
+							timeslot = timeslot + 10;
+
+						if (timeslot > 50)
+							timeslot = 10;
+					} else if (currentCalcTimeslot == 0 && temp->timeslot == 0)
+					{
+						timeslot = 10;
+						baseTimeslot = 0;
+						currentTimeslot = 0;
+					}PRINTF("[RLL]:Send to CS base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
+
+					sendSlots[2].timeslot = timeslot;
+					sendSlots[2].direction = 1;
+				}
+				break;
+			case -1:
+				/*
+				 * Case -1: Forward to CS, to ChildCH and Parent	 *
+				 */
+				if (getTier() != 0)
+				{
+					timeslot = -1;
+					if (RLLTier % 2 == 0)
+					{
+						temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+						tx1 = 2;
+						tx2 = 6;
+
+						currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
+						baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
+						currentTimeslot = temp->timeslot - baseTimeslot;
+						if (currentTimeslot < tx1)
+							timeslot = baseTimeslot + tx1;
+						else if (currentTimeslot < tx2)
+							timeslot = baseTimeslot + tx2;
+						else
+							timeslot = baseTimeslot + 10 + tx1;
+
+						if (timeslot > 50)
+							timeslot = tx1;
+
+					} else
+					{
+						tx1 = 4;
+						tx2 = 8;
+						temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+						currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
+						baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
+						currentTimeslot = temp->timeslot - baseTimeslot;
+						if (currentTimeslot < tx1)
+							timeslot = baseTimeslot + tx1;
+						else if (currentTimeslot < tx2)
+							timeslot = baseTimeslot + tx2;
+						else
+							timeslot = baseTimeslot + 10 + tx1;
+
+						if (timeslot > 50)
+							timeslot = tx1;
+						//				}
+					}PRINTF("[RLL]:Send to Parent \%2=1 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
+
+
+					sendSlots[0].timeslot = timeslot;
+															sendSlots[0].direction = -1;
+				}
+
+				if (getNumChildCH() > 1)
+				{
+					timeslot = -1;
+					if (RLLTier % 2 == 0)
+					{
+						tx1 = 5;
+						tx2 = 9;
+						temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+						currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
+						baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
+						currentTimeslot = temp->timeslot - baseTimeslot;
+						if (currentTimeslot < tx1)
+							timeslot = baseTimeslot + tx1;
+						else if (currentTimeslot < tx2)
+							timeslot = baseTimeslot + tx2;
+						else
+							timeslot = baseTimeslot + 10 + tx1;
+
+						if (timeslot > 50)
+							timeslot = tx1;
+					} else
+					{
+
+						currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
+						temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+						tx1 = 3;
+						tx2 = 7;
+
+						baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
+						currentTimeslot = temp->timeslot - baseTimeslot;
+						if (currentTimeslot < tx1)
+							timeslot = baseTimeslot + tx1;
+						else if (currentTimeslot < tx2)
+							timeslot = baseTimeslot + tx2;
+						else
+							timeslot = baseTimeslot + 10 + tx1;
+
+						if (timeslot > 50)
+							timeslot = tx1;
+
+					}PRINTF("[RLL]:Send to Child CH \%2=0 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
+
+					sendSlots[1].timeslot = timeslot;
+					sendSlots[1].direction = 1;
+				}
+
+				if (getNumCS() > 0)
+				{
+					timeslot = -1;
+					temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
+					currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
+
+					if (currentCalcTimeslot != 0)
+					{
+						baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
+						currentTimeslot = temp->timeslot - baseTimeslot;
+						timeslot = baseTimeslot + 10;
+						if (timeslot == temp->timeslot)
+							timeslot = timeslot + 10;
+
+						if (timeslot > 50)
+							timeslot = 10;
+					} else if (currentCalcTimeslot == 0 && temp->timeslot == 0)
+					{
+						timeslot = 10;
+						baseTimeslot = 0;
+						currentTimeslot = 0;
+					}PRINTF("[RLL]:Send to CS base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
+
+					sendSlots[2].timeslot = timeslot;
+					sendSlots[2].direction = 1;
+				}
+				break;
+		}
+
+		i = 0;
+		int x, y, n = 3;
+		for (x = 0; x < n; x++)
+		{
+			for (y = 0; y < n - 1; y++)
+			{
+				if (sendSlots[y].timeslot > sendSlots[y + 1].timeslot)
+				{
+					struct forwardType temp = sendSlots[y + 1];
+					sendSlots[y + 1] = sendSlots[y];
+					sendSlots[y] = temp;
+				}
+			}
+		}
+		for (i = 0; i < 3; i++)
+		{
+			if (sendSlots[i].timeslot != -1)
+			{
+
+				switch (sendSlots[i].direction)
+				{
+					case 0:
+						data->direction = -1;
+						break;
+					case 1:
+						data->direction = 1;
+						break;
+					case 2:
+						data->direction = 1;
+						break;
+				}
+
+				PRINTF("[RLL]: Forward packet: timeslot: %d, direction: %d\n",sendSlots[i].timeslot,sendSlots[i].direction);
 				packetbuf_copyfrom(data, sizeof(struct RLL_PACKET));
 				packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
-				packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, timeslot);
+				packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, sendSlots[i].timeslot);
 				broadcast_send(&rll_broadcast);
 			}
-
-		}
-
-		if ((direction == -1 && RLLNumChildCH > 1) || (direction >= 0 && RLLNumChildCH != 0))
-		{
-			data->direction = 1;
-			if (RLLTier % 2 == 0)
-			{
-				tx1 = 5;
-				tx2 = 9;
-				temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
-				currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
-				baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
-				currentTimeslot = temp->timeslot - baseTimeslot;
-				if (currentTimeslot < tx1)
-					timeslot = baseTimeslot + tx1;
-				else if (currentTimeslot < tx2)
-					timeslot = baseTimeslot + tx2;
-				else
-					timeslot = baseTimeslot + 10 + tx1;
-
-				if (timeslot > 50)
-					timeslot = tx1;
-				PRINTF("[RLL]:Send to Parent \%2=0 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
-			} else
-			{
-
-				currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
-				temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
-				tx1 = 3;
-				tx2 = 7;
-
-				baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
-				currentTimeslot = temp->timeslot - baseTimeslot;
-				if (currentTimeslot < tx1)
-					timeslot = baseTimeslot + tx1;
-				else if (currentTimeslot < tx2)
-					timeslot = baseTimeslot + tx2;
-				else
-					timeslot = baseTimeslot + 10 + tx1;
-
-				if (timeslot > 50)
-					timeslot = tx1;
-
-				PRINTF("[RLL]:Send to Parent \%2=1 base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
-			}
-			packetbuf_copyfrom(data, sizeof(struct RLL_PACKET));
-			packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
-			packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, timeslot);
-			broadcast_send(&rll_broadcast);
-
-		}
-
-		if (((direction == -1 || direction == 1) && RLLNumCS != 0) || (direction == 0 && RLLNumCS > 1))
-		{
-			data->direction = 1;
-			PRINTF("[RLL]: forward to CS at: asn-%x.%lx\n",current_asn.ms1b,current_asn.ls4b);ANNOTATE("[RLL]: currentCalcTimeslot: %d, timeslot: %d\n",currentCalcTimeslot,temp->timeslot);
-			temp = tsch_schedule_get_next_active_link(&current_asn, 0, NULL);
-			currentCalcTimeslot = temp->timeslot - ((uint16_t) temp->timeslot / 10) * 10;
-
-			if (currentCalcTimeslot != 0)
-			{
-				baseTimeslot = ((uint16_t) temp->timeslot / 10) * 10;
-				currentTimeslot = temp->timeslot - baseTimeslot;
-				timeslot = baseTimeslot + 10;
-				if (timeslot == temp->timeslot)
-					timeslot = timeslot + 10;
-
-				if (timeslot > 50)
-					timeslot = 10;
-			} else if (currentCalcTimeslot == 0 && temp->timeslot == 0)
-			{
-				timeslot = 10;
-				baseTimeslot = 0;
-				currentTimeslot = 0;
-			}PRINTF("[RLL]:Send to CS base timeslot: %d, currentTimeslot: %d, send timeslot: %d at: asn-%x.%lx\n",baseTimeslot,currentTimeslot, timeslot,current_asn.ms1b,current_asn.ls4b);
-			packetbuf_copyfrom(data, sizeof(struct RLL_PACKET));
-			packetbuf_set_attr(PACKETBUF_ATTR_TSCH_SLOTFRAME, 0);
-			packetbuf_set_attr(PACKETBUF_ATTR_TSCH_TIMESLOT, timeslot);
-			broadcast_send(&rll_broadcast);
-			mt_yield();
 		}
 
 		mt_yield();
@@ -541,7 +801,6 @@ static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from
 {
 
 	struct RLL_PACKET *tempPacket = packetbuf_dataptr();
-
 	switch (tempPacket->subType)
 	{
 		case RLL_DATA:
@@ -557,11 +816,24 @@ static void rll_packet_received(struct broadcast_conn *c, const linkaddr_t *from
 
 				if (RLL_CIDERState == 5)
 				{
+					if (tempPacket->priority == 1)
+						checkQueue();
 
+					RLLForwardPacket.appData = tempPacket->appData;
+					RLLForwardPacket.base.dst = tsch_broadcast_address;
+					RLLForwardPacket.base.type = tempPacket->base.type;
+					RLLForwardPacket.initalSRC = tempPacket->initalSRC;
+					RLLForwardPacket.priority = tempPacket->priority;
+					RLLForwardPacket.seqNo = tempPacket->seqNo;
+					RLLForwardPacket.subType = tempPacket->subType;
+					RLLForwardPacket.direction = tempPacket->direction;
+
+					mt_exec(&forward_thread);
 				}
 				//ANNOTATE("[RLL]: Data packet type: %d\n",tempPacket->appData.subType);
 				RLLAppPacket = tempPacket->appData;
 				mt_exec(&app_thread);
+				lastRxSeqNo = RLLForwardPacket.seqNo;
 				//APPDATACALLBACK(&RLLDataPacket);
 			}
 			break;
