@@ -838,6 +838,10 @@ void handleTopologyReply(struct APP_PACKET *data)
 			list_push(topologyInfo_list, e);
 		}
 	}
+	// if this reply comes in while not waiting for a topology update, trigger sending of update to database
+	// (otherwise, late updates don't make it to the front end)
+	if (waitForTopologyUpdate < 1)
+		waitForTopologyUpdate = 1;
 
 }
 
