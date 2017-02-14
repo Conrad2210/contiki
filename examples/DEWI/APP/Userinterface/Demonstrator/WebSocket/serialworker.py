@@ -76,7 +76,7 @@ class SerialProcess(multiprocessing.Process):
             temperature = data[data.index("'")+1:data.index("'",data.index("'")+1,len(data))]
             self.dewi.add_battery_stat(B_addr, temperature)
 
-        if "colour" in data:
+        if "color" in data:
             C_addr = data[data.index("(")+1:data.index(")")]
             C_addr = C_addr[0:2]+":"+C_addr[2:4]
             colour = data[data.index("'")+1:data.index("'",data.index("'")+1,len(data))]

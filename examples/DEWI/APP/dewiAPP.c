@@ -616,7 +616,7 @@ void handleProcessEvent()
 				printf("MasterSlave_addr data: '%08x' \r\n", (e->master.u16));
 				printf("MasterSlave_addr data: '%08x' \r\n",
 						(e->master.u16 << 16) | (e->child.u16));
-				printf("Master (%04x) colour: '%d'\r\n", e->master.u16, e->colour);
+				printf("Master (%04x) color: '%d'\r\n", e->master.u16, e->colour);
 			}
 			if (list_length(topologyInfo_list) == 0)
 			{
@@ -644,6 +644,24 @@ void handleProcessEvent()
 		else if (waitForTopologyUpdate > 0)
 		{
 			waitForTopologyUpdate--;
+		}
+		if ((getActiveProtocol() == 2) && (list_length(topologyInfo_list) == 0) && (waitForTopologyUpdate <= 0) && (isGateway == 1))
+		{
+			// RLL active, but no topology info collected yet, start topology info collection automatically
+			printf("Starting initial topology collection.\r\n");
+			// re-initialize topology information list
+			list_init(topologyInfo_list);
+			// poll topology data from network
+			struct APP_PACKET temp;
+			temp.subType = APP_TOPOLOGYREQUEST;
+			temp.timeSend = current_asn;
+			temp.dst = tsch_broadcast_address;
+			temp.src = linkaddr_node_addr;
+			temp.seqNo = seqNo++;
+			sendRLLDataMessage(temp, 0);
+
+			// set a flag to wait for topology updates
+			waitForTopologyUpdate = 2;
 		}
 
 		if ((sendSensorDataCountdown <= 0) && (getActiveProtocol() == 2))
@@ -716,32 +734,71 @@ void handleProcessEvent()
 
 }
 
+// prepare and send topology reply in demonstrator mode
 void handleTopologyRequest()
 {
-	if (getCIDERState()==5){
-		uint8_t numChildren = 0; // number of children
-		linkaddr_t children[CONF_MAX_NEIGHBOURS];
-		numChildren = getChildAddresses(children);
-		printf("got topology request, have %d children\r\n", numChildren);
+	PRINTF("[APP]: send TopologyReply\n");
+	checkQueueStatus();
+	struct APP_PACKET packet;
+	packet.src = linkaddr_node_addr;
+	packet.dst = tsch_broadcast_address;
+	packet.subType = APP_TOPOLOGYREPLY;
+	packet.timeslot[0] = getTier();
+	packet.timeslot[1] = getColour();
+	uint8_t numChildren = 0; // number of children
+	linkaddr_t children[CONF_MAX_NEIGHBOURS];
+	numChildren = getChildAddresses(children);
+	PRINTF("got topology request, have %d children\r\n", numChildren);
+	uint8_t numPackets = (uint8_t) ceilf((float) numChildren / (float) 23);
 
-		int i,j;
-		for (i = 0; i <= numChildren/20; i++)
-		{ // put information about max. 20 children in packet, send multiple packets if needed
-			struct APP_PACKET temp;
-			temp.subType = APP_TOPOLOGYREPLY;
-			temp.values[0] = (uint16_t) ((i==numChildren/20)?numChildren%20:20);
-			temp.values[1] = linkaddr_node_addr.u16;
-			temp.values[2] = (uint16_t) getColour();
-			for (j = 0; j < ((i==numChildren/20)?numChildren%20:20); j++)
+	if (numPackets == 1)
+					{
+						//send one packet
+
+						int temp = 0;
+						for (temp = 0; temp < numChildren; temp++)
+						{
+							packet.values[temp] = children[temp].u16;
+						}
+						packet.count = numChildren;
+						packet.remainingData = 0;
+						//packet.
+						lock = 1;
+						sendRLLDataMessage(packet, 0);
+					}
+	else
+	{
+		//send more than one packet
+		int temp = 0, sentPacket = 0, lowerBorder;
+		PRINTF("numPackets: %d,numChildren: %d\n", numPackets, numChildren);
+		for (sentPacket = 0; sentPacket < numPackets; sentPacket++)
+		{
+			uint8_t maxBorder = (sentPacket + 1) * 23;
+			if (maxBorder > numChildren)
 			{
-				temp.values[j+3] = children[i*10+j].u16;
+				maxBorder = numChildren;
+				packet.remainingData = 0;
 			}
-			temp.timeSend = current_asn;
-			temp.dst = tsch_broadcast_address;
-			temp.src = linkaddr_node_addr;
-			temp.seqNo = seqNo++;
-			sendRLLDataMessage(temp, 0);
+			else
+			{
+				packet.remainingData = 1;
+
+			}
+			temp = 0;
+
+			for (lowerBorder = 0 + sentPacket * 23; lowerBorder < maxBorder;
+					lowerBorder++)
+			{
+				packet.values[temp] = children[lowerBorder].u16;
+				temp++;
+			}
+
+			packet.count = temp;
+			lock = 1;
+			sendRLLDataMessage(packet, 0);
+			clock_delay_usec(50000);
 		}
+
 	}
 
 }
@@ -750,15 +807,15 @@ void handleTopologyRequest()
 // input: the incoming packet
 void handleTopologyReply(struct APP_PACKET *data)
 {
-	int numEntries = data->values[0]; // extract the amount of child addresses in this packet
+	int numEntries = data->count; // extract the amount of child addresses in this packet
 	int i;
 	// go through the contents of the packet
 	for (i = 0; i < numEntries; i++)
 	{
 		struct topologyInfo_entry entry;
-		entry.master.u16 = data->values[1];
-		entry.colour = data->values[2];
-		entry.child.u16 = data->values[i + 3];
+		entry.master.u16 = data->src.u16;
+		entry.colour = data->timeslot[1];
+		entry.child.u16 = data->values[i];
 		struct topologyInfo_entry *e = NULL;
 		for (e = list_head(topologyInfo_list); e != NULL; e = e->next)
 		{ //check if the entry with this child is already present
