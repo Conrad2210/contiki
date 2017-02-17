@@ -575,8 +575,51 @@ void handleSerialInput(process_data_t data)
 			updatePerformanceStats(0);
 
 		}
+		else if (strstr(ch_data, "0x") != NULL)
+		{
+
+			//checkQueueStatus();
+			uint16_t temp = (uint16_t) strtol(ch_data, NULL, 16);
+			printf("received statistics request for node %04x\n", temp);
+			if (linkaddr_node_addr.u16 == temp)
+			{
+				// get temperature and battery values and send them
+				int temperature, battery;
+				temperature = cc2538_temp_sensor.value(
+				CC2538_SENSORS_VALUE_TYPE_CONVERTED) / 1000;
+				battery = vdd3_sensor.value(
+				CC2538_SENSORS_VALUE_TYPE_CONVERTED);
+				printf("node(%04x) Temperature = '%dC' \r\n", linkaddr_node_addr.u16, temperature);
+				sendBatteryStatusByserialP(battery, linkaddr_node_addr);
+
+				// send performance statistics
+				int i = 0;
+				struct performanceStatEntry *e = NULL;
+				for (e = list_head(perfStat_list); e != NULL; e = e->next)
+				{
+					printf("node(%04x) Stats: Packets = '%d', Latency = '%d'\r\n",
+							linkaddr_node_addr.u16, e->packetCounter, e->latency);
+				}
+
+//				PRINTF("RESULTReplyTxPackets:0x%4x,%d\n", linkaddr_node_addr.u16, txPackets);
+//				txPackets = 0;
+			}
+			else if (temp != 0)
+			{
+				// send APP_RESULTREQUEST to node to collect statistics from that node
+				PRINTF("[APP]: APP_RESULTREQUEST received, send message\n");
+				struct APP_PACKET packet;
+				packet.src = linkaddr_node_addr;
+				packet.dst.u16 = temp;
+				packet.subType = APP_RESULTREQUEST;
+
+				lock = 1;
+				sendRLLDataMessage(packet, 0);
+			}
+		}
 		else
 		{ // assuming received color value
+			printf("received colour value\n");
 			i_data = strtol(ch_data, &ptr, 16);	//Convert char data to hex
 
 			R = (int) (i_data & 0x00ff0000) >> 19;  //Select byte 1 and shift to first position
@@ -664,72 +707,72 @@ void handleProcessEvent()
 			waitForTopologyUpdate = 2;
 		}
 
-		if ((sendSensorDataCountdown <= 0) && (getActiveProtocol() == 2))
-		{ // sensor data counter expired
-		  // obtain temperature and battery values and send them
-			int temperature, battery;
-			temperature = cc2538_temp_sensor.value(
-			CC2538_SENSORS_VALUE_TYPE_CONVERTED) / 1000;
-			battery = vdd3_sensor.value(
-			CC2538_SENSORS_VALUE_TYPE_CONVERTED);
-
-			struct APP_PACKET temp;
-			temp.subType = APP_SENSORDATA;
-			temp.temperature = (uint8_t) temperature;
-			temp.battery = (uint8_t) battery;
-			temp.timeSend = current_asn;
-			temp.dst = tsch_broadcast_address;
-			temp.src = linkaddr_node_addr;
-			temp.seqNo = seqNo++;
-			// add performance stats to packet
-			int i = 0;
-			struct performanceStatEntry *e = NULL;
-			for (e = list_head(perfStat_list); e != NULL; e = e->next)
-			{ //add performance stats to packet
-				temp.timeslot[i] = e->latency;
-				temp.values[i] = e->packetCounter;
-				if (i == 22)
-				{
-					// packet full, send it and create a new one
-					temp.remainingData = 1;
-					sendRLLDataMessage(temp, 0);
-					i = 0;
-					temp.seqNo = seqNo++;
-
-				}
-				else
-				{
-					temp.remainingData = 0;
-					i++;
-				}
-
-				//if this is the gateway, send the performance data on the serial port
-				if (isGateway)
-				{
-					printf("node(%04x) Stats: Packets = '%d', Latency = '%d'\r\n",
-							linkaddr_node_addr.u16, e->packetCounter, e->latency);
-				}
-			}
-			while (i < 23)
-			{
-				// fill remaining temp.values with 0 so that we don't accidentially parse undefined values on the other end
-				temp.values[i] = 0;
-				i++;
-			}
-			sendRLLDataMessage(temp, 0);
-
-			if (isGateway)
-			{
-				// if this is the gateway, send data on serial port as well
-				printf("node(%04x) Temperature = '%dC' \r\n", linkaddr_node_addr.u16, temperature);
-				sendBatteryStatusByserialP(battery, linkaddr_node_addr);
-			}
-			sendSensorDataCountdown = 5 + linkaddr_node_addr.u16 % 15; // do this every xth loop, x being between 5 and 14
-		}
-		else
-		{
-			sendSensorDataCountdown--;
-		}
+//		if ((sendSensorDataCountdown <= 0) && (getActiveProtocol() == 2))
+//		{ // sensor data counter expired
+//		  // obtain temperature and battery values and send them
+//			int temperature, battery;
+//			temperature = cc2538_temp_sensor.value(
+//			CC2538_SENSORS_VALUE_TYPE_CONVERTED) / 1000;
+//			battery = vdd3_sensor.value(
+//			CC2538_SENSORS_VALUE_TYPE_CONVERTED);
+//
+//			struct APP_PACKET temp;
+//			temp.subType = APP_SENSORDATA;
+//			temp.temperature = (uint8_t) temperature;
+//			temp.battery = (uint8_t) battery;
+//			temp.timeSend = current_asn;
+//			temp.dst = tsch_broadcast_address;
+//			temp.src = linkaddr_node_addr;
+//			temp.seqNo = seqNo++;
+//			// add performance stats to packet
+//			int i = 0;
+//			struct performanceStatEntry *e = NULL;
+//			for (e = list_head(perfStat_list); e != NULL; e = e->next)
+//			{ //add performance stats to packet
+//				temp.timeslot[i] = e->latency;
+//				temp.values[i] = e->packetCounter;
+//				if (i == 22)
+//				{
+//					// packet full, send it and create a new one
+//					temp.remainingData = 1;
+//					sendRLLDataMessage(temp, 0);
+//					i = 0;
+//					temp.seqNo = seqNo++;
+//
+//				}
+//				else
+//				{
+//					temp.remainingData = 0;
+//					i++;
+//				}
+//
+//				//if this is the gateway, send the performance data on the serial port
+//				if (isGateway)
+//				{
+//					printf("node(%04x) Stats: Packets = '%d', Latency = '%d'\r\n",
+//							linkaddr_node_addr.u16, e->packetCounter, e->latency);
+//				}
+//			}
+//			while (i < 23)
+//			{
+//				// fill remaining temp.values with 0 so that we don't accidentially parse undefined values on the other end
+//				temp.values[i] = 0;
+//				i++;
+//			}
+//			sendRLLDataMessage(temp, 0);
+//
+//			if (isGateway)
+//			{
+//				// if this is the gateway, send data on serial port as well
+//				printf("node(%04x) Temperature = '%dC' \r\n", linkaddr_node_addr.u16, temperature);
+//				sendBatteryStatusByserialP(battery, linkaddr_node_addr);
+//			}
+//			sendSensorDataCountdown = 5 + linkaddr_node_addr.u16 % 15; // do this every xth loop, x being between 5 and 14
+//		}
+//		else
+//		{
+//			sendSensorDataCountdown--;
+//		}
 	}
 
 }
@@ -976,6 +1019,22 @@ void applicationDataCallback(struct APP_PACKET *data)
 				else ledToggle = 1;
 				updatePerformanceStats(latency);
 
+			}
+			else if (data->subType == APP_RESULTREQUEST)
+			{
+
+				PRINTF("[APP]: APP_RESULTREQUEST received: Type: %d, from: 0x%4x for 0x%4x\n",
+						data->subType, data->src.u16, data->dst.u16);
+				if (data->dst.u16 == linkaddr_node_addr.u16 && isGateway == 0)
+				{
+					PROCESS_CONTEXT_BEGIN(&dewiDemo)
+						;
+						etimer_stop(&resultReply_timer);
+						etimer_set(&resultReply_timer,
+						CLOCK_SECOND);
+						PROCESS_CONTEXT_END(&dewiDemo);
+
+				}
 			}
 			else if ((data->subType == APP_SENSORDATA) && isGateway)
 			{ // received sensor data, forward them to serial port if this is the gateway
@@ -1583,6 +1642,53 @@ while (1)
 		{
 			button_press_counter = 0;
 		}
+		else if (data == &resultReply_timer)
+		{
+			// obtain temperature and battery values and send them
+			int temperature, battery;
+			temperature = cc2538_temp_sensor.value(
+			CC2538_SENSORS_VALUE_TYPE_CONVERTED) / 1000;
+			battery = vdd3_sensor.value(
+			CC2538_SENSORS_VALUE_TYPE_CONVERTED);
+
+			struct APP_PACKET temp;
+			temp.subType = APP_SENSORDATA;
+			temp.temperature = (uint8_t) temperature;
+			temp.battery = (uint8_t) battery;
+			temp.timeSend = current_asn;
+			temp.dst = tsch_broadcast_address;
+			temp.src = linkaddr_node_addr;
+			temp.seqNo = seqNo++;
+			// add performance stats to packet
+			int i = 0;
+			struct performanceStatEntry *e = NULL;
+			for (e = list_head(perfStat_list); e != NULL; e = e->next)
+			{ //add performance stats to packet
+				temp.timeslot[i] = e->latency;
+				temp.values[i] = e->packetCounter;
+				if (i == 22)
+				{
+					// packet full, send it and create a new one
+					temp.remainingData = 1;
+					sendRLLDataMessage(temp, 0);
+					i = 0;
+					temp.seqNo = seqNo++;
+				}
+				else
+				{
+					temp.remainingData = 0;
+					i++;
+				}
+			}
+			while (i < 23)
+			{
+				// fill remaining temp.values with 0 so that we don't accidentially parse undefined values on the other end
+				temp.values[i] = 0;
+				i++;
+			}
+			sendRLLDataMessage(temp, 0);
+		}
+
 	}
 	else if (ev == button_press_duration_exceeded)
 	{
