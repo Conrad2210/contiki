@@ -31,7 +31,7 @@
 			"columns": [
 				{"data": "addr"},
 				{"data": "pkt_sum"},
-				{"data": "avg_lat"},
+				{"data": "avg_lat", "fnCreatedCell": function (nTd, sData, oData, iRow, iCol){$(nTd).html("<a style='color:blue;' onClick='window.open(\"histogram.phtml?address="+oData.addr+"\", \"latency histogram\", \"resizable=1, width=700, height=500\")'>"+oData.avg_lat+"</a>");}},
 			]
 		});   
 	});
