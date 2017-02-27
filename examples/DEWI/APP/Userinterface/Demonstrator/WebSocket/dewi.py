@@ -161,3 +161,12 @@ class  dewi():
 				print "MySQL Error [%d]: %s" % (e.args[0], e.args[1])
 			except IndexError:
 				print "MySQL Error: %s" % str(e)
+				
+	def getNodeslist(self):
+		connection = self.dbConnection
+		try:
+			connection.query("SELECT addr from Dewi_tab;")
+			result = connection.store_result()
+			return result.fetch_row(0)
+		except mysql.Error, e:
+			print "MySQL Error: %s" % str(e)

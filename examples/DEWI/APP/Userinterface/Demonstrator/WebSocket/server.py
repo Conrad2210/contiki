@@ -8,6 +8,7 @@ import os
 import time
 import multiprocessing
 import serialworker
+import statscollectionworker
 import json
  
 define("port", default=8081, help="run on the given port", type=int)
@@ -60,6 +61,10 @@ if __name__ == '__main__':
     sp = serialworker.SerialProcess(input_queue, output_queue)
     sp.daemon = True
     sp.start()
+    ## start the stats collection worker as a deamon
+    sc = statscollectionworker.StatsCollectionProcess(input_queue)
+    sc.daemon = True
+    sc.start()
     tornado.options.parse_command_line()
     app = tornado.web.Application(
         handlers=[
