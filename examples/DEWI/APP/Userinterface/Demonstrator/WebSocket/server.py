@@ -9,6 +9,7 @@ import time
 import multiprocessing
 import serialworker
 import statscollectionworker
+import dewi
 import json
  
 define("port", default=8081, help="run on the given port", type=int)

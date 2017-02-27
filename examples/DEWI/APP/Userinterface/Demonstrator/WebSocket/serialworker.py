@@ -89,6 +89,10 @@ class SerialProcess(multiprocessing.Process):
             packets = splitted[1];
             latency = int(splitted[3]);
             self.dewi.add_statistics(addr, packets, latency)
+
+	if "Started Demonstrator" in data:
+	    # gateway restarted, possibly new experiment, so clear database
+	    self.dewi.cleanDB()
             
     def sendToSerial(self,data):
         if "resetstatistics" in data:
@@ -100,6 +104,9 @@ class SerialProcess(multiprocessing.Process):
     def run(self):
 
         self.sp.flushInput()
+
+	## clean the database tables
+	self.dewi.cleanDB()
 
         while True:
             # look for incoming tornado request

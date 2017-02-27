@@ -338,6 +338,7 @@ void handleSensorsEvent(process_data_t data)
 						temp.dst = tsch_broadcast_address;
 						temp.src = linkaddr_node_addr;
 						temp.seqNo = seqNo++;
+						lock = 0;
 						sendRLLDataMessage(temp, 0);
 						updatePerformanceStats(0);
 
@@ -498,6 +499,7 @@ void handleSerialInput(process_data_t data)
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
+			lock = 1;
 			sendRLLDataMessage(temp, 0);
 
 			// set a flag to wait for topology updates
@@ -552,9 +554,11 @@ void handleSerialInput(process_data_t data)
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
+			lock = 1;
 			sendRLLDataMessage(temp, 0);
 			// reset own statistics
 			list_init(perfStat_list);
+			txPackets = 0;
 		}
 		else if (strstr(ch_data, "BRIGHTNESS") != NULL)
 		{ // received brightness value
@@ -571,6 +575,7 @@ void handleSerialInput(process_data_t data)
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
+			lock = 0;
 			sendRLLDataMessage(temp, 0);
 			updatePerformanceStats(0);
 
@@ -598,7 +603,7 @@ void handleSerialInput(process_data_t data)
 				for (e = list_head(perfStat_list); e != NULL; e = e->next)
 				{
 					printf("node(%04x) Stats: Packets = '%d', Latency = '%d'\r\n",
-							linkaddr_node_addr.u16, e->packetCounter, e->latency);
+							linkaddr_node_addr.u16, txPackets, e->latency);
 				}
 
 //				PRINTF("RESULTReplyTxPackets:0x%4x,%d\n", linkaddr_node_addr.u16, txPackets);
@@ -638,6 +643,7 @@ void handleSerialInput(process_data_t data)
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
+			lock = 0;
 			sendRLLDataMessage(temp, 0);
 			updatePerformanceStats(0);
 
@@ -661,8 +667,8 @@ void handleProcessEvent()
 						(e->master.u16 << 16) | (e->child.u16));
 				printf("Master (%04x) color: '%d'\r\n", e->master.u16, e->colour);
 			}
-			if (list_length(topologyInfo_list) == 0)
-			{
+			if ((list_length(topologyInfo_list) == 0) &&(getActiveProtocol() == 2))
+			{	// if no topology info is available and RLL is running, restart collection
 				printf("No topology info available! Re-starting collection.\r\n");
 				// re-initialize topology information list
 				list_init(topologyInfo_list);
@@ -673,10 +679,11 @@ void handleProcessEvent()
 				temp.dst = tsch_broadcast_address;
 				temp.src = linkaddr_node_addr;
 				temp.seqNo = seqNo++;
+				lock = 1;
 				sendRLLDataMessage(temp, 0);
 
 				// set a flag to wait for topology updates
-				waitForTopologyUpdate = 2;
+				waitForTopologyUpdate = 3;
 			}
 			else
 			{
@@ -701,78 +708,13 @@ void handleProcessEvent()
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
+			lock = 1;
 			sendRLLDataMessage(temp, 0);
 
 			// set a flag to wait for topology updates
-			waitForTopologyUpdate = 2;
+			waitForTopologyUpdate = 3;
 		}
 
-//		if ((sendSensorDataCountdown <= 0) && (getActiveProtocol() == 2))
-//		{ // sensor data counter expired
-//		  // obtain temperature and battery values and send them
-//			int temperature, battery;
-//			temperature = cc2538_temp_sensor.value(
-//			CC2538_SENSORS_VALUE_TYPE_CONVERTED) / 1000;
-//			battery = vdd3_sensor.value(
-//			CC2538_SENSORS_VALUE_TYPE_CONVERTED);
-//
-//			struct APP_PACKET temp;
-//			temp.subType = APP_SENSORDATA;
-//			temp.temperature = (uint8_t) temperature;
-//			temp.battery = (uint8_t) battery;
-//			temp.timeSend = current_asn;
-//			temp.dst = tsch_broadcast_address;
-//			temp.src = linkaddr_node_addr;
-//			temp.seqNo = seqNo++;
-//			// add performance stats to packet
-//			int i = 0;
-//			struct performanceStatEntry *e = NULL;
-//			for (e = list_head(perfStat_list); e != NULL; e = e->next)
-//			{ //add performance stats to packet
-//				temp.timeslot[i] = e->latency;
-//				temp.values[i] = e->packetCounter;
-//				if (i == 22)
-//				{
-//					// packet full, send it and create a new one
-//					temp.remainingData = 1;
-//					sendRLLDataMessage(temp, 0);
-//					i = 0;
-//					temp.seqNo = seqNo++;
-//
-//				}
-//				else
-//				{
-//					temp.remainingData = 0;
-//					i++;
-//				}
-//
-//				//if this is the gateway, send the performance data on the serial port
-//				if (isGateway)
-//				{
-//					printf("node(%04x) Stats: Packets = '%d', Latency = '%d'\r\n",
-//							linkaddr_node_addr.u16, e->packetCounter, e->latency);
-//				}
-//			}
-//			while (i < 23)
-//			{
-//				// fill remaining temp.values with 0 so that we don't accidentially parse undefined values on the other end
-//				temp.values[i] = 0;
-//				i++;
-//			}
-//			sendRLLDataMessage(temp, 0);
-//
-//			if (isGateway)
-//			{
-//				// if this is the gateway, send data on serial port as well
-//				printf("node(%04x) Temperature = '%dC' \r\n", linkaddr_node_addr.u16, temperature);
-//				sendBatteryStatusByserialP(battery, linkaddr_node_addr);
-//			}
-//			sendSensorDataCountdown = 5 + linkaddr_node_addr.u16 % 15; // do this every xth loop, x being between 5 and 14
-//		}
-//		else
-//		{
-//			sendSensorDataCountdown--;
-//		}
 	}
 
 }
@@ -1071,7 +1013,7 @@ void applicationDataCallback(struct APP_PACKET *data)
 			else if (data->subType == APP_STATSRESET)
 			{ // reset statistics
 				list_init(perfStat_list);
-
+				txPackets = 0;
 			}
 		}
 	}
@@ -1080,14 +1022,11 @@ void applicationDataCallback(struct APP_PACKET *data)
 
 void packetDeletedFromQueue()
 {
-	if (experimentActive == 1)
-	{
 		if (lock == 0)
 		{
 			PRINTF("[APP]: Packet sent\n");
 			txPackets++;
 		}
-	}
 }
 
 void tsch_dewi_callback_joining_network(void)
@@ -1548,7 +1487,7 @@ PROCESS_BEGIN()
 initNeighbourTable();
 setCoord(0);
 initScheduler();
-PRINTF("[APP]: Started Demonstartor APP\n");
+PRINTF("[APP]: Started Demonstrator APP\n");
 radio_result_t rv = NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, 0);
 //configure buttons
 button_sensor.configure(BUTTON_SENSOR_CONFIG_TYPE_INTERVAL,
@@ -1622,6 +1561,7 @@ while (1)
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
+			lock = 1;
 			sendRLLDataMessage(temp, 0);
 			list_init(perfStat_list);
 		}
@@ -1670,6 +1610,7 @@ while (1)
 				{
 					// packet full, send it and create a new one
 					temp.remainingData = 1;
+					lock = 1;
 					sendRLLDataMessage(temp, 0);
 					i = 0;
 					temp.seqNo = seqNo++;
@@ -1686,6 +1627,7 @@ while (1)
 				temp.values[i] = 0;
 				i++;
 			}
+			lock = 1;
 			sendRLLDataMessage(temp, 0);
 		}
 
