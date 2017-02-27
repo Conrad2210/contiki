@@ -658,6 +658,10 @@ static void cider_packet_received(struct broadcast_conn *c, const linkaddr_t *fr
 			{
 				n.myCS = 1;
 				n.myChildCH = 0;
+			}else
+			{
+				n.myCS = 0;
+				n.myChildCH = 0;
 			}
 			n.CIDERState = CIDER_CS;
 			n.msgCounter = 0;
