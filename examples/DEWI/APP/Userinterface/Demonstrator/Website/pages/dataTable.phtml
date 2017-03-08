@@ -89,9 +89,9 @@
                         <li>
                             <a href="color.phtml">RGB LED Color</a>
                         </li>
-			<li>
+			<!--<li>
 			    <a href="statistics.phtml">Statistics</a>
-			</li>
+			</li>-->
 			<li>
 			    <a href="console.html">Console</a>
 			</li>
@@ -125,6 +125,8 @@
 		<div class="input-group">
 			<span class="input-group-btn">
 				<button class="btn btn-warning btn-sm" style="margin-left: 0;" onclick="sendTopologyRefresh()">Refresh topology information</button>
+				<button class="btn btn-warning btn-sm" style="margin-left: 0;" onclick="collectStatistics()">Refresh statistics information</button>&nbsp;
+				<button class="btn btn-warning btn-sm" style="margin-left: 0;" onclick="resetStatistics()">Reset statistics</button>
 			</span>
                 </div>
 		<div>
@@ -175,9 +177,18 @@ $('#clear').click(function(){
   $('#received').empty();
 });
 
-		// send a topology refresh message to the network and reload the page after 10 seconds
+		// send a topology refresh message to the network and reload the page after 15 seconds
 		function sendTopologyRefresh(){
 			socket.send("topologyrefresh\n");
+			setTimeout(function(){window.location.reload(true);}, 15000);
+		}
+		// refresh the table by reloading
+		function collectStatistics(){
+			window.location.reload(true);
+		}
+		// send a statistics reset message to the network and reload the page after 10 seconds
+		function resetStatistics(){
+			socket.send("resetstatistics\n");
 			setTimeout(function(){window.location.reload(true);}, 10000);
 		}
 	</script>

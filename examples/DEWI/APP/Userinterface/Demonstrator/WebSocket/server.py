@@ -18,6 +18,7 @@ clients = []
 
 input_queue = multiprocessing.Queue()
 output_queue = multiprocessing.Queue()
+feedback_queue = multiprocessing.Queue()
 
 
  
@@ -59,11 +60,11 @@ def checkQueue():
 
 if __name__ == '__main__':
     ## start the serial worker in background (as a deamon)
-    sp = serialworker.SerialProcess(input_queue, output_queue)
+    sp = serialworker.SerialProcess(input_queue, output_queue, feedback_queue)
     sp.daemon = True
     sp.start()
     ## start the stats collection worker as a deamon
-    sc = statscollectionworker.StatsCollectionProcess(input_queue)
+    sc = statscollectionworker.StatsCollectionProcess(input_queue, feedback_queue)
     sc.daemon = True
     sc.start()
     tornado.options.parse_command_line()
