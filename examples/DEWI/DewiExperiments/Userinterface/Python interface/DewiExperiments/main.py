@@ -23,6 +23,7 @@ from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as Navigatio
 import databaseClassi
 import plotly.plotly as py
 import plotly.tools as tls
+import networkx as nx
 
 
 # configures the serial connections (the parameters differ depending on
@@ -363,6 +364,29 @@ class MainWindow(QtGui.QMainWindow):
         # and shows the progress of an experiement
         self.statusBar().showMessage('Ready !')
 
+        #####################################################
+        parseFlockLabAction = QtGui.QAction("&Parse FlockLab",self)
+        parseFlockLabAction.setShortcut('Ctrl+p');
+        parseFlockLabAction.setStatusTip("Parse serial.csv files from FlockLab");
+        parseFlockLabAction.triggered.connect(self.parseFlockLab)
+        parseIoTLabAction = QtGui.QAction("&Parse IoTLab",self)
+        parseIoTLabAction.setShortcut('Ctrl+p');
+        parseIoTLabAction.setStatusTip("Parse serial.csv files from IoTLab");
+        parseIoTLabAction.setEnabled(False);
+
+
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu('&Parse')
+        fileMenu.addAction(parseFlockLabAction)
+        fileMenu.addAction(parseIoTLabAction)
+
+
+
+        self.lastPath = "C:\Users\R00118979\Desktop"
+
+        ##################################################
+
+
         self.xmax = 2000  # xmax defines the highest horizontal lenght of the latency graph
         self.x_list = []  # x_list is the list of the currently plot x_data for the the latency graph
         self.y_list = []  # y_list is the list of the currently plot y_data for the the latency graph
@@ -373,6 +397,7 @@ class MainWindow(QtGui.QMainWindow):
         # Our figure, canvas and axes necessary to plot
         self.figure_latency = plt.figure()
         self.figure_plr = plt.figure()
+        self.figure_topology = plt.figure()
         self.canvas_latency = FigureCanvas(self.figure_latency)
         self.canvas_plr = FigureCanvas(self.figure_plr)
         self.axes_latency = self.figure_latency.add_subplot(111)
@@ -495,6 +520,14 @@ class MainWindow(QtGui.QMainWindow):
         self.SelectHeatmap_buttion5 = QtGui.QPushButton('SelectHeatmap 5')
         self.SelectHeatmap_file5 = QtGui.QLineEdit()
         self.SelectHeatmap_file5.setEnabled(False)
+
+
+        self.Topology_buttion1 = QtGui.QPushButton('Draw Topology 1')
+        self.Topology_buttion1.clicked.connect(self.drawTopology1)
+        self.Topology_buttion2 = QtGui.QPushButton('Draw Topology 2')
+        self.Topology_buttion3 = QtGui.QPushButton('Draw Topology 3')
+        self.Topology_buttion4 = QtGui.QPushButton('Draw Topology 4')
+        self.Topology_buttion5 = QtGui.QPushButton('Draw Topology 5')
 
 
         self.HEATMAP_buttion1.clicked.connect(self.drawHeatmap1)
@@ -629,6 +662,7 @@ class MainWindow(QtGui.QMainWindow):
         test_HBox6.addWidget(self.SelectHeatmap_file1)
         test_HBox6.addWidget(self.SelectHeatmap_buttion1)
         test_HBox6.addWidget(self.HEATMAP_buttion1)
+        test_HBox6.addWidget(self.Topology_buttion1)
         test_HBox6.addStretch(1)
 
         test_HBox7.addStretch(1)
@@ -719,6 +753,48 @@ class MainWindow(QtGui.QMainWindow):
 
         self.show()
 
+
+    def parseFlockLab(self):
+        # results = ["test":[]];
+        self.lastPath = QtGui.QFileDialog.getOpenFileName(self, "Open FlockLab file",self.lastPath,"CSV (*.csv)")
+        self.txPackets = {};
+        self.rxPackets = {};
+        with open(self.lastPath, 'rb') as csvfile:
+            file =csv.reader(csvfile);
+
+            for row in file:
+                try:
+                    if "Packets:" in row[6]:
+                        if "rx" in row[6]:
+                            try:
+                                if self.rxPackets[int(row[1])] != None:
+                                    self.rxPackets[int(row[1])].append([row[0],int(row[5][row[5].index(":") + 1:len(row[6])])])
+                            except KeyError:
+                                self.rxPackets[int(row[1])] = [[row[0],int(row[5][row[5].index(":") + 1:len(row[6])])]];
+                            self.db.insertRxPacketsParseFlockLab(0,0,int(row[1]),int(row[6][row[6].index(" ") + 1:len(row[6])]))
+                        elif "tx" in row[6]:
+                            try:
+                                if self.txPackets[int(row[1])] != None:
+                                    self.txPackets[int(row[1])].append([row[0],int(row[5][row[5].index(":") + 1:len(row[6])])])
+                            except KeyError:
+                                self.txPackets[int(row[1])] = [[row[0],int(row[5][row[5].index(":") + 1:len(row[6])])]];
+                            self.db.insertTxPacketsParseFlockLab(0,0,int(row[1]),int(row[6][row[6].index(" ") + 1:len(row[6])]))
+                except IndexError:
+                    print "not in range"
+
+            for dataSetTx in self.txPackets:
+                for entryTx in self.txPackets[dataSetTx]:
+                    for dataSetRx in self.rxPackets:
+                        for entryRx in self.rxPackets[dataSetRx]:
+                            if entryTx[1] == entryRx[1]:
+                                entryRx[0] = float(entryRx[0]) - float(entryTx[0]);
+                                if entryRx[0] > 0:
+                                    self.db.insertLatency(0,0,entryRx[1],entryRx[0],1);
+                                break;
+
+            print "done"
+
+
     # These are the methods to call when the window is being closed. The two
     # Qthreads are asked to stop.
     def closeEvent(self, event):
@@ -799,19 +875,19 @@ class MainWindow(QtGui.QMainWindow):
         for i in range(0, len(experiment_list)):
             self.compare1.addItem(str(
                 "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB, {7}".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
-                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6], QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy"))))
+                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6], QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy HH:mm"))))
             self.compare2.addItem(str(
-                "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
-                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6],QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy"))))
+                "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB, {7}".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
+                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6], QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy HH:mm"))))
             self.compare3.addItem(str(
-                "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
-                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6],QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy"))))
+                "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB, {7}".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
+                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6], QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy HH:mm"))))
             self.compare4.addItem(str(
-                "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
-                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6],QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy"))))
+                "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB, {7}".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
+                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6], QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy HH:mm"))))
             self.compare5.addItem(str(
-                "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
-                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6],QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy"))))
+                "[{0}]: {1}, {2}, {3}s, {4}, {5} dBm, {6} dB, {7}".format(experiment_list[i][1], experiment_list[i][0], experiment_list[i][2],
+                                                    experiment_list[i][3], experiment_list[i][4], experiment_list[i][5], experiment_list[i][6], QDateTime.fromTime_t(int(experiment_list[i][7])).toString("dd.MM.yyyy HH:mm"))))
 
 
             #        cursor = db.cursor()
@@ -956,6 +1032,31 @@ class MainWindow(QtGui.QMainWindow):
 
             self.plot()
 
+    def drawTopology1(self):
+        if self.check1.isChecked() == True:
+            sessionid = int(str(self.compare1.currentText())[
+                            str(self.compare1.currentText()).index("[") + 1:str(
+                                self.compare1.currentText()).index("]")])
+
+            if (sessionid > -1):
+                G = nx.Graph()
+                topologyList = self.db.getTopology(sessionid)
+                G.add_nodes_from(topologyList[1]);
+                for node in topologyList[0]:
+                    G.add_edge(node[0],node[1]);
+                pos = nx.fruchterman_reingold_layout(G)
+                color = ['b','g','r','c','m','y','k','w']
+
+
+                for node in topologyList[0]:
+                    nx.draw_networkx_nodes(G, pos=pos, with_labels=True, nodelist=[node[0],node[1]], node_size=2500,
+                                           node_color=color[node[3]])
+                    nx.draw_networkx_edges(G, pos=pos, edgelist=[[node[0],node[1]]])
+                    nx.draw_networkx_labels(G, pos=pos)
+
+                plt.show()  # display
+
+        return
     def drawHeatmap1(self):
         if(self.SelectHeatmap_file1.text() != "" and self.check1.isChecked() == True):
             sessionid = int(str(self.compare1.currentText())[
@@ -973,30 +1074,33 @@ class MainWindow(QtGui.QMainWindow):
                 spamreader = csv.reader(csvfile, delimiter=',')
                 for row in spamreader:
                     self.topology.append(row)
-                self.topology = list(self.topology)
+                self.topology.reverse();
+                tempResult = [];
+                # for i in range(0,len(self.topology)):
+                #     self.topology[i].reverse();
                 tempResult = self.topology
-                counter1 = 0
-                counter2 = 0
-                for i in range(0,len(self.topology)):
 
-                    counter2 = 0
+                for i in range(0,len(self.topology)):
                     for k in range(0,len(self.topology[i])):
                         if self.topology[i][k] != '':
                             tempResult[i][k] = self.db.getRXPacketsForNode(int(sessionid),self.topology[i][k])
+                            print tempResult[i][k]
                             if tempResult[i][k] == None:
                                 tempResult[i][k] = 0
+
                             tempResult[i][k] = 100 - ((100/float(txPackets[0])) * float(tempResult[i][k]))
+
                         else:
                             tempResult[i][k] = 0
 
                 fig = plt.figure()
                 ax = fig.add_subplot(111)
 
-                ax.set_title('PLR Heatmap')
+                ax.set_title(description[0])
 
                 plotly_fig = tls.mpl_to_plotly(fig)
 
-                trace = dict(z=tempResult, type="heatmap", zmin=0, zmax=10)
+                trace = dict(z=tempResult, type="heatmap", zmin=0, zmax=40)
 
                 plotly_fig['data'] = [trace]
 
@@ -1448,7 +1552,7 @@ class MainWindow(QtGui.QMainWindow):
                 self.y_list[i] = [x * 100 for x in self.y_list[i]]
                 self.axes_latency.plot(self.x_list[i], self.y_list[i], linewidth=1)  # , label=name_labels[i]
 
-        self.axes_latency.legend(self.PlotLegend,loc=2)
+        self.axes_latency.legend(self.PlotLegend,loc='upper center', bbox_to_anchor=(0.5, -0.05),fancybox=True, shadow=True, ncol=5)
 
         for i in range(len(self.x_list)):
             if self.x_list[i] != []:
@@ -1477,7 +1581,7 @@ class MainWindow(QtGui.QMainWindow):
 
         self.axes_latency.set_xlim([0, self.xmax])
 
-        self.axes_latency.legend(loc='lower right')
+       # self.axes_latency.legend(loc='lower right')
         self.canvas_latency.draw()
 
         print self.plr_x
@@ -1490,7 +1594,7 @@ class MainWindow(QtGui.QMainWindow):
             self.axes_plr.set_title("Packet Loss Rate")
             self.axes_plr.set_xlabel("Number Experiment")
             self.axes_plr.set_ylabel("[%]")
-            self.axes_plr.legend(self.PlotLegend, loc=2)
+            self.axes_plr.legend(self.PlotLegend, loc='upper center', bbox_to_anchor=(0.5, -0.05),fancybox=True, shadow=True, ncol=5)
             # self.axes_plr.xticks(self.plr_y[i] + 1, self.plr_y[i])
 
         # To add labels on top of the bars to show the precise plr, rects and
