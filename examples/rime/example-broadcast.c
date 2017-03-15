@@ -44,7 +44,7 @@
 #include "dev/button-sensor.h"
 
 #include "dev/leds.h"
-
+#include "timesynch.h"
 #include <stdio.h>
 /*---------------------------------------------------------------------------*/
 PROCESS(example_broadcast_process, "Broadcast example");
@@ -55,6 +55,8 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
   printf("broadcast message received from %d.%d: '%s'\n",
          from->u8[0], from->u8[1], (char *)packetbuf_dataptr());
+
+  printf("[APP]: timesynch_time: %u\n", timesynch_time());
 }
 static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
 static struct broadcast_conn broadcast;

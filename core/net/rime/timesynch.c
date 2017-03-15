@@ -47,7 +47,7 @@
 #include "net/rime/rime.h"
 #include "net/rime/timesynch.h"
 #include <string.h>
-
+#define TIMESYNCH_CONF_ENABLED 1
 #if TIMESYNCH_CONF_ENABLED
 static int authority_level;
 static rtimer_clock_t offset;
@@ -72,8 +72,8 @@ struct timesynch_msg {
 
 PROCESS(timesynch_process, "Timesynch process");
 
-#define MIN_INTERVAL CLOCK_SECOND * 8
-#define MAX_INTERVAL CLOCK_SECOND * 60 * 5
+#define MIN_INTERVAL CLOCK_SECOND
+#define MAX_INTERVAL CLOCK_SECOND * 10
 /*---------------------------------------------------------------------------*/
 int
 timesynch_authority_level(void)
@@ -124,6 +124,7 @@ static void
 adjust_offset(rtimer_clock_t authoritative_time, rtimer_clock_t local_time)
 {
   offset = authoritative_time - local_time;
+	printf("timesynch: authoritative_time %u, local_time: %u, offset: %d\n",authoritative_time,local_time,offset);
 }
 /*---------------------------------------------------------------------------*/
 static void
@@ -138,6 +139,8 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
        have, we synchronize to the time of the sending node and set our
        own authority level to be one more than the sending node. */
   if(msg.authority_level < authority_level) {
+		printf("timesynch: msg.timestamp  %u, msg.authority_offset: %u, offset: %d\n",msg.timestamp ,msg.authority_offset,offset);
+
     adjust_offset(msg.timestamp + msg.authority_offset,
                   packetbuf_attr(PACKETBUF_ATTR_TIMESTAMP));
     timesynch_set_authority_level(msg.authority_level + 1);
@@ -191,6 +194,7 @@ PROCESS_THREAD(timesynch_process, ev, data)
 void
 timesynch_init(void)
 {
+	printf("start timesynch\n");
   process_start(&timesynch_process, NULL);
 }
 /*---------------------------------------------------------------------------*/
