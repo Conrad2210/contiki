@@ -18,9 +18,9 @@
 		{
 			$db_array[] = $row;
 		}
-	}else {
-		echo '<h2 class="page-header">no connected node</h2>';
-	}
+	}//else {
+	//	echo '<h2 class="page-header">no connected node</h2>';
+	//}
 
 	//udapte all nodes id in the datatable
 	for($y = 0; $y < $lenght; $y++){

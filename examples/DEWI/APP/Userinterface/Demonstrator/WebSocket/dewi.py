@@ -83,9 +83,9 @@ class  dewi():
 		connection = self.dbConnection
 		latency = latency*10;
 		try:
-			connection.query("INSERT INTO Dewi_statsTab (addr, packets, latency) VALUES ('"+str(addr)+"',"+str(packets)+","+str(latency)+") ON DUPLICATE KEY UPDATE packets = "+str(packets)+", latency = "+str(latency)+";")
+			connection.query("INSERT INTO Dewi_statsTab (addr, packets, latency) VALUES ('"+str(addr)+"',"+str(packets)+","+str(latency)+") ON DUPLICATE KEY UPDATE packets = packets +"+str(packets)+", latency = "+str(latency)+";")
 			result = connection.use_result()
-			print "INSERT INTO Dewi_statsTab (addr, packets, latency) VALUES ('"+str(addr)+"',"+str(packets)+","+str(latency)+") ON DUPLICATE KEY UPDATE packets = "+str(packets)+", latency = "+str(latency)
+			#print "INSERT INTO Dewi_statsTab (addr, packets, latency) VALUES ('"+str(addr)+"',"+str(packets)+","+str(latency)+") ON DUPLICATE KEY UPDATE packets = "+str(packets)+", latency = "+str(latency)
 			print "MySQL version: %s" % result
 		except mysql.Error, e:
 			try:

@@ -117,6 +117,7 @@ uint8_t tempResultCounter = 0;
 /////////////////////////////
 ////////////////////////////
 char ledToggle;
+char waitForStatsAck;
 
 // instead of having different timers, use counters to trigger actions at multiples of process event timer
 char sendSensorDataCountdown; // for recurrent transmission of sensor data (temperature and battery level)
@@ -158,7 +159,7 @@ const struct etimer processResults_timer, topologyReply_timer, resultReply_timer
 /***************************************/
 void setColor(uint16_t R, uint16_t G, uint16_t B);
 void updatePerformanceStats(uint8_t latency);
-void sendBatteryStatusByserialP(int b_data, linkaddr_t addr);
+void sendBatteryStatusByserialP(uint8_t battery, linkaddr_t addr);
 void handleSensorsEvent(process_data_t data);
 void handleSerialInput(process_data_t data);
 void handleProcessEvent();
@@ -208,57 +209,64 @@ void updatePerformanceStats(uint8_t latency)
 	}
 }
 
-// convert battery voltage level to battery percentage status, and send over serial port
-void sendBatteryStatusByserialP(int b_data, linkaddr_t addr)
+// send battery status over serial port
+void sendBatteryStatusByserialP(uint8_t battery, linkaddr_t addr)
+{
+	printf("node(%04x) Battery '%d%%' \r\n", addr.u16, battery);
+}
+
+// convert battery voltage level to battery percentage
+uint8_t convertBatteryValues(int b_data)
 {
 	if (b_data >= 3240)
 	{
-		printf("node(%04x) Battery '100%%' \r\n", addr.u16);
+		return 100;
 	}
 	else if (b_data >= 3230 && b_data < 3240)
 	{
-		printf("node(%04x) Battery '90%%' \r\n", addr.u16);
+		return 90;
 	}
 	else if (b_data >= 3200 && b_data < 3230)
 	{
-		printf("node(%04x) Battery '80%%' \r\n", addr.u16);
+		return 80;
 	}
 	else if (b_data >= 3170 && b_data < 3200)
 	{
-		printf("node(%04x) Battery '70%%' \r\n", addr.u16);
+		return 70;
 	}
 	else if (b_data >= 3100 && b_data < 3170)
 	{
-		printf("node(%04x) Battery '60%%' \r\n", addr.u16);
+		return 60;
 	}
 	else if (b_data >= 3050 && b_data < 3100)
 	{
-		printf("node(%04x) Battery '50%%' \r\n", addr.u16);
+		return 50;
 	}
 	else if (b_data >= 2950 && b_data < 3050)
 	{
-		printf("node(%04x) Battery '40%%' \r\n", addr.u16);
+		return 40;
 	}
 	else if (b_data >= 2900 && b_data < 2950)
 	{
-		printf("node(%04x) Battery '30%%' \r\n", addr.u16);
+		return 30;
 	}
 	else if (b_data >= 2800 && b_data < 2900)
 	{
-		printf("node(%04x) Battery '20%%' \r\n", addr.u16);
+		return 20;
 	}
 	else if (b_data >= 2600 && b_data < 2800)
 	{
-		printf("node(%04x) Battery '10%%' \r\n", addr.u16);
+		return 10;
 	}
 	else if (b_data >= 2350 && b_data < 2600)
 	{
-		printf("node(%04x) Battery '5%%' \r\n", addr.u16);
+		return 5;
 	}
-	else if (b_data < 2350)
+	else
 	{
-		printf("node(%04x) Battery '0%%' \r\n", addr.u16);
+		return 0;
 	}
+
 }
 
 // function to handle incoming sensor events
@@ -587,7 +595,7 @@ void handleSerialInput(process_data_t data)
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
 			lock = 0;
-			sendRLLDataMessage(temp, 0);
+			sendRLLDataMessage(temp, 1);
 			updatePerformanceStats(0);
 
 		}
@@ -606,7 +614,8 @@ void handleSerialInput(process_data_t data)
 				battery = vdd3_sensor.value(
 				CC2538_SENSORS_VALUE_TYPE_CONVERTED);
 				printf("node(%04x) Temperature = '%dC' \r\n", linkaddr_node_addr.u16, temperature);
-				sendBatteryStatusByserialP(battery, linkaddr_node_addr);
+				uint8_t batteryPercent = convertBatteryValues(battery);
+				sendBatteryStatusByserialP(batteryPercent, linkaddr_node_addr);
 
 				// send performance statistics
 				int i = 0;
@@ -616,11 +625,11 @@ void handleSerialInput(process_data_t data)
 					printf("node(%04x) Stats: Packets = '%d', Latency = '%d'\r\n",
 							linkaddr_node_addr.u16, txPackets, e->latency);
 				}
-
+				waitForStatsAck = 1;
 //				PRINTF("RESULTReplyTxPackets:0x%4x,%d\n", linkaddr_node_addr.u16, txPackets);
 //				txPackets = 0;
 			}
-			else if (temp != 0)
+			else //if (temp != 0)
 			{
 				// send APP_RESULTREQUEST to node to collect statistics from that node
 				PRINTF("[APP]: APP_RESULTREQUEST received, send message\n");
@@ -630,7 +639,12 @@ void handleSerialInput(process_data_t data)
 				packet.subType = APP_RESULTREQUEST;
 
 				lock = 1;
-				sendRLLDataMessage(packet, 0);
+				sendRLLDataMessage(packet, 1);
+				if(waitForStatsAck == 1){
+					waitForStatsAck = 0;
+					list_init(perfStat_list);
+					txPackets = 0;
+				}
 			}
 		}
 		else
@@ -655,7 +669,7 @@ void handleSerialInput(process_data_t data)
 			temp.src = linkaddr_node_addr;
 			temp.seqNo = seqNo++;
 			lock = 0;
-			sendRLLDataMessage(temp, 0);
+			sendRLLDataMessage(temp, 1);
 			updatePerformanceStats(0);
 
 		}
@@ -814,6 +828,7 @@ void handleTopologyRequest()
 void handleTopologyReply(struct APP_PACKET *data)
 {
 	int numEntries = data->count; // extract the amount of child addresses in this packet
+	printf("Got Topology reply from 0x%4x with %d entries\n", data->src.u16, numEntries);
 	int i;
 	// go through the contents of the packet
 	for (i = 0; i < numEntries; i++)
@@ -956,7 +971,8 @@ void applicationDataCallback(struct APP_PACKET *data)
 	{
 		if (linkaddr_cmp(&data->dst, &linkaddr_node_addr) == 1
 				|| (linkaddr_cmp(&data->dst, &tsch_broadcast_address) == 1
-						&& linkaddr_cmp(&data->src, &linkaddr_node_addr) != 1))
+				&& linkaddr_cmp(&data->src, &linkaddr_node_addr) != 1)
+				|| (data->subType == APP_RESULTREQUEST && linkaddr_cmp(&data->src, &linkaddr_node_addr) != 1))
 		{
 			struct asn_t receivedAt = current_asn;
 			uint8_t latency = ASN_DIFF(receivedAt, data->timeSend); // latency in number of time slots
@@ -997,6 +1013,13 @@ void applicationDataCallback(struct APP_PACKET *data)
 						CLOCK_SECOND);
 						PROCESS_CONTEXT_END(&dewiDemo);
 
+				}
+				else if (data->dst.u16 != linkaddr_node_addr.u16 && waitForStatsAck == 1)
+				{
+					waitForStatsAck = 0;
+					// clear statistics table
+					list_init(perfStat_list);
+					txPackets = 0;
 				}
 			}
 			else if ((data->subType == APP_SENSORDATA) && isGateway)
@@ -1184,6 +1207,7 @@ PROCESS_THREAD(dewiStart, ev, data)  // main demonstrator process
 		etimer_set(&waitTimer, 5 * CLOCK_SECOND); //event timer, every 3 seconds , there is a event
 
 		leds_off(LEDS_ALL);
+		experimentActive = 0;
 		while (1)
 		{
 			PROCESS_YIELD()
@@ -1197,7 +1221,8 @@ PROCESS_THREAD(dewiStart, ev, data)  // main demonstrator process
 					if (button_sensor.value(BUTTON_SENSOR_VALUE_TYPE_LEVEL)
 							== BUTTON_SENSOR_PRESSED_LEVEL)
 					{
-						experimentActive = 0;
+						//experimentActive = 0;
+						experimentActive = 1;
 
 					}
 
@@ -1559,6 +1584,9 @@ isGateway = 0;
 //initially set ledToggle to 1, meaning the LED is on
 ledToggle = 1;
 
+// initialize waitForStatsAck to 0 (not waiting)
+waitForStatsAck = 0;
+
 //initialize performance stats
 list_init(perfStat_list);
 memb_init(&perfStat_mem);
@@ -1621,11 +1649,12 @@ while (1)
 			CC2538_SENSORS_VALUE_TYPE_CONVERTED) / 1000;
 			battery = vdd3_sensor.value(
 			CC2538_SENSORS_VALUE_TYPE_CONVERTED);
+			uint8_t batteryPercent = convertBatteryValues(battery);
 
 			struct APP_PACKET temp;
 			temp.subType = APP_SENSORDATA;
 			temp.temperature = (uint8_t) temperature;
-			temp.battery = (uint8_t) battery;
+			temp.battery = batteryPercent;
 			temp.timeSend = current_asn;
 			temp.dst = tsch_broadcast_address;
 			temp.src = linkaddr_node_addr;
@@ -1660,6 +1689,7 @@ while (1)
 			}
 			lock = 1;
 			sendRLLDataMessage(temp, 0);
+			waitForStatsAck = 1;
 		}
 
 	}

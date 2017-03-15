@@ -12,10 +12,11 @@ class SerialProcess(multiprocessing.Process):
     dewi = DBConnection.dewi()
     addrMasterSlave = ""
 
-    def __init__(self, input_queue, output_queue):
+    def __init__(self, input_queue, output_queue, feedback_queue):
         multiprocessing.Process.__init__(self)
         self.input_queue = input_queue
         self.output_queue = output_queue
+        self.feedback_queue = feedback_queue
         self.sp = serial.Serial(SERIAL_PORT, SERIAL_BAUDRATE, timeout=1)
 
     def close(self):
@@ -75,6 +76,7 @@ class SerialProcess(multiprocessing.Process):
             B_addr = B_addr[0:2]+":"+B_addr[2:4]
             temperature = data[data.index("'")+1:data.index("'",data.index("'")+1,len(data))]
             self.dewi.add_battery_stat(B_addr, temperature)
+            self.feedback_queue.put("statsReceived")
 
         if "color" in data:
             C_addr = data[data.index("(")+1:data.index(")")]
@@ -90,9 +92,9 @@ class SerialProcess(multiprocessing.Process):
             latency = int(splitted[3]);
             self.dewi.add_statistics(addr, packets, latency)
 
-	if "Started Demonstrator" in data:
+	#if "Started Demonstrator" in data:
 	    # gateway restarted, possibly new experiment, so clear database
-	    self.dewi.cleanDB()
+	    #self.dewi.cleanDB()
             
     def sendToSerial(self,data):
         if "resetstatistics" in data:
@@ -105,8 +107,8 @@ class SerialProcess(multiprocessing.Process):
 
         self.sp.flushInput()
 
-	## clean the database tables
-	self.dewi.cleanDB()
+    	## clean the database tables
+        #self.dewi.cleanDB()
 
         while True:
             # look for incoming tornado request
