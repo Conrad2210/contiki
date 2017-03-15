@@ -499,7 +499,12 @@ void handleSerialInput(process_data_t data)
 		if (strcmp(ch_data, "topologyrefresh") == 0)
 		{ // received topology refresh message
 		  // re-initialize topology information list
-			list_init(topologyInfo_list);
+//			list_init(topologyInfo_list);
+			while (list_head(topologyInfo_list) != NULL)
+			{
+				memb_free(&topologyInfo_mem, list_head(topologyInfo_list));
+				list_remove(topologyInfo_list, list_head(topologyInfo_list));
+			}
 			// poll topology data from network
 			struct APP_PACKET temp;
 			temp.subType = APP_TOPOLOGYREQUEST;
@@ -565,7 +570,13 @@ void handleSerialInput(process_data_t data)
 			lock = 1;
 			sendRLLDataMessage(temp, 0);
 			// reset own statistics
-			list_init(perfStat_list);
+
+//			list_init(perfStat_list);
+			while (list_head(perfStat_list) != NULL)
+			{
+				memb_free(&perfStat_mem, list_head(perfStat_list));
+				list_remove(perfStat_list, list_head(perfStat_list));
+			}
 			txPackets = 0;
 		}
 		else if (strstr(ch_data, "BRIGHTNESS") != NULL)
@@ -685,7 +696,12 @@ void handleProcessEvent()
 			{	// if no topology info is available and RLL is running, restart collection
 				printf("No topology info available! Re-starting collection.\r\n");
 				// re-initialize topology information list
-				list_init(topologyInfo_list);
+//				list_init(topologyInfo_list);
+				while (list_head(topologyInfo_list) != NULL)
+							{
+								memb_free(&topologyInfo_mem, list_head(topologyInfo_list));
+								list_remove(topologyInfo_list, list_head(topologyInfo_list));
+							}
 				// poll topology data from network
 				struct APP_PACKET temp;
 				temp.subType = APP_TOPOLOGYREQUEST;
@@ -714,7 +730,12 @@ void handleProcessEvent()
 			// RLL active, but no topology info collected yet, start topology info collection automatically
 			printf("Starting initial topology collection.\r\n");
 			// re-initialize topology information list
-			list_init(topologyInfo_list);
+//			list_init(topologyInfo_list);
+			while (list_head(topologyInfo_list) != NULL)
+						{
+							memb_free(&topologyInfo_mem, list_head(topologyInfo_list));
+							list_remove(topologyInfo_list, list_head(topologyInfo_list));
+						}
 			// poll topology data from network
 			struct APP_PACKET temp;
 			temp.subType = APP_TOPOLOGYREQUEST;
@@ -1035,7 +1056,12 @@ void applicationDataCallback(struct APP_PACKET *data)
 			}
 			else if (data->subType == APP_STATSRESET)
 			{ // reset statistics
-				list_init(perfStat_list);
+//				list_init(perfStat_list);
+				while (list_head(perfStat_list) != NULL)
+				{
+					memb_free(&perfStat_mem, list_head(perfStat_list));
+					list_remove(perfStat_list, list_head(perfStat_list));
+				}
 				txPackets = 0;
 			}
 		}
@@ -1591,7 +1617,12 @@ while (1)
 			temp.seqNo = seqNo++;
 			lock = 1;
 			sendRLLDataMessage(temp, 0);
-			list_init(perfStat_list);
+//			list_init(perfStat_list);
+			while (list_head(perfStat_list) != NULL)
+			{
+				memb_free(&perfStat_mem, list_head(perfStat_list));
+				list_remove(perfStat_list, list_head(perfStat_list));
+			}
 		}
 		handleSerialInput(data);
 	}

@@ -1,0 +1,21 @@
+# $Id: $
+
+# TODO: Drivers for sensors still need to be developed.
+# CONTIKI_TARGET_SOURCEFILES += contiki-wsn430-platform.c
+CONTIKI_TARGET_SOURCEFILES += battery-sensor.c radio-sensor.c \
+	temperature-sensor.c
+
+# WITH_CC1100=1
+WITH_CC2420=1
+
+ifndef SMALL
+SMALL=1
+endif
+
+include $(CONTIKI)/platform/wsn430/Makefile.common
+
+MODULES += core/net/mac \
+           core/net \
+           core/net/mac/contikimac core/net/mac/cxmac \
+           core/net/llsec core/net/llsec/noncoresec \
+           dev/cc2420 dev/ds2411

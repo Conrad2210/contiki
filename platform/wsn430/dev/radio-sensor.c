@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, Swedish Institute of Computer Science.
+ * Copyright (c) 2005, Swedish Institute of Computer Science
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,61 +28,52 @@
  *
  * This file is part of the Contiki operating system.
  *
+ * $Id: $
  */
 
-/**
- * \file
- *         Testing the broadcast layer in Rime
- * \author
- *         Adam Dunkels <adam@sics.se>
- */
+#include "lib/sensors.h"
 
-#include "contiki.h"
-#include "net/rime/rime.h"
-#include "random.h"
+#include "cc2420.h"
+#include "dev/radio-sensor.h"
 
-#include "dev/button-sensor.h"
+const struct sensors_sensor radio_sensor;
+static int active;
 
-#include "dev/leds.h"
-#include "timesynch.h"
-#include <stdio.h>
 /*---------------------------------------------------------------------------*/
-PROCESS(example_broadcast_process, "Broadcast example");
-AUTOSTART_PROCESSES(&example_broadcast_process);
-/*---------------------------------------------------------------------------*/
-static void
-broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
+static int
+value(int type)
 {
-  printf("broadcast message received from %d.%d: '%s'\n",
-         from->u8[0], from->u8[1], (char *)packetbuf_dataptr());
+  switch(type) {
+  case RADIO_SENSOR_LAST_PACKET:
+    return cc2420_last_correlation;
+  case RADIO_SENSOR_LAST_VALUE:
+  default:
 
-  printf("[APP]: timesynch_time: %u\n", timesynch_time());
-}
-static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
-static struct broadcast_conn broadcast;
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(example_broadcast_process, ev, data)
-{
-  static struct etimer et;
+    return cc2420_last_rssi;
 
-  PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
-
-  PROCESS_BEGIN();
-
-  broadcast_open(&broadcast, 129, &broadcast_call);
-
-  while(1) {
-
-    /* Delay 2-4 seconds */
-    etimer_set(&et, CLOCK_SECOND * 4 + random_rand() % (CLOCK_SECOND * 4));
-
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-
-    packetbuf_copyfrom("Hello", 6);
-    broadcast_send(&broadcast);
-    printf("broadcast message sent\n");
   }
-
-  PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
+static int
+configure(int type, int c)
+{
+  if(type == SENSORS_ACTIVE) {
+    active = c;
+    return 1;
+  }
+  return 0;
+}
+/*---------------------------------------------------------------------------*/
+static int
+status(int type)
+{
+  switch(type) {
+  case SENSORS_ACTIVE:
+  case SENSORS_READY:
+    return active;
+  }
+  return 0;
+}
+/*---------------------------------------------------------------------------*/
+SENSORS_SENSOR(radio_sensor, RADIO_SENSOR,
+	       value, configure, status);

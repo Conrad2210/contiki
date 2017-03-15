@@ -181,7 +181,7 @@ recv(const linkaddr_t *originator, uint8_t seqno, uint8_t hops)
 	 msg->toolong, msg->tooshort, msg->badsynch, msg->badcrc,
 	 msg->contentiondrop, msg->sendingdrop, msg->lltx, msg->llrx);
 #if TIMESYNCH_CONF_ENABLED
-  printf("%u", timesynch_time() - msg->timestamp);
+  printf("timesync: %u", timesynch_time() - msg->timestamp);
 #else
   printf("%u", RTIMER_NOW() - msg->timestamp);
 #endif /* TIMESYNCH_CONF_ENABLED */

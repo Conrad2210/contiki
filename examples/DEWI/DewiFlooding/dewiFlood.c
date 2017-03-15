@@ -51,6 +51,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <inttypes.h>
+#include "timesynch.h"
 /*---------------------------------------------------------------------------*/
 PROCESS(example_broadcast_process, "Broadcast example");
 AUTOSTART_PROCESSES(&example_broadcast_process);
@@ -64,6 +65,7 @@ struct FloodPacket
 {
 	uint16_t seqNo;
 	uint16_t hops;
+	rtimer_clock_t timestamp;
 };
 
 struct FloodPacket packet;
@@ -73,15 +75,19 @@ uint16_t seq = 0, lastSeq = 0;
 static struct broadcast_conn broadcast;
 static void broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
-	struct FloodPacket *tempPacket = (struct FloodPacket*) packetbuf_dataptr();
-	if (lastSeq < tempPacket->seqNo)
+	struct FloodPacket tempPacket;
+	memcpy(&tempPacket, packetbuf_dataptr(), sizeof(struct FloodPacket));
+	if (lastSeq < tempPacket.seqNo && (tempPacket.seqNo - lastSeq) < 10)
 	{
 		rxPackets = rxPackets +1;
-		printf("[APP]: MSG received: hopcount: %d, seq: %d\n", tempPacket->hops, tempPacket->seqNo);
-		printf("[APP]: rxPackets: %d\n",rxPackets);
-		lastSeq = tempPacket->seqNo;
-		tempPacket->hops = tempPacket->hops + 1;
-		packetbuf_copyfrom(tempPacket, 4);
+		rtimer_clock_t lat = timesynch_time() - tempPacket.timestamp;
+		unsigned long latency = (unsigned long)(lat) * 1e6 / RTIMER_SECOND;
+		printf("[APP]: timesynch_time: %u, timestap: %u\n",timesynch_time(),tempPacket.timestamp);
+		printf("[APP]: MSG received: hopcount: %d, seq: %d, rxPackets: %d, latency %lu.%03lu ms\n", tempPacket.hops, tempPacket.seqNo,rxPackets,latency / 1000, latency % 1000);
+
+		lastSeq = tempPacket.seqNo;
+		tempPacket.hops = tempPacket.hops + 1;
+		packetbuf_copyfrom(&tempPacket, sizeof(struct FloodPacket));
 		broadcast_send(&broadcast);
 	}
 }
@@ -102,8 +108,9 @@ PROCESS_THREAD(example_broadcast_process, ev, data)
 		;
 
 		broadcast_open(&broadcast, 129, &broadcast_call);
-
-		etimer_set(&burst, CLOCK_SECOND);
+		if (linkaddr_cmp(&coord, &linkaddr_node_addr))
+			timesynch_set_authority_level(0);
+		etimer_set(&burst, CLOCK_SECOND * 60);
 		while (1)
 		{
 			PROCESS_YIELD()
@@ -118,8 +125,8 @@ PROCESS_THREAD(example_broadcast_process, ev, data)
 						{
 							packet.hops = 0;
 							seq = seq + 1;
-							printf("seqNo: %d\n", seq);
 							packet.seqNo = seq;
+							packet.timestamp = timesynch_time();
 							printf("broadcast message sent with seqNo: %d, hopCount: %d\n", packet.seqNo, packet.hops);
 							packetbuf_copyfrom(&packet, sizeof(struct FloodPacket));
 							broadcast_send(&broadcast);
@@ -148,6 +155,7 @@ PROCESS_THREAD(example_broadcast_process, ev, data)
 						seq = seq + 1;
 						printf("seqNo: %d\n", seq);
 						packet.seqNo = seq;
+						packet.timestamp = timesynch_time();
 						printf("broadcast message sent with seqNo: %d, hopCount: %d\n", packet.seqNo, packet.hops);
 						packetbuf_copyfrom(&packet, sizeof(struct FloodPacket));
 						broadcast_send(&broadcast);
